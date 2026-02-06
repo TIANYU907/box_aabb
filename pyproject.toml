@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "box-aabb"
+version = "2.0.0"
+description = "机器人连杆AABB包围盒计算库"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+
+dependencies = [
+    "numpy>=1.21",
+]
+
+[project.optional-dependencies]
+optimize = ["scipy>=1.7"]
+viz = ["matplotlib>=3.4"]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "scipy>=1.7",
+    "matplotlib>=3.4",
+]
+all = ["box-aabb[optimize,viz]"]
+
+[tool.setuptools.packages.find]
+include = ["box_aabb*"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
