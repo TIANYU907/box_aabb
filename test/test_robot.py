@@ -172,3 +172,120 @@ class TestPandaPreset:
     def test_finger_fixed(self):
         lo, hi = PANDA_JOINT_LIMITS[7]
         assert lo == 0 and hi == 0
+
+
+class TestRobotNameAndLimits:
+    """Robot.name and Robot.joint_limits attributes."""
+
+    def test_default_name(self, simple_2dof_robot):
+        assert simple_2dof_robot.name == "Robot"
+
+    def test_custom_name(self):
+        dh = [{"alpha": 0, "a": 1.0, "d": 0, "theta": 0, "type": "revolute"}]
+        r = Robot(dh, name="MyBot")
+        assert r.name == "MyBot"
+
+    def test_default_joint_limits_none(self, simple_2dof_robot):
+        assert simple_2dof_robot.joint_limits is None
+
+    def test_custom_joint_limits(self):
+        dh = [
+            {"alpha": 0, "a": 1.0, "d": 0, "theta": 0, "type": "revolute"},
+            {"alpha": 0, "a": 1.0, "d": 0, "theta": 0, "type": "revolute"},
+        ]
+        limits = [(-1.0, 1.0), (-2.0, 2.0)]
+        r = Robot(dh, name="LimitBot", joint_limits=limits)
+        assert r.joint_limits == [(-1.0, 1.0), (-2.0, 2.0)]
+
+    def test_panda_from_config_has_name(self):
+        robot = load_robot('panda')
+        assert robot.name == "Panda"
+
+    def test_panda_from_config_has_limits(self):
+        robot = load_robot('panda')
+        assert robot.joint_limits is not None
+        assert len(robot.joint_limits) == 8
+
+    def test_panda_from_config_limits_match_legacy(self):
+        robot = load_robot('panda')
+        for i, (lo, hi) in enumerate(robot.joint_limits):
+            assert abs(lo - PANDA_JOINT_LIMITS[i][0]) < 1e-6
+            assert abs(hi - PANDA_JOINT_LIMITS[i][1]) < 1e-6
+
+
+class TestConfigSystem:
+    """Robot.from_json, Robot.from_config, load_robot, list_configs."""
+
+    def test_load_robot_panda(self):
+        robot = load_robot('panda')
+        assert robot.n_joints == 8
+        assert robot.name == "Panda"
+
+    def test_load_robot_case_insensitive(self):
+        robot = load_robot('Panda')
+        assert robot.name == "Panda"
+
+    def test_load_robot_not_found_raises(self):
+        with pytest.raises(FileNotFoundError, match="找不到配置"):
+            load_robot('nonexistent_robot')
+
+    def test_list_configs_includes_panda(self):
+        configs = Robot.list_configs()
+        assert 'panda' in configs
+
+    def test_from_config_same_as_load_robot(self):
+        r1 = Robot.from_config('panda')
+        r2 = load_robot('panda')
+        assert r1.name == r2.name
+        assert r1.n_joints == r2.n_joints
+
+    def test_from_json_full_format(self, tmp_path):
+        """Full config JSON with all fields."""
+        cfg = {
+            "name": "TestBot",
+            "dh_params": [
+                {"alpha": 0, "a": 0.5, "d": 0, "theta": 0, "type": "revolute"},
+                {"alpha": 0, "a": 0.3, "d": 0, "theta": 0, "type": "revolute"},
+            ],
+            "joint_limits": [[-1.5, 1.5], [-2.0, 2.0]],
+            "coupled_pairs": [[0, 1]],
+            "coupled_triples": [],
+        }
+        p = tmp_path / "test_bot.json"
+        p.write_text(json.dumps(cfg), encoding='utf-8')
+        robot = Robot.from_json(str(p))
+        assert robot.name == "TestBot"
+        assert robot.n_joints == 2
+        assert robot.joint_limits == [(-1.5, 1.5), (-2.0, 2.0)]
+        assert robot.coupled_pairs == [(0, 1)]
+        assert robot.coupled_triples == []
+
+    def test_from_json_legacy_list_format(self, tmp_path):
+        """Legacy format: bare DH list."""
+        dh = [
+            {"alpha": 0, "a": 1, "d": 0, "theta": 0, "type": "revolute"},
+        ]
+        p = tmp_path / "legacy.json"
+        p.write_text(json.dumps(dh), encoding='utf-8')
+        robot = Robot.from_json(str(p))
+        assert robot.n_joints == 1
+        assert robot.name == "Robot"
+        assert robot.joint_limits is None
+
+    def test_from_json_legacy_dh_key(self, tmp_path):
+        """Legacy format: {\"dh\": [...]}."""
+        cfg = {"dh": [
+            {"alpha": 0, "a": 1, "d": 0, "theta": 0, "type": "revolute"},
+        ]}
+        p = tmp_path / "legacy_dh.json"
+        p.write_text(json.dumps(cfg), encoding='utf-8')
+        robot = Robot.from_json(str(p))
+        assert robot.n_joints == 1
+
+    def test_create_panda_robot_backward_compat(self):
+        """create_panda_robot() still works and returns same result as load_robot."""
+        r1 = create_panda_robot()
+        r2 = load_robot('panda')
+        assert r1.n_joints == r2.n_joints
+        assert r1.name == r2.name
+        assert len(r1.coupled_pairs) == len(r2.coupled_pairs)

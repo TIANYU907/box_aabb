@@ -4,12 +4,13 @@
 
 ## 特性
 
+- **多机器人配置**: 各机器人保存为独立JSON配置，按名称加载
 - **关键点采样 (Critical)**: 基于梯度分析的精确枚举 + 约束点优化
 - **随机采样 (Random)**: 大量随机采样 + scipy 局部优化
 - **混合策略 (Hybrid)**: 关键枚举 + 约束优化 + 少量随机补充（推荐）
 - **区间方法 (Interval)**: 使用仿射/区间算术，保守但保证安全
 - **连杆等分**: 将连杆划分为多段获得更紧凑的包围盒
-- **机器人无关**: 支持任意串联机器人（通过DH参数定义）
+- **机器人无关**: 支持任意串联机器人（通过DH参数 + JSON配置定义）
 
 ## 安装
 
@@ -32,10 +33,12 @@ pip install ".[dev]"            # 含 pytest
 ## 快速开始
 
 ```python
-from box_aabb import create_panda_robot, AABBCalculator
+from box_aabb import load_robot, AABBCalculator, Robot
 
-# 1. 创建机器人（以Panda为例）
-robot = create_panda_robot()
+# 1. 按名称加载内置机器人配置
+robot = load_robot('panda')
+print(robot.name)          # "Panda"
+print(robot.joint_limits)  # [(-2.8973, 2.8973), ...]
 
 # 2. 定义关节区间
 joint_intervals = [
@@ -49,8 +52,8 @@ joint_intervals = [
     (0, 0),         # q7 (夹爪，固定)
 ]
 
-# 3. 计算AABB（推荐使用 hybrid 模式）
-calc = AABBCalculator(robot, robot_name="Panda")
+# 3. 计算AABB（robot_name 自动从 robot.name 读取）
+calc = AABBCalculator(robot)
 result = calc.compute_envelope(
     joint_intervals,
     method='numerical',
@@ -65,6 +68,9 @@ for aabb in result.link_aabbs:
 
 # 5. 生成报告
 report = result.generate_report(save_path="aabb_report.md")
+
+# 查看所有可用配置
+print(Robot.list_configs())  # ['2dof_planar', 'panda']
 ```
 
 ## API参考
@@ -74,32 +80,76 @@ report = result.generate_report(save_path="aabb_report.md")
 机器人运动学模型，基于修正DH参数 (Modified DH Convention)。
 
 ```python
-from box_aabb import Robot, create_panda_robot
+from box_aabb import Robot, load_robot
 
-# 使用预设的Panda机器人
-robot = create_panda_robot()
+# 方式1: 按名称加载内置配置（推荐）
+robot = load_robot('panda')
+# 等价于：
+robot = Robot.from_config('panda')
 
-# 或从DH参数列表创建（支持任意机器人）
+# 查看所有内置配置
+print(Robot.list_configs())  # ['2dof_planar', 'panda']
+
+# 方式2: 从自定义JSON配置文件加载
+robot = Robot.from_json('my_robot.json')
+
+# 方式3: 直接构造（适合临时测试）
 dh_params = [
     {"alpha": 0, "a": 0, "d": 0.333, "theta": 0, "type": "revolute"},
     # ...
 ]
 robot = Robot(
     dh_params,
-    coupled_pairs=[(0, 2), (1, 3)],        # 可选：耦合关节对
-    coupled_triples=[(0, 2, 4), (1, 3, 5)], # 可选：耦合关节三元组
+    name="MyRobot",                         # 可选：机器人名称
+    joint_limits=[(-2.89, 2.89), ...],       # 可选：关节限制
+    coupled_pairs=[(0, 2), (1, 3)],          # 可选：耦合关节对
+    coupled_triples=[(0, 2, 4), (1, 3, 5)],  # 可选：耦合关节三元组
 )
 
-# 或从JSON加载
-robot = Robot.from_json('robot_config.json')
+# Robot 属性
+print(robot.name)            # "Panda"
+print(robot.n_joints)        # 8
+print(robot.joint_limits)    # [(-2.8973, 2.8973), ...]
+print(robot.coupled_pairs)   # [(0, 2), (1, 3)]
+print(robot.coupled_triples) # [(0, 2, 4), (1, 3, 5)]
 ```
+
+### 机器人配置文件格式
+
+将JSON文件放入 `configs/` 目录即可通过 `load_robot('名称')` 加载：
+
+```json
+{
+    "name": "MyRobot",
+    "description": "My custom 6-DOF robot",
+    "dh_convention": "modified",
+    "dh_params": [
+        {"alpha": 0, "a": 0, "d": 0.333, "theta": 0, "type": "revolute"},
+        ...
+    ],
+    "joint_limits": [
+        [-2.89, 2.89],
+        ...
+    ],
+    "coupled_pairs": [[0, 2], [1, 3]],
+    "coupled_triples": [[0, 2, 4], [1, 3, 5]]
+}
+```
+
+| 字段 | 类型 | 必需 | 说明 |
+|------|------|------|------|
+| `name` | string | 否 | 机器人名称，默认 "Robot" |
+| `dh_params` | list | **是** | DH参数列表 |
+| `joint_limits` | list | 否 | 关节限制 `[[lo, hi], ...]` |
+| `coupled_pairs` | list | 否 | 耦合关节对 `[[i, j], ...]` |
+| `coupled_triples` | list | 否 | 耦合关节三元组 `[[i, j, k], ...]` |
 
 ### AABBCalculator
 
 AABB计算器——瘦调度层，委托给各策略模块。
 
 ```python
-calc = AABBCalculator(robot, robot_name="MyRobot")
+calc = AABBCalculator(robot)  # robot_name 自动从 robot.name 读取
 
 # 完整版 API（推荐）
 result = calc.compute_envelope(
@@ -156,7 +206,7 @@ fig.show()
 ```
 box_aabb/
 ├── __init__.py           # 包入口 & 公开API
-├── robot.py              # Robot 类: DH运动学, FK, 相关关节检测
+├── robot.py              # Robot 类: DH运动学, FK, 配置加载
 ├── aabb_calculator.py    # AABBCalculator: 瘦调度层
 ├── models.py             # 数据类: BoundaryConfig, LinkAABBInfo, AABBEnvelopeResult
 ├── report.py             # ReportGenerator: Markdown 报告生成
@@ -164,6 +214,9 @@ box_aabb/
 ├── interval_math.py      # Interval & AffineForm 算术
 ├── interval_fk.py        # 区间正运动学 (保守AABB)
 ├── visualizer.py         # Matplotlib 3D 可视化
+├── configs/              # 机器人配置文件目录
+│   ├── panda.json        # Franka Emika Panda 7+1-DOF
+│   └── 2dof_planar.json  # 测试用2-DOF平面机器人
 ├── strategies/
 │   ├── __init__.py
 │   ├── base.py           # BaseStrategy: 共享采样逻辑 (策略1-7)
@@ -172,7 +225,7 @@ box_aabb/
 │   └── hybrid.py         # HybridStrategy: 混合策略
 ├── test/
 │   ├── conftest.py       # pytest fixtures
-│   ├── test_robot.py     # Robot 单元测试
+│   ├── test_robot.py     # Robot + 配置系统测试
 │   ├── test_interval_math.py  # 区间/仿射算术测试
 │   ├── test_models.py    # 数据类测试
 │   ├── test_report.py    # 报告生成测试
@@ -189,6 +242,7 @@ box_aabb/
 
 **设计原则：**
 
+- **配置驱动**: 各机器人参数保存为独立JSON文件，`load_robot('name')` 一行加载
 - **策略模式 (Strategy Pattern)**: `CriticalStrategy` / `RandomStrategy` / `HybridStrategy` 继承 `BaseStrategy`，共享采样逻辑
 - **瘦调度层**: `AABBCalculator` 仅做参数验证和策略分发，不含采样逻辑
 - **关注点分离**: 运动学 (`robot.py`)、数据模型 (`models.py`)、优化 (`optimization.py`)、报告 (`report.py`) 各自独立

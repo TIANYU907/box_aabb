@@ -1,0 +1,15 @@
+{
+    "name": "2DOF-Planar",
+    "description": "Minimal 2-DOF planar robot for testing",
+    "dh_convention": "modified",
+    "dh_params": [
+        {"alpha": 0, "a": 1.0, "d": 0.0, "theta": 0, "type": "revolute"},
+        {"alpha": 0, "a": 1.0, "d": 0.0, "theta": 0, "type": "revolute"}
+    ],
+    "joint_limits": [
+        [-3.14159, 3.14159],
+        [-3.14159, 3.14159]
+    ],
+    "coupled_pairs": [],
+    "coupled_triples": []
+}
