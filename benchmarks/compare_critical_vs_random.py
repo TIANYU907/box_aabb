@@ -21,9 +21,10 @@ from datetime import datetime
 from typing import List, Tuple, Dict, Optional
 
 # 确保可以导入 box_aabb
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_src_dir = os.path.join(_project_root, 'src')
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
 
 from box_aabb import (
     Robot,

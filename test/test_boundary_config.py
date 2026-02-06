@@ -3,16 +3,14 @@
 """
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))
 
-from box_aabb import Robot, AABBCalculator
+from box_aabb import Robot, AABBCalculator, load_robot
 import numpy as np
 
 
 def main():
-    config_path = os.path.join(os.path.dirname(__file__), 
-                               '..', 'src', 'robot', 'panda_config.json')
-    robot = Robot.from_json(config_path)
+    robot = load_robot('panda')
     
     # 定义关节区间
     joint_intervals = [

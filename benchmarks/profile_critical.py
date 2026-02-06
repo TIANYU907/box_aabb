@@ -1,6 +1,6 @@
 """Profile critical vs random to find the bottleneck"""
 import sys, os, time, random
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
 import numpy as np
 from box_aabb import create_panda_robot, AABBCalculator
 

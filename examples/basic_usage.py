@@ -7,9 +7,9 @@ examples/basic_usage.py - 基本使用示例
 import sys
 import os
 
-# 添加 box_aabb 所在的父目录到路径
-_pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(_pkg_dir))
+# 添加 src/ 目录到路径，使 box_aabb 包可导入
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_project_root, 'src'))
 
 from box_aabb import (
     Robot, AABBCalculator, Visualizer,

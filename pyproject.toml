@@ -1,10 +1,10 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "box-aabb"
-version = "2.0.0"
+version = "3.0.0"
 description = "机器人连杆AABB包围盒计算库"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -26,10 +26,12 @@ dev = [
 all = ["box-aabb[optimize,viz]"]
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["box_aabb*"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
+pythonpath = ["src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

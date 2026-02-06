@@ -205,24 +205,28 @@ fig.show()
 
 ```
 box_aabb/
-├── __init__.py           # 包入口 & 公开API
-├── robot.py              # Robot 类: DH运动学, FK, 配置加载
-├── aabb_calculator.py    # AABBCalculator: 瘦调度层
-├── models.py             # 数据类: BoundaryConfig, LinkAABBInfo, AABBEnvelopeResult
-├── report.py             # ReportGenerator: Markdown 报告生成
-├── optimization.py       # optimize_extremes: L-BFGS-B 局部优化
-├── interval_math.py      # Interval & AffineForm 算术
-├── interval_fk.py        # 区间正运动学 (保守AABB)
-├── visualizer.py         # Matplotlib 3D 可视化
-├── configs/              # 机器人配置文件目录
-│   ├── panda.json        # Franka Emika Panda 7+1-DOF
-│   └── 2dof_planar.json  # 测试用2-DOF平面机器人
-├── strategies/
-│   ├── __init__.py
-│   ├── base.py           # BaseStrategy: 共享采样逻辑 (策略1-7)
-│   ├── critical.py       # CriticalStrategy: 关键点枚举
-│   ├── random.py         # RandomStrategy: 随机采样
-│   └── hybrid.py         # HybridStrategy: 混合策略
+├── pyproject.toml
+├── README.md
+├── src/
+│   └── box_aabb/             # 核心库 (src layout)
+│       ├── __init__.py           # 包入口 & 公开API
+│       ├── robot.py              # Robot 类: DH运动学, FK, 配置加载
+│       ├── aabb_calculator.py    # AABBCalculator: 瘦调度层
+│       ├── models.py             # 数据类: BoundaryConfig, LinkAABBInfo, AABBEnvelopeResult
+│       ├── report.py             # ReportGenerator: Markdown 报告生成
+│       ├── optimization.py       # optimize_extremes: L-BFGS-B 局部优化
+│       ├── interval_math.py      # Interval & AffineForm 算术
+│       ├── interval_fk.py        # 区间正运动学 (保守AABB)
+│       ├── visualizer.py         # Matplotlib 3D 可视化
+│       ├── configs/              # 机器人配置文件目录
+│       │   ├── panda.json        # Franka Emika Panda 7+1-DOF
+│       │   └── 2dof_planar.json  # 测试用2-DOF平面机器人
+│       └── strategies/
+│           ├── __init__.py
+│           ├── base.py           # BaseStrategy: 共享采样逻辑 (策略1-7)
+│           ├── critical.py       # CriticalStrategy: 关键点枚举
+│           ├── random.py         # RandomStrategy: 随机采样
+│           └── hybrid.py         # HybridStrategy: 混合策略
 ├── test/
 │   ├── conftest.py       # pytest fixtures
 │   ├── test_robot.py     # Robot + 配置系统测试
@@ -234,10 +238,10 @@ box_aabb/
 │   ├── profile_critical.py
 │   ├── profile_v2.py
 │   └── compare_critical_vs_random.py
-├── examples/
-│   ├── basic_usage.py
-│   └── example_visualize_envelope.py
-└── pyproject.toml
+└── examples/
+    ├── basic_usage.py
+    ├── random_box_demo.py
+    └── example_visualize_envelope.py
 ```
 
 **设计原则：**

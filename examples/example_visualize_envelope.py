@@ -6,13 +6,14 @@
 """
 import sys
 import os
-_pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(_pkg_dir))
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_project_root, 'src'))
 
 from box_aabb import (
     Robot, 
     AABBCalculator, 
-    visualize_envelope_result
+    visualize_envelope_result,
+    load_robot,
 )
 import math
 
@@ -23,21 +24,8 @@ def main():
     print("AABB Envelope Visualization Demo")
     print("=" * 60)
     
-    # 从JSON配置创建机器人
-    config_path = os.path.join(os.path.dirname(__file__), 
-                               '..', 'src', 'robot', 'panda_config.json')
-    
-    if os.path.exists(config_path):
-        robot = Robot.from_json(config_path)
-        robot_name = "Panda"  # 从配置文件
-        print(f"从配置文件加载机器人: {config_path}")
-    else:
-        # 使用内置Panda
-        from box_aabb import create_panda_robot
-        robot = create_panda_robot()
-        robot_name = "Panda"
-        print("使用内置Panda机器人配置")
-    
+    robot = load_robot('panda')
+    robot_name = robot.name
     print(f"机器人名称: {robot_name}")
     print(f"关节数: {robot.n_joints}")
     print()

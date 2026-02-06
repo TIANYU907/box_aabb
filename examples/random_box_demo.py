@@ -20,8 +20,8 @@ import math
 import datetime
 
 # 确保 box_aabb 包可导入
-_pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(_pkg_dir))
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_project_root, 'src'))
 
 from box_aabb import (
     load_robot, AABBCalculator,
@@ -118,9 +118,11 @@ def main():
     # 获取关节名（如果有）
     joint_names = None
     try:
-        # 尝试从配置中读取
+        # 从 box_aabb 包内的 configs 目录读取关节名
         import json
-        cfg_path = os.path.join(_pkg_dir, "configs", f"{args.robot.lower()}.json")
+        import box_aabb.robot as _robot_mod
+        _configs_dir = os.path.join(os.path.dirname(_robot_mod.__file__), "configs")
+        cfg_path = os.path.join(_configs_dir, f"{args.robot.lower()}.json")
         if os.path.isfile(cfg_path):
             with open(cfg_path, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
