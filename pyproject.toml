@@ -17,6 +17,7 @@ dependencies = [
 [project.optional-dependencies]
 optimize = ["scipy>=1.7"]
 viz = ["matplotlib>=3.4"]
+drake = ["drake"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",

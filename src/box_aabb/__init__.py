@@ -26,8 +26,9 @@ from .models import (
 from .aabb_calculator import AABBCalculator
 from .report import ReportGenerator
 from .visualizer import Visualizer, visualize_envelope_result
+from . import planner
 
-__version__ = "3.0.0"
+__version__ = "3.1.0"
 __all__ = [
     # 核心
     'Robot',
@@ -45,4 +46,6 @@ __all__ = [
     # 可视化
     'Visualizer',
     'visualize_envelope_result',
+    # 路径规划
+    'planner',
 ]

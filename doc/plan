@@ -1,0 +1,99 @@
+我现在想基于机械臂区间关节包络相关算法：C:\Users\TIAN\OneDrive - The Chinese University of Hong Kong\Desktop\code\box_aabb\src\box_aabb，编写一个给定障碍物信息场景下～机械臂避障路径规划算法box-rrt。其核心想法为，通过探索的方式拓展体积尽量大的无碰撞的关节区间box tree。包含几个环节，以及各环节需要注意的事项：
+
+============================================================================
+                       实  现  进  度  记  录
+============================================================================
+
+版本: v3.1.0
+代码位置: src/box_aabb/planner/
+测试位置: test/planner/
+示例位置: examples/planner_demo_3dof.py
+全部测试: 193 passed (83 planner + 110 existing)
+
+模块列表:
+  [✅] planner/models.py        - BoxNode, BoxTree, Edge, Obstacle, PlannerConfig, PlannerResult
+  [✅] planner/obstacles.py     - Scene (AABB 障碍物管理, 2D→3D 自动扩展)
+  [✅] planner/collision.py     - CollisionChecker (点/区间/线段碰撞检测, skip_base_link 参数)
+  [✅] planner/box_expansion.py - BoxExpander (Jacobian-norm 启发式, 二分边界搜索)
+  [✅] planner/box_tree.py      - BoxTreeManager (创建/管理 box tree, 边界采样)
+  [✅] planner/connector.py     - TreeConnector (树内/树间重叠连接, 线段碰撞验证)
+  [✅] planner/box_rrt.py       - BoxRRT 主规划器 (含连通性修复)
+  [✅] planner/gcs_optimizer.py - GCS 优化 (Drake 可选, Dijkstra+scipy fallback)
+  [✅] planner/path_smoother.py - PathSmoother (shortcut + moving average)
+  [✅] planner/visualizer.py    - C-space/工作空间可视化 (支持任意维度投影)
+
+关键修复:
+  - CollisionChecker skip_base_link 参数化 (不再无条件跳过 link 1)
+  - Dijkstra 堆比较 bug (添加 counter 防止 str/int 比较)
+  - 连通性修复: 迭代 BFS + 段连接桥接断开的图组件
+  - 3DOF 平面机器人 (Modified DH 下 2DOF link 位置仅依赖 q0, 3DOF 才有非平凡 C-space)
+
+机器人配置:
+  [✅] configs/3dof_planar.json  - 3DOF 平面机器人 (连杆长度 1.0, 1.0, 0.5)
+  [已有] configs/2dof_planar.json - 2DOF (link 位置仅依赖 q0, 不适合路径规划)
+  [已有] configs/panda.json       - 7DOF Panda (待集成)
+
+============================================================================
+
+1.在关节空间中随机采样无碰撞box seed点：  [✅ 已实现]
+    实现: BoxRRT._sample_seed() — 均匀随机 + goal_bias 偏向采样
+    - 采样时需要考虑机械臂的运动范围和障碍物的位置，确保采样的点在可行的空间内。
+    - 可以使用均匀采样或者基于概率的采样方法，以提高采样效率和覆盖率。
+
+2.拓展box，  [✅ 已实现]
+    实现: BoxExpander.expand() — Jacobian-norm 排序维度 + 二分边界搜索
+    - 从seed点开始，逐步拓展box，确保每次拓展都在无碰撞的空间内。
+    - 可以使用一些启发式方法来指导拓展方向，例如朝向目标点或者避开障碍物，或者拓展雅可比范数较小的方向，以提高拓展效率。
+
+3 在拓展得到的box边界上再采样seed点，  [✅ 已实现]
+    实现: BoxRRT._boundary_expand() — 叶子 box 面上体积加权均匀采样
+    - 需要确保新采样的seed点仍然在无碰撞的空间内，并且与当前box有一定的连接性。
+    - 需要想办法获取拓展性强的点，以便后续的拓展能够更有效地覆盖空间。
+
+4.继续拓展box，当达到特定条件停止拓展。  [✅ 已实现]
+    实现: BoxRRT.plan() 主循环 — max_iterations + max_box_nodes 双停止条件
+    大致过程同步骤2
+
+5.尝试连接各个box tree建立graph of convex set。  [✅ 已实现]
+    实现: TreeConnector.connect_within_trees() + connect_between_trees()
+    + BoxRRT._bridge_disconnected() 连通性修复
+    - 连接可以通过rrt方法用线段连接，而不用box连接。
+    - 连接起来之后可以尝试将线段进行拓展和优化，形成新的box tree，以提高路径的质量和可行性。
+    - 连接时需要考虑路径的可行性和安全性，确保连接的路径不会与障碍物发生碰撞。
+    - 可以使用一些启发式方法来指导连接，例如优先连接距离目标点较近的box tree，或者优先连接具有较大拓展性的box tree，以提高连接效率和路径质量。
+    - 连接完成后需要对连接的路径进行优化，例如通过路径平滑或者路径修剪等方法，以提高路径的质量和可行性。
+    - 建立graph of convex set后，尝试对graph进行简化和优化，以提高路径规划的效率和质量。 参考论文 https://www.science.org/doi/10.1126/scirobotics.adf7843
+
+6 连接给定的规划始末点和box trees。  [✅ 已实现]
+    实现: TreeConnector.connect_endpoints() — 包含/最近 box 自动匹配
+    - 连接始末点时需要确保连接的路径在无碰撞的空间内，并且与box tree有一定的连接性。
+    - 可以使用一些启发式方法来指导连接，例如优先连接距离目标点较近的box tree，或者优先连接具有较大拓展性的box tree，以提高连接效率和路径质量。
+    - 连接完成后需要对连接的路径进行优化，例如通过路径平滑或者路径修剪等方法，以提高路径的质量和可行性。
+
+7.规划路径。  [✅ 已实现]
+    实现: GCSOptimizer (Drake GCS 可选) + Dijkstra fallback + PathSmoother
+    参考论文 https://www.science.org/doi/10.1126/scirobotics.adf7843
+
+代码设计时需要注意的问题：
+- 代码结构清晰，模块化设计，便于维护和扩展。  [✅ 11 个模块, 清晰的依赖层次]
+- 充分利用已有的算法和数据结构，例如RRT算法和box tree数据结构  [✅ 复用 robot.py, interval_fk.py]
+- 代码注释清晰，便于理解和使用。  [✅ 中文注释 + 类型标注]
+- 需要进行充分的测试和验证，确保算法的正确性和效率。  [✅ 193 tests]
+- 可以考虑使用一些可视化工具来展示算法的运行过程和结果，以便更好地理解和调试算法。  [✅ visualizer.py, matplotlib]
+- 需要考虑算法的鲁棒性和稳定性，确保算法在不同的场景和条件下都能够正常运行并且能够处理一些异常情况，例如采样失败或者连接失败等。  [✅ 连通性修复, 多轮桥接]
+- 需要考虑算法的可扩展性和通用性，确保算法能够适应不同类型的机械臂和不同的障碍物场景，并且能够方便地进行参数调整和算法改进。  [✅ PlannerConfig 参数化, 支持任意 DOF]
+- 需要考虑算法的可重复性和可验证性，确保算法的结果能够被其他人验证和复现，并且能够提供一些测试用例和数据集来支持算法的评估和比较。  [✅ seed 参数, 确定性可重现]
+- 需要考虑算法的安全性和可靠性，确保算法在实际应用中能够保证机械臂的安全运行，并且能够处理一些异常情况，例如机械臂的故障或者环境的变化等。  [✅ 保守 AABB, 安全裕度参数]
+- 需要考虑算法的用户友好性和易用性，确保算法能够被用户方便地使用和配置，并且能够提供一些文档和示例来帮助用户理解和使用算法。  [✅ examples/planner_demo_3dof.py]
+- 需要考虑算法的可维护性和可扩展性，确保算法能够方便地进行维护和扩展，并且能够适应未来的需求和变化。  [✅ Strategy 模式, 模块化]
+- 需要考虑算法的性能和效率，尤其是在处理复杂场景和大规模数据时，可能需要进行一些优化和改进，例如使用并行计算或者分布式计算等方法来提高算法的效率。  [⏳ 未来优化: 并行碰撞检测, 空间索引]
+
+============================================================================
+                       待  办  事  项
+============================================================================
+- [ ] 7DOF Panda 集成测试
+- [ ] Drake GCS 集成测试 (需安装 Drake)
+- [ ] 性能基准测试 (benchmarks/)
+- [ ] 更多障碍物场景示例
+- [ ] 路径质量评价指标
+- [ ] 并行碰撞检测优化
