@@ -51,6 +51,8 @@ class BoxExpander:
         max_rounds: int = 3,
         jacobian_delta: float = 0.01,
         min_initial_half_width: float = 0.001,
+        use_sampling: bool = False,
+        sampling_n: int = 80,
     ) -> None:
         self.robot = robot
         self.collision_checker = collision_checker
@@ -60,12 +62,16 @@ class BoxExpander:
         self.jacobian_delta = jacobian_delta
         self.min_initial_half_width = min_initial_half_width
         self._n_dims = len(joint_limits)
+        self.use_sampling = use_sampling
+        self.sampling_n = sampling_n
+        self._rng: Optional[np.random.Generator] = None
 
     def expand(
         self,
         seed: np.ndarray,
         node_id: int = 0,
         tree_id: int = -1,
+        rng: Optional[np.random.Generator] = None,
     ) -> Optional[BoxNode]:
         """从 seed 配置拓展无碰撞 box
 
@@ -73,10 +79,13 @@ class BoxExpander:
             seed: 无碰撞 seed 配置 (n_joints,)
             node_id: 分配给该 box 节点的 ID
             tree_id: 所属树 ID
+            rng: 随机数生成器（采样模式使用）
 
         Returns:
             BoxNode 实例，或 None（若 seed 本身就碰撞）
         """
+        self._rng = rng or np.random.default_rng()
+
         if self.collision_checker.check_config_collision(seed):
             logger.debug("seed 配置碰撞，跳过: %s", seed)
             return None
@@ -89,7 +98,7 @@ class BoxExpander:
             intervals.append((lo, hi))
 
         # 确认初始 box 无碰撞
-        if self.collision_checker.check_box_collision(intervals):
+        if self._check_collision(intervals):
             # 过估计导致极小 box 也被判碰撞，回退到点
             logger.debug("初始极小 box 碰撞（过估计），使用点区间")
             intervals = [(seed[i], seed[i]) for i in range(self._n_dims)]
@@ -203,6 +212,32 @@ class BoxExpander:
 
         return intervals
 
+    def _check_collision(
+        self,
+        test_intervals: List[Tuple[float, float]],
+    ) -> bool:
+        """box 碰撞检测（支持 hybrid 模式）
+
+        当 use_sampling=True 时，先用区间 FK 检查，
+        若区间 FK 判碰撞再用采样方式复核。
+        采样无碰撞则覆盖为安全（概率性）。
+
+        Returns:
+            True = 碰撞, False = 安全
+        """
+        interval_result = self.collision_checker.check_box_collision(test_intervals)
+        if not interval_result:
+            # 区间 FK 说安全 → 一定安全
+            return False
+        if not self.use_sampling:
+            # 不启用采样 → 直接信任区间 FK
+            return True
+        # 区间 FK 说碰撞但可能过估计 → 用采样复核
+        sampling_result = self.collision_checker.check_box_collision_sampling(
+            test_intervals, n_samples=self.sampling_n, rng=self._rng,
+        )
+        return sampling_result
+
     def _binary_search_boundary(
         self,
         intervals: List[Tuple[float, float]],
@@ -233,7 +268,7 @@ class BoxExpander:
         else:
             test_intervals[dim] = (test, intervals[dim][1])
 
-        if not self.collision_checker.check_box_collision(test_intervals):
+        if not self._check_collision(test_intervals):
             # 到极限都无碰撞
             return test
 
@@ -249,7 +284,7 @@ class BoxExpander:
             else:
                 test_intervals[dim] = (mid, intervals[dim][1])
 
-            if self.collision_checker.check_box_collision(test_intervals):
+            if self._check_collision(test_intervals):
                 # mid 处碰撞，收缩
                 test = mid
             else:
@@ -260,11 +295,12 @@ class BoxExpander:
 
     @staticmethod
     def _volume(intervals: List[Tuple[float, float]]) -> float:
-        """计算区间体积"""
+        """计算区间体积（忽略固定关节的零宽度维度）"""
         vol = 1.0
+        has_nonzero = False
         for lo, hi in intervals:
             w = hi - lo
-            if w <= 0:
-                return 0.0
-            vol *= w
-        return vol
+            if w > 0:
+                vol *= w
+                has_nonzero = True
+        return vol if has_nonzero else 0.0

@@ -102,6 +102,17 @@ class TestBoxNode:
             joint_intervals=[(1.0, 1.0), (0.0, 1.0)],
             seed_config=np.array([1.0, 0.5]),
         )
+        # 零宽度维度（固定关节）不参与体积计算
+        # 有效维度 [0.0, 1.0] 宽度 1.0 → 体积 = 1.0
+        assert box.volume == 1.0
+
+    def test_all_zero_width_volume(self):
+        box = BoxNode(
+            node_id=0,
+            joint_intervals=[(1.0, 1.0), (2.0, 2.0)],
+            seed_config=np.array([1.0, 2.0]),
+        )
+        # 全部维度零宽度 → 体积 = 0.0
         assert box.volume == 0.0
 
 

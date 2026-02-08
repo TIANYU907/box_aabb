@@ -85,6 +85,8 @@ class BoxRRT:
             robot=robot,
             scene=scene,
         )
+        # 高自由度机器人自动启用采样辅助 box 拓展
+        _use_sampling = robot.n_joints > 4
         self.box_expander = BoxExpander(
             robot=robot,
             collision_checker=self.collision_checker,
@@ -92,6 +94,7 @@ class BoxRRT:
             expansion_resolution=self.config.expansion_resolution,
             max_rounds=self.config.max_expansion_rounds,
             jacobian_delta=self.config.jacobian_delta,
+            use_sampling=_use_sampling,
         )
         self.tree_manager = BoxTreeManager()
         self.connector = TreeConnector(
@@ -175,7 +178,7 @@ class BoxRRT:
 
             # 拓展 box
             node_id = self.tree_manager.allocate_node_id()
-            box = self.box_expander.expand(q_seed, node_id=node_id)
+            box = self.box_expander.expand(q_seed, node_id=node_id, rng=rng)
             if box is None or box.volume < self.config.min_box_volume:
                 continue
 
@@ -414,14 +417,14 @@ class BoxRRT:
         """从始末点创建初始 box tree"""
         # 起始点 box
         start_id = self.tree_manager.allocate_node_id()
-        start_box = self.box_expander.expand(q_start, node_id=start_id)
+        start_box = self.box_expander.expand(q_start, node_id=start_id, rng=rng)
         if start_box is not None and start_box.volume >= self.config.min_box_volume:
             self.tree_manager.create_tree(start_box)
             logger.info("起始 box: 体积 %.6f", start_box.volume)
 
         # 目标点 box
         goal_id = self.tree_manager.allocate_node_id()
-        goal_box = self.box_expander.expand(q_goal, node_id=goal_id)
+        goal_box = self.box_expander.expand(q_goal, node_id=goal_id, rng=rng)
         if goal_box is not None and goal_box.volume >= self.config.min_box_volume:
             self.tree_manager.create_tree(goal_box)
             logger.info("目标 box: 体积 %.6f", goal_box.volume)
@@ -520,7 +523,7 @@ class BoxRRT:
                 continue
 
             node_id = self.tree_manager.allocate_node_id()
-            new_box = self.box_expander.expand(q_seed, node_id=node_id)
+            new_box = self.box_expander.expand(q_seed, node_id=node_id, rng=rng)
             if new_box is None or new_box.volume < self.config.min_box_volume:
                 continue
 
@@ -586,7 +589,7 @@ class BoxRRT:
                         continue
 
                     node_id = self.tree_manager.allocate_node_id()
-                    new_box = self.box_expander.expand(q_seed, node_id=node_id)
+                    new_box = self.box_expander.expand(q_seed, node_id=node_id, rng=rng)
                     if new_box is None or new_box.volume < self.config.min_box_volume:
                         continue
 

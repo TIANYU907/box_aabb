@@ -178,6 +178,64 @@ class CollisionChecker:
 
         return False
 
+    def check_box_collision_sampling(
+        self,
+        joint_intervals: List[Tuple[float, float]],
+        n_samples: int = 100,
+        rng: Optional[np.random.Generator] = None,
+    ) -> bool:
+        """基于采样的 box 碰撞检测
+
+        在 box 内随机采样 n_samples 个配置，逐一做点碰撞检测。
+        若任一采样点碰撞则返回 True，否则返回 False（概率性安全）。
+
+        与 check_box_collision 的区别：
+        - check_box_collision 使用区间 FK，保守但可能严重过估计
+        - 本方法使用采样，适用于高自由度机器人的辅助验证
+
+        Args:
+            joint_intervals: 关节区间 [(lo_0, hi_0), ...]
+            n_samples: 采样数量
+            rng: 随机数生成器
+
+        Returns:
+            True = 存在采样点碰撞, False = 所有采样点无碰撞
+        """
+        if rng is None:
+            rng = np.random.default_rng()
+
+        obstacles = self.scene.get_obstacles()
+        if not obstacles:
+            return False
+
+        # 先检查中心点
+        center = np.array([(lo + hi) / 2.0 for lo, hi in joint_intervals])
+        if self.check_config_collision(center):
+            return True
+
+        # 检查部分顶点（对高维不做全部 2^n 个顶点）
+        n_dims = len(joint_intervals)
+        n_vertex_samples = min(2 * n_dims, n_samples // 3)
+        for _ in range(n_vertex_samples):
+            q = np.array([
+                rng.choice([lo, hi]) if hi > lo else lo
+                for lo, hi in joint_intervals
+            ])
+            if self.check_config_collision(q):
+                return True
+
+        # 随机采样
+        remaining = n_samples - n_vertex_samples - 1
+        for _ in range(remaining):
+            q = np.array([
+                rng.uniform(lo, hi) if hi > lo else lo
+                for lo, hi in joint_intervals
+            ])
+            if self.check_config_collision(q):
+                return True
+
+        return False
+
     def check_segment_collision(
         self,
         q_start: np.ndarray,

@@ -195,11 +195,30 @@ class AffineForm:
             new_terms = {k: v * c for k, v in self.terms.items()}
             return AffineForm(self.x0 * c, new_terms)
         if isinstance(other, AffineForm):
-            # 非线性：转为区间计算
-            int_self = self.to_interval()
-            int_other = other.to_interval()
-            int_result = int_self * int_other
-            return AffineForm.from_interval(int_result.min, int_result.max)
+            # 仿射乘法: x*y = x0*y0 + x0*Σ(yi*εi) + y0*Σ(xi*εi) + δ
+            # 其中 δ = Σ(xi*εi)*Σ(yi*εi) 的范围用单个新噪声符号保守包围
+            new_center = self.x0 * other.x0
+            new_terms = {}
+
+            # x0 * other 的线性部分
+            for idx, coeff in other.terms.items():
+                new_terms[idx] = new_terms.get(idx, 0.0) + self.x0 * coeff
+
+            # y0 * self 的线性部分
+            for idx, coeff in self.terms.items():
+                new_terms[idx] = new_terms.get(idx, 0.0) + other.x0 * coeff
+
+            # 二次余项: |Σ|xi|| * |Σ|yi||
+            self_radius = sum(abs(c) for c in self.terms.values())
+            other_radius = sum(abs(c) for c in other.terms.values())
+            remainder = self_radius * other_radius
+
+            if remainder > 1e-15:
+                noise_idx = _get_new_noise_index()
+                new_terms[noise_idx] = remainder
+
+            new_terms = {k: v for k, v in new_terms.items() if abs(v) > 1e-15}
+            return AffineForm(new_center, new_terms)
         return self.to_interval() * other
     
     def __rmul__(self, other):
@@ -313,12 +332,84 @@ def I_cos(x) -> Interval:
 
 
 def smart_sin(x) -> AffineForm:
-    """sin运算：返回新的仿射形式"""
-    interval = I_sin(x)
-    return AffineForm.from_interval(interval.min, interval.max)
+    """sin运算：Chebyshev 线性化保留仿射相关性
+
+    对窄区间使用一阶泰勒展开 + 二阶余项，
+    对宽区间回退到区间求值。这使得 sin(θ) 保留对 θ 的
+    噪声符号依赖，大幅减少后续矩阵运算的过估计。
+    """
+    if not isinstance(x, AffineForm):
+        interval = I_sin(x)
+        return AffineForm.from_interval(interval.min, interval.max)
+
+    x_int = x.to_interval()
+    width = x_int.max - x_int.min
+
+    # 宽区间 (>π/2)：回退为区间
+    if width > math.pi / 2:
+        interval = I_sin(x_int)
+        return AffineForm.from_interval(interval.min, interval.max)
+
+    # 窄区间: 使用 Chebyshev 线性近似
+    # sin(x) ≈ sin(x0) + cos(x0)*(x-x0) + δ
+    # |δ| ≤ width² / 8  (二阶余项上界)
+    x0 = x.x0
+    sin_x0 = math.sin(x0)
+    cos_x0 = math.cos(x0)
+
+    # 线性部分: sin(x0) + cos(x0)*(x - x0) = sin(x0) - cos(x0)*x0 + cos(x0)*x
+    result = x * cos_x0  # AffineForm * scalar => 保留所有噪声符号
+    result = result + (sin_x0 - cos_x0 * x0)
+
+    # 二阶余项: |sin''(ξ)/2| * radius² ≤ radius² / 2
+    radius = (x_int.max - x_int.min) / 2.0
+    remainder = radius * radius / 2.0
+    if remainder > 1e-15:
+        noise_idx = _get_new_noise_index()
+        result.terms[noise_idx] = remainder
+
+    # 安全裁剪到 [-1, 1]
+    iv = result.to_interval()
+    if iv.min < -1.0 or iv.max > 1.0:
+        interval = I_sin(x_int)
+        return AffineForm.from_interval(interval.min, interval.max)
+
+    return result
 
 
 def smart_cos(x) -> AffineForm:
-    """cos运算：返回新的仿射形式"""
-    interval = I_cos(x)
-    return AffineForm.from_interval(interval.min, interval.max)
+    """cos运算：Chebyshev 线性化保留仿射相关性
+
+    类似 smart_sin，使用一阶线性化减少过估计。
+    """
+    if not isinstance(x, AffineForm):
+        interval = I_cos(x)
+        return AffineForm.from_interval(interval.min, interval.max)
+
+    x_int = x.to_interval()
+    width = x_int.max - x_int.min
+
+    if width > math.pi / 2:
+        interval = I_cos(x_int)
+        return AffineForm.from_interval(interval.min, interval.max)
+
+    x0 = x.x0
+    cos_x0 = math.cos(x0)
+    sin_x0 = math.sin(x0)
+
+    # cos(x) ≈ cos(x0) - sin(x0)*(x - x0) + δ
+    result = x * (-sin_x0)
+    result = result + (cos_x0 + sin_x0 * x0)
+
+    radius = (x_int.max - x_int.min) / 2.0
+    remainder = radius * radius / 2.0
+    if remainder > 1e-15:
+        noise_idx = _get_new_noise_index()
+        result.terms[noise_idx] = remainder
+
+    iv = result.to_interval()
+    if iv.min < -1.0 or iv.max > 1.0:
+        interval = I_cos(x_int)
+        return AffineForm.from_interval(interval.min, interval.max)
+
+    return result

@@ -1,0 +1,42 @@
+[1] 3DOF Wall Obstacle
+  OK pts=5 len=4.246 t=4.8s
+  -> viz_wall_cspace_q0q1.png (48 KB)
+  -> viz_wall_cspace_q0q2.png (43 KB)
+  -> viz_wall_workspace.png (73 KB)
+  metrics: ratio=1.06x smooth=0.433
+
+[2] 3DOF Two-Walls Gap
+  OK pts=6 len=4.850 t=7.1s
+  -> viz_gap_cspace_q0q1.png (51 KB)
+  -> viz_gap_cspace_q0q2.png (45 KB)
+  -> viz_gap_workspace.png (67 KB)
+  metrics: ratio=1.54x smooth=0.454
+
+[3] Panda 7DOF (empty scene)
+  OK pts=2 len=1.665 t=0.0s
+  -> viz_panda_cspace_q0q1.png (28 KB)
+  -> viz_panda_cspace_q2q3.png (28 KB)
+  -> viz_panda_cspace_q4q5.png (29 KB)
+
+[4] Collision heatmap: Wall (resolution=0.1)
+  -> viz_wall_collision_map.png (52 KB)
+
+[5] Collision heatmap: Gap (resolution=0.1)
+  -> viz_gap_collision_map.png (57 KB)
+
+Total: 15 images generated
+  viz_3dof_collision_map.png (52 KB)
+  viz_3dof_cspace_q0q1.png (48 KB)
+  viz_3dof_cspace_q0q2.png (43 KB)
+  viz_3dof_workspace.png (73 KB)
+  viz_gap_collision_map.png (57 KB)
+  viz_gap_cspace_q0q1.png (51 KB)
+  viz_gap_cspace_q0q2.png (45 KB)
+  viz_gap_workspace.png (67 KB)
+  viz_panda_cspace_q0q1.png (28 KB)
+  viz_panda_cspace_q2q3.png (28 KB)
+  viz_panda_cspace_q4q5.png (29 KB)
+  viz_wall_collision_map.png (52 KB)
+  viz_wall_cspace_q0q1.png (48 KB)
+  viz_wall_cspace_q0q2.png (43 KB)
+  viz_wall_workspace.png (73 KB)

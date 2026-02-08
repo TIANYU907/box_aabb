@@ -4,23 +4,25 @@
                        实  现  进  度  记  录
 ============================================================================
 
-版本: v3.1.0
+版本: v3.2.0
 代码位置: src/box_aabb/planner/
 测试位置: test/planner/
-示例位置: examples/planner_demo_3dof.py
-全部测试: 193 passed (83 planner + 110 existing)
+示例位置: examples/planner_demo_3dof.py, examples/planner_demo_panda.py
+全部测试: 226 passed, 2 skipped (Drake) (118 planner + 110 existing)
 
 模块列表:
-  [✅] planner/models.py        - BoxNode, BoxTree, Edge, Obstacle, PlannerConfig, PlannerResult
-  [✅] planner/obstacles.py     - Scene (AABB 障碍物管理, 2D→3D 自动扩展)
-  [✅] planner/collision.py     - CollisionChecker (点/区间/线段碰撞检测, skip_base_link 参数)
-  [✅] planner/box_expansion.py - BoxExpander (Jacobian-norm 启发式, 二分边界搜索)
-  [✅] planner/box_tree.py      - BoxTreeManager (创建/管理 box tree, 边界采样)
-  [✅] planner/connector.py     - TreeConnector (树内/树间重叠连接, 线段碰撞验证)
-  [✅] planner/box_rrt.py       - BoxRRT 主规划器 (含连通性修复)
-  [✅] planner/gcs_optimizer.py - GCS 优化 (Drake 可选, Dijkstra+scipy fallback)
-  [✅] planner/path_smoother.py - PathSmoother (shortcut + moving average)
-  [✅] planner/visualizer.py    - C-space/工作空间可视化 (支持任意维度投影)
+  [✅] planner/models.py             - BoxNode, BoxTree, Edge, Obstacle, PlannerConfig, PlannerResult
+  [✅] planner/obstacles.py          - Scene (AABB 障碍物管理, 2D→3D 自动扩展)
+  [✅] planner/collision.py          - CollisionChecker (点/区间/线段碰撞检测, skip_base_link 参数)
+  [✅] planner/box_expansion.py      - BoxExpander (Jacobian-norm 启发式, 二分边界搜索)
+  [✅] planner/box_tree.py           - BoxTreeManager (创建/管理 box tree, 边界采样)
+  [✅] planner/connector.py          - TreeConnector (树内/树间重叠连接, 线段碰撞验证)
+  [✅] planner/box_rrt.py            - BoxRRT 主规划器 (含连通性修复)
+  [✅] planner/gcs_optimizer.py      - GCS 优化 (Drake 可选, Dijkstra+scipy fallback)
+  [✅] planner/path_smoother.py      - PathSmoother (shortcut + moving average)
+  [✅] planner/visualizer.py         - C-space/工作空间可视化 (支持任意维度投影)
+  [✅] planner/metrics.py            - PathMetrics 路径质量评价指标 (长度/平滑度/安全裕度/效率)
+  [✅] planner/parallel_collision.py - ParallelCollisionChecker + SpatialIndex 空间索引
 
 关键修复:
   - CollisionChecker skip_base_link 参数化 (不再无条件跳过 link 1)
@@ -31,7 +33,22 @@
 机器人配置:
   [✅] configs/3dof_planar.json  - 3DOF 平面机器人 (连杆长度 1.0, 1.0, 0.5)
   [已有] configs/2dof_planar.json - 2DOF (link 位置仅依赖 q0, 不适合路径规划)
-  [已有] configs/panda.json       - 7DOF Panda (待集成)
+  [✅] configs/panda.json        - 7DOF Panda (已完成集成测试, 22 tests)
+
+测试文件:
+  [✅] test/planner/test_panda_integration.py - 22 tests (基础/碰撞/拓展/端到端)
+  [✅] test/planner/test_gcs_optimizer.py     - 13 tests (Dijkstra/fallback/Drake skip)
+  [✅] test/planner/test_box_rrt.py           - 18 tests
+  [✅] test/planner/test_collision.py         - 18 tests
+  [✅] test/planner/test_box_expansion.py     - 9 tests
+  [✅] test/planner/test_box_tree.py          - 18 tests
+  [✅] test/planner/test_obstacles.py         - 20 tests
+
+示例与基准:
+  [✅] examples/planner_demo_3dof.py    - 3DOF 演示 (C-space + 工作空间可视化)
+  [✅] examples/planner_demo_panda.py   - 7DOF Panda 演示 (含质量评价)
+  [✅] examples/planner_scenarios.py    - 5 种障碍物场景对比 (单障碍物/窄通道/杂乱/L形/围栏)
+  [✅] benchmarks/planner_benchmark.py  - 性能基准 (碰撞吞吐量/拓展/端到端/并行/参数敏感度)
 
 ============================================================================
 
@@ -91,9 +108,9 @@
 ============================================================================
                        待  办  事  项
 ============================================================================
-- [ ] 7DOF Panda 集成测试
-- [ ] Drake GCS 集成测试 (需安装 Drake)
-- [ ] 性能基准测试 (benchmarks/)
-- [ ] 更多障碍物场景示例
-- [ ] 路径质量评价指标
-- [ ] 并行碰撞检测优化
+- [x] 7DOF Panda 集成测试  (v3.2.0: 22 tests, examples/planner_demo_panda.py)
+- [x] Drake GCS 集成测试    (v3.2.0: 13 tests, Drake 可选 skip)
+- [x] 性能基准测试          (v3.2.0: benchmarks/planner_benchmark.py)
+- [x] 更多障碍物场景示例    (v3.2.0: examples/planner_scenarios.py, 5 种场景)
+- [x] 路径质量评价指标      (v3.2.0: planner/metrics.py, PathMetrics)
+- [x] 并行碰撞检测优化      (v3.2.0: planner/parallel_collision.py, ThreadPool + SpatialIndex)

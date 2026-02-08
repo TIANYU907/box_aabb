@@ -30,6 +30,7 @@ from .box_tree import BoxTreeManager
 from .box_rrt import BoxRRT
 from .connector import TreeConnector
 from .path_smoother import PathSmoother
+from .metrics import PathMetrics, evaluate_result, compare_results, format_comparison_table
 
 __all__ = [
     # 数据模型
@@ -48,4 +49,9 @@ __all__ = [
     'BoxRRT',
     'TreeConnector',
     'PathSmoother',
+    # 评价指标
+    'PathMetrics',
+    'evaluate_result',
+    'compare_results',
+    'format_comparison_table',
 ]

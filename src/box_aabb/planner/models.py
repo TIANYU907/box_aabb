@@ -94,14 +94,16 @@ class BoxNode:
             self.volume = self._compute_volume()
 
     def _compute_volume(self) -> float:
-        """计算 box 体积（各维宽度之积）"""
+        """计算 box 体积（各维宽度之积，忽略固定关节）"""
         vol = 1.0
+        has_nonzero = False
         for lo, hi in self.joint_intervals:
             width = hi - lo
-            if width <= 0:
-                return 0.0
-            vol *= width
-        return vol
+            if width > 0:
+                vol *= width
+                has_nonzero = True
+            # 跳过宽度=0 的维度（固定关节），不让它把体积乘为 0
+        return vol if has_nonzero else 0.0
 
     @property
     def center(self) -> np.ndarray:
