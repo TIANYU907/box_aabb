@@ -32,6 +32,7 @@ from .box_tree import BoxTreeManager
 from .connector import TreeConnector
 from .path_smoother import PathSmoother, compute_path_length
 from .gcs_optimizer import GCSOptimizer
+from .aabb_cache import AABBCache
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class BoxRRT:
         scene: Scene,
         config: Optional[PlannerConfig] = None,
         joint_limits: Optional[List[Tuple[float, float]]] = None,
+        aabb_cache: Optional[AABBCache] = None,
     ) -> None:
         self.robot = robot
         self.scene = scene
@@ -80,10 +82,14 @@ class BoxRRT:
 
         self._n_dims = len(self.joint_limits)
 
+        # AABB 缓存
+        _cache = aabb_cache if self.config.use_aabb_cache else None
+
         # 初始化子模块
         self.collision_checker = CollisionChecker(
             robot=robot,
             scene=scene,
+            aabb_cache=_cache,
         )
         # 高自由度机器人自动启用采样辅助 box 拓展
         _use_sampling = robot.n_joints > 4

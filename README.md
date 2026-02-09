@@ -208,40 +208,41 @@ box_aabb/
 ├── pyproject.toml
 ├── README.md
 ├── src/
-│   └── box_aabb/             # 核心库 (src layout)
-│       ├── __init__.py           # 包入口 & 公开API
-│       ├── robot.py              # Robot 类: DH运动学, FK, 配置加载
-│       ├── aabb_calculator.py    # AABBCalculator: 瘦调度层
-│       ├── models.py             # 数据类: BoundaryConfig, LinkAABBInfo, AABBEnvelopeResult
-│       ├── report.py             # ReportGenerator: Markdown 报告生成
-│       ├── optimization.py       # optimize_extremes: L-BFGS-B 局部优化
-│       ├── interval_math.py      # Interval & AffineForm 算术
-│       ├── interval_fk.py        # 区间正运动学 (保守AABB)
-│       ├── visualizer.py         # Matplotlib 3D 可视化
-│       ├── configs/              # 机器人配置文件目录
-│       │   ├── panda.json        # Franka Emika Panda 7+1-DOF
-│       │   └── 2dof_planar.json  # 测试用2-DOF平面机器人
-│       └── strategies/
-│           ├── __init__.py
-│           ├── base.py           # BaseStrategy: 共享采样逻辑 (策略1-7)
-│           ├── critical.py       # CriticalStrategy: 关键点枚举
-│           ├── random.py         # RandomStrategy: 随机采样
-│           └── hybrid.py         # HybridStrategy: 混合策略
+│   ├── box_aabb/             # 核心库 (src layout)
+│   │   ├── __init__.py           # 包入口 & 公开API
+│   │   ├── robot.py              # Robot 类: DH运动学, FK, 配置加载
+│   │   ├── aabb_calculator.py    # AABBCalculator: 瘦调度层
+│   │   ├── models.py             # 数据类: BoundaryConfig, LinkAABBInfo, AABBEnvelopeResult
+│   │   ├── report.py             # ReportGenerator: Markdown 报告生成
+│   │   ├── optimization.py       # optimize_extremes: L-BFGS-B 局部优化
+│   │   ├── interval_math.py      # Interval & AffineForm 算术
+│   │   ├── interval_fk.py        # 区间正运动学 (保守AABB)
+│   │   ├── visualizer.py         # Matplotlib 3D 可视化
+│   │   ├── configs/              # 机器人配置文件目录
+│   │   └── strategies/           # 采样策略 (critical/random/hybrid)
+│   └── planner/              # ★ 路径规划包 (v4.0)
+│       ├── box_rrt.py            # 主规划器入口
+│       ├── collision.py          # 碰撞检测 (集成 AABB 缓存)
+│       ├── box_expansion.py      # Box 拓展
+│       ├── box_tree.py           # Box 树管理
+│       ├── aabb_cache.py         # AABB 缓存系统
+│       ├── box_forest.py         # 可复用 BoxForest
+│       ├── box_query.py          # Forest 查询规划
+│       ├── dynamic_visualizer.py # 动态可视化动画
+│       ├── free_space_tiler.py   # 自由空间瓦片化
+│       └── ...                   # connector, smoother, GCS, metrics 等
 ├── test/
 │   ├── conftest.py       # pytest fixtures
 │   ├── test_robot.py     # Robot + 配置系统测试
 │   ├── test_interval_math.py  # 区间/仿射算术测试
-│   ├── test_models.py    # 数据类测试
-│   ├── test_report.py    # 报告生成测试
-│   └── test_calculator.py # 集成测试 (全方法覆盖)
+│   └── planner/          # 规划器测试
 ├── benchmarks/
-│   ├── profile_critical.py
-│   ├── profile_v2.py
-│   └── compare_critical_vs_random.py
+│   ├── threshold_experiment.py  # 区间宽度阈值实验 (v4.0)
+│   └── ...
 └── examples/
     ├── basic_usage.py
-    ├── random_box_demo.py
-    └── example_visualize_envelope.py
+    ├── planner_demo_animation.py  # 动态可视化 demo (v4.0)
+    └── ...
 ```
 
 **设计原则：**
@@ -319,6 +320,48 @@ for aabb in result.link_aabbs:
 ```bash
 pytest test/ -v
 ```
+
+## Planner 模块 (v4.0)
+
+独立路径规划包 `planner`，基于 Box-RRT 算法实现碰撞-free 路径规划。
+
+### 新功能
+
+| 模块 | 功能 | 说明 |
+|------|------|------|
+| `aabb_cache` | AABB 缓存系统 | 双层存储（interval/numerical），NumPy 向量化查询，LRU 淘汰，pickle 持久化 |
+| `box_forest` | 可复用 BoxForest | 预构建碰撞-free box 树，支持保存/加载、robot 指纹校验 |
+| `box_query` | Forest 查询规划 | 复用 forest 快速规划新查询，局部扩展 + 图搜索 |
+| `dynamic_visualizer` | 动态可视化 | FuncAnimation 动画、EE 轨迹、ghost frames、等弧长重采样 |
+| `free_space_tiler` | 自由空间瓦片化 | 自适应单维二分切分，识别碰撞-free C-space 区域 |
+
+### 快速示例
+
+```python
+from box_aabb import load_robot
+from planner import BoxRRT, PlannerConfig, Scene, AABBCache
+
+robot = load_robot('2dof_planar')
+scene = Scene()
+config = PlannerConfig(use_aabb_cache=True)
+
+# 带缓存的规划
+cache = AABBCache()
+planner = BoxRRT(robot, scene, config, aabb_cache=cache)
+result = planner.plan(start, goal)
+
+# 保存缓存供下次使用
+cache.save("cache.pkl")
+```
+
+```python
+# 动态可视化
+from planner import animate_robot_path
+anim = animate_robot_path(robot, result.path, scene=scene, fps=30)
+anim.save("motion.gif", writer='pillow')
+```
+
+详细设计文档见 [doc/zh/planner_design.md](doc/zh/planner_design.md)。
 
 ## 性能
 

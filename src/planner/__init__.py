@@ -13,6 +13,13 @@ planner - Box-RRT 机械臂避障路径规划
 6. 通过 GCS 求解器优化路径
 7. 路径平滑后处理
 
+v4.0 新增：
+- BoxForest: 可复用的 box 森林，始末点变化时无需重建
+- BoxForestQuery: 基于已有森林的快速查询规划
+- AABBCache: AABB 包络缓存系统，避免重复计算
+- FreeSpaceTiler: 自由空间瓦片化器，反选无碰撞区间
+- animate_robot_path: 动态可视化机械臂运动
+
 参考论文:
     Marcucci et al., "Motion planning around obstacles with convex optimization",
     Science Robotics, 2023. DOI: 10.1126/scirobotics.adf7843
@@ -34,6 +41,11 @@ from .box_rrt import BoxRRT
 from .connector import TreeConnector
 from .path_smoother import PathSmoother
 from .metrics import PathMetrics, evaluate_result, compare_results, format_comparison_table
+from .aabb_cache import AABBCache, IntervalStore, CacheEntry
+from .box_forest import BoxForest
+from .box_query import BoxForestQuery
+from .free_space_tiler import FreeSpaceTiler, FreeSpaceTile
+from .dynamic_visualizer import animate_robot_path, resample_path
 
 __all__ = [
     # 数据模型
@@ -57,4 +69,14 @@ __all__ = [
     'evaluate_result',
     'compare_results',
     'format_comparison_table',
+    # v4.0 新增
+    'AABBCache',
+    'IntervalStore',
+    'CacheEntry',
+    'BoxForest',
+    'BoxForestQuery',
+    'FreeSpaceTiler',
+    'FreeSpaceTile',
+    'animate_robot_path',
+    'resample_path',
 ]

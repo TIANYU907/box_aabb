@@ -241,6 +241,11 @@ class PlannerConfig:
         use_gcs: 是否使用 GCS 优化路径（需要 Drake）
         gcs_bezier_degree: GCS Bézier 曲线阶数
         verbose: 是否输出详细日志
+        build_n_seeds: BoxForest 构建阶段的采样种子数量
+        query_expand_budget: 查询阶段始末点附近拓展的最大 box 数
+        forest_path: 预构建 BoxForest 文件路径（可选）
+        interval_width_threshold: 区间/数值方法切换阈值 (rad)
+        use_aabb_cache: 是否启用 AABB 包络缓存
     """
     max_iterations: int = 500
     max_box_nodes: int = 200
@@ -257,6 +262,13 @@ class PlannerConfig:
     use_gcs: bool = False
     gcs_bezier_degree: int = 3
     verbose: bool = False
+    # v4.0 新增：BoxForest 复用
+    build_n_seeds: int = 200
+    query_expand_budget: int = 10
+    forest_path: Optional[str] = None
+    # v4.0 新增：自适应阈值与缓存
+    interval_width_threshold: float = 1.0
+    use_aabb_cache: bool = False
 
 
 @dataclass

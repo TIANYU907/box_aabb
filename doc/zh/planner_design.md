@@ -1,6 +1,6 @@
 # Box-RRT 路径规划器 — 设计与实现文档
 
-> **版本**: v3.2.0 &nbsp;|&nbsp; **日期**: 2026-02-08 &nbsp;|&nbsp; **机器人支持**: 2/3DOF 平面 + Panda 7DOF
+> **版本**: v4.0.0 &nbsp;|&nbsp; **日期**: 2026-02-08 &nbsp;|&nbsp; **机器人支持**: 2/3DOF 平面 + Panda 7DOF
 
 ---
 
@@ -22,13 +22,20 @@
    - 4.10 [评价指标 (metrics.py)](#410-评价指标-metricspy)
    - 4.11 [可视化 (visualizer.py)](#411-可视化-visualizerpy)
    - 4.12 [并行碰撞检测 (parallel_collision.py)](#412-并行碰撞检测-parallel_collisionpy)
-5. [底层数学支撑](#5-底层数学支撑)
-   - 5.1 [仿射算术 (interval_math.py)](#51-仿射算术-interval_mathpy)
-   - 5.2 [区间正运动学 (interval_fk.py)](#52-区间正运动学-interval_fkpy)
-6. [关键设计决策](#6-关键设计决策)
-7. [使用示例](#7-使用示例)
-8. [测试覆盖](#8-测试覆盖)
-9. [性能数据](#9-性能数据)
+5. [v4.0 新增功能](#5-v40-新增功能)
+   - 5.1 [AABB 包络缓存 (aabb_cache.py)](#51-aabb-包络缓存-aabb_cachepy)
+   - 5.2 [可复用 Box 森林 (box_forest.py)](#52-可复用-box-森林-box_forestpy)
+   - 5.3 [森林查询规划 (box_query.py)](#53-森林查询规划-box_querypy)
+   - 5.4 [动态可视化 (dynamic_visualizer.py)](#54-动态可视化-dynamic_visualizerpy)
+   - 5.5 [自由空间瓦片化 (free_space_tiler.py)](#55-自由空间瓦片化-free_space_tilerpy)
+   - 5.6 [阈值实验 (threshold_experiment.py)](#56-阈值实验-threshold_experimentpy)
+6. [底层数学支撑](#6-底层数学支撑)
+   - 6.1 [仿射算术 (interval_math.py)](#61-仿射算术-interval_mathpy)
+   - 6.2 [区间正运动学 (interval_fk.py)](#62-区间正运动学-interval_fkpy)
+7. [关键设计决策](#7-关键设计决策)
+8. [使用示例](#8-使用示例)
+9. [测试覆盖](#9-测试覆盖)
+10. [性能数据](#10-性能数据)
 
 ---
 
@@ -89,7 +96,12 @@ src/
     ├── gcs_optimizer.py     # GCS 凸优化 / Dijkstra fallback
     ├── metrics.py           # 路径评价指标
     ├── visualizer.py        # C-space / workspace 可视化
-    └── parallel_collision.py # 并行碰撞检测 + 空间索引
+    ├── parallel_collision.py # 并行碰撞检测 + 空间索引
+    ├── aabb_cache.py        # ★ AABB 缓存系统 (v4.0)
+    ├── box_forest.py        # ★ 可复用 BoxForest (v4.0)
+    ├── box_query.py         # Forest 查询规划 (v4.0)
+    ├── dynamic_visualizer.py # 动态可视化动画 (v4.0)
+    └── free_space_tiler.py  # 自由空间瓦片化 (v4.0)
 ```
 
 **依赖关系图**（planner 调用 box_aabb）:
@@ -492,9 +504,181 @@ for _ in max_iters:
 
 ---
 
-## 5. 底层数学支撑
+## 5. v4.0 新增功能
 
-### 5.1 仿射算术 (interval_math.py)
+### 5.1 AABB 包络缓存 (aabb_cache.py)
+
+**文件**: `src/planner/aabb_cache.py`
+
+缓存机器人在特定关节区间上的 AABB 包络计算结果，避免重复的区间 FK 计算。
+
+**核心类**:
+
+| 类名 | 说明 |
+|------|------|
+| `CacheEntry` | 缓存条目：intervals + link_aabbs + n_sub + volume + timestamp |
+| `IntervalStore` | 自适应区间索引存储：逐维 SortedList + NumPy 向量化查询 |
+| `AABBCache` | 顶层管理器：按机器人指纹隔离，interval/numerical 双库 |
+
+**设计要点**:
+
+1. **双库分离存储**:
+   - Interval 库：存放区间 FK 的保守结果，体积越小越精确（安全侧）
+   - Numerical 库：存放数值采样的紧致结果，体积越大越精确（非安全侧）
+   - 同一区间的精度替换：interval 库保留小体积，numerical 库保留大体积
+
+2. **三种查询模式**:
+   - `query_exact(intervals)` — 精确匹配
+   - `query_subsets(intervals)` — 找缓存中被目标区间包含的所有子集
+   - `query_interval_merge(intervals)` — 子集合并 + 3D AABB 并集 + 间隙检测
+
+3. **合并数学**:
+
+   对关节区间 $D = D_1 \cup D_2$，各连杆 AABB 满足：
+   $$\text{AABB}_\ell(D) = \text{BoundingBox}(\text{AABB}_\ell(D_1) \cup \text{AABB}_\ell(D_2))$$
+   即逐连杆在 3D 空间取 $\min(\text{min\_point})$, $\max(\text{max\_point})$。
+
+4. **自适应索引**:
+   - NumPy 向量化层：shape `(M, N, 2)` 数组支持批量子集/包含判断
+   - 精度对齐：intervals 端点四舍五入到 6 位小数避免浮点问题
+   - LRU 淘汰：达到 `max_entries` 时删除最旧条目
+
+5. **碰撞检测集成** (`collision.py`):
+   ```python
+   CollisionChecker(robot, scene, aabb_cache=cache)
+   ```
+   `check_box_collision()` 中自动查缓存 → 命中则跳过 FK → 未命中计算后存入
+
+---
+
+### 5.2 可复用 Box 森林 (box_forest.py)
+
+**文件**: `src/planner/box_forest.py`
+
+在场景中构建覆盖 C-free 的 box 森林，可持久化后在多次规划中复用。
+
+**核心 API**:
+
+| 方法 | 说明 |
+|------|------|
+| `BoxForest.build(robot, scene, config)` | 构建森林（无目标偏向，均匀采样） |
+| `forest.save(filepath)` | 持久化到文件 (pickle) |
+| `BoxForest.load(filepath, robot, scene)` | 从文件加载（验证机器人指纹） |
+
+**构建策略**:
+1. 均匀随机采样 `build_n_seeds` 个 seed 点（无 goal_bias）
+2. 跳过已被现有 box 覆盖的 seed
+3. 拓展 box，加入最近树或创建新树
+4. 每个树做少量边界拓展（3 个采样点/棵）
+5. 允许最多 `max_box_nodes × 3` 个 box（森林模式更宽松）
+
+**机器人指纹验证**: 加载时校验 `robot.fingerprint()` (SHA256) 确保机器人一致性。
+
+---
+
+### 5.3 森林查询规划 (box_query.py)
+
+**文件**: `src/planner/box_query.py`
+
+基于已有 BoxForest 的快速查询规划，无需重新拓展 box。
+
+```python
+forest = BoxForest.load("forest.pkl", robot, scene)
+query = BoxForestQuery(forest)
+result = query.plan(q_start, q_goal, seed=42)
+```
+
+**查询流程**:
+1. 验证始末点无碰撞
+2. 尝试直连
+3. 在始末点附近做少量补充拓展（`query_expand_budget` 个 box）
+4. 复用森林的 TreeConnector 连接始末点
+5. 图搜索 + 路径平滑
+
+**优势**: 当场景不变、只换始末点时，无需重建 box 覆盖，查询时间远低于完整规划。
+
+---
+
+### 5.4 动态可视化 (dynamic_visualizer.py)
+
+**文件**: `src/planner/dynamic_visualizer.py`
+
+生成机械臂运动路径的动画，自动检测 2D/3D 机器人。
+
+**核心 API**:
+
+```python
+from planner.dynamic_visualizer import animate_robot_path, resample_path
+
+# 重采样使动画平滑
+smooth_path = resample_path(result.path, n_frames=100)
+# 生成动画
+anim = animate_robot_path(robot, smooth_path, scene=scene,
+                           fps=20, trail_length=30, ghost_interval=10)
+# 保存
+anim.save("robot.gif", writer='pillow', fps=20)
+```
+
+**功能**:
+- 2D 平面和 3D 空间自动检测
+- 末端执行器轨迹跟踪（可配置尾巴长度）
+- 残影显示（ghost_interval 控制间隔）
+- 障碍物叠加显示
+- 帧计数器
+- 等弧长路径重采样（`resample_path`）
+
+---
+
+### 5.5 自由空间瓦片化 (free_space_tiler.py)
+
+**文件**: `src/planner/free_space_tiler.py`
+
+给定 3D 障碍物，反选出尽可能大的无碰撞关节区间包络。
+
+**核心策略**: 自适应单维度二分分割
+
+```
+recursive_tile(intervals, depth):
+    if not collision(intervals):
+        → 加入结果（整个区间无碰撞）
+    elif depth >= max_depth:
+        → 放弃（太深了）
+    else:
+        选最宽维度 dim
+        mid = (lo[dim] + hi[dim]) / 2
+        recursive_tile([lo, mid], depth+1)  # 子区间 1
+        recursive_tile([mid, hi], depth+1)  # 子区间 2
+```
+
+**关键特性**:
+- 每次只沿一个维度分割（避免 $2^N$ 爆炸）
+- 优先分割最宽维度
+- `min_width` 防止过小瓦片
+- `max_depth` 控制递归深度
+- 支持 Hybrid 碰撞检测（区间 FK + 采样复核）
+- 结果可直接转为 `BoxNode` 列表
+
+---
+
+### 5.6 阈值实验 (threshold_experiment.py)
+
+**文件**: `benchmarks/threshold_experiment.py`
+
+确定区间方法与数值方法的 AABB 体积交叉阈值。
+
+**实验流程**:
+1. 固定基准配置，逐关节扫描区间宽度
+2. 对每个宽度分别计算 interval FK 和 numerical sampling 的 AABB
+3. 画出 体积-宽度 曲线
+4. 找 interval 体积首次超过 numerical 2 倍的宽度作为阈值
+
+**输出**: 每个关节的推荐阈值 + 全局中位阈值 + 对比图表
+
+---
+
+## 6. 底层数学支撑
+
+### 6.1 仿射算术 (interval_math.py)
 
 **文件**: `src/box_aabb/interval_math.py` — ~420 行
 
@@ -526,7 +710,7 @@ $$|\delta| \leq \frac{r^2}{2}, \quad r = \sum |x_i|$$
 
 在 8 次链式 DH 矩阵乘法中，普通区间算术的"wrapping effect"（包裹效应）导致指数级过估计。仿射算术通过追踪噪声符号相关性，使得相消项（如 $\sin^2\theta + \cos^2\theta - 1$）能被更紧地估计。
 
-### 5.2 区间正运动学 (interval_fk.py)
+### 6.2 区间正运动学 (interval_fk.py)
 
 **文件**: `src/box_aabb/interval_fk.py` — ~150 行
 
@@ -542,9 +726,9 @@ $$|\delta| \leq \frac{r^2}{2}, \quad r = \sum |x_i|$$
 
 ---
 
-## 6. 关键设计决策
+## 7. 关键设计决策
 
-### 6.1 Hybrid 碰撞检测
+### 7.1 Hybrid 碰撞检测
 
 **问题**: 对 Panda 7DOF 机器人，纯区间 FK 在 8 次矩阵链乘后严重过估计，导致 box 无法拓展（volume ≈ 0）。
 
@@ -557,20 +741,20 @@ _use_sampling = robot.n_joints > 4
 - 区间 FK 说碰撞 + 采样全通过 → **概率性安全**（覆盖误报）
 - 区间 FK 说碰撞 + 采样命中 → **确认碰撞**
 
-### 6.2 固定关节的体积处理
+### 7.2 固定关节的体积处理
 
 **问题**: Panda 第 8 个关节（手指）限制为 $[0, 0]$（固定关节），宽度=0 使得所有 box volume=0，被 `min_box_volume` 过滤掉。
 
 **解决方案**: `BoxNode._compute_volume()` 和 `BoxExpander._volume()` 跳过零宽度维度，只计算活动关节的体积积。
 
-### 6.3 AffineForm 乘法保相关性
+### 7.3 AffineForm 乘法保相关性
 
 **问题**: 原始实现将两个 AffineForm 转为 Interval 相乘，丢失所有噪声符号相关性。
 
 **解决方案**: 保留线性项的仿射乘法。关键公式：
 $$x \cdot y = x_0 y_0 + \sum_i (x_0 y_i + y_0 x_i) \varepsilon_i + \delta \varepsilon_{new}$$
 
-### 6.4 连通性修复
+### 7.4 连通性修复
 
 **问题**: 采样不充分时可能导致 start 和 goal 不在同一个连通分量。
 
@@ -578,9 +762,9 @@ $$x \cdot y = x_0 y_0 + \sum_i (x_0 y_i + y_0 x_i) \varepsilon_i + \delta \varep
 
 ---
 
-## 7. 使用示例
+## 8. 使用示例
 
-### 7.1 基本用法
+### 8.1 基本用法
 
 ```python
 from box_aabb.robot import load_robot
@@ -608,7 +792,7 @@ if result.success:
     print(f"路径: {len(result.path)} 个点, 长度 {result.path_length:.3f}")
 ```
 
-### 7.2 可视化
+### 8.2 可视化
 
 ```python
 from planner.visualizer import plot_cspace_boxes, plot_workspace_result
@@ -623,7 +807,7 @@ fig2 = plot_workspace_result(robot, scene, result, n_poses=12)
 fig2.savefig("workspace.png")
 ```
 
-### 7.3 评价指标
+### 8.3 评价指标
 
 ```python
 from planner import evaluate_result
@@ -637,11 +821,66 @@ print(metrics.summary())
 #   min_clearance = 0.045
 ```
 
+### 8.4 可复用 Box 森林 (v4.0)
+
+```python
+from planner import BoxForest, BoxForestQuery, PlannerConfig
+
+# 构建森林（一次性）
+config = PlannerConfig(build_n_seeds=200, max_box_nodes=100)
+forest = BoxForest.build(robot, scene, config, seed=42)
+forest.save("forest.pkl")
+
+# 多次查询（换始末点）
+forest = BoxForest.load("forest.pkl", robot, scene)
+query = BoxForestQuery(forest)
+result1 = query.plan(q_start_1, q_goal_1)
+result2 = query.plan(q_start_2, q_goal_2)  # 复用同一森林
+```
+
+### 8.5 AABB 缓存 (v4.0)
+
+```python
+from planner import AABBCache, BoxRRT, PlannerConfig
+
+cache = AABBCache()
+config = PlannerConfig(use_aabb_cache=True)
+planner = BoxRRT(robot, scene, config, aabb_cache=cache)
+result = planner.plan(q_start, q_goal)
+
+# 缓存统计
+print(cache.get_stats(robot))
+# {'interval': 150, 'numerical': 0}
+```
+
+### 8.6 动态可视化 (v4.0)
+
+```python
+from planner.dynamic_visualizer import animate_robot_path, resample_path
+
+smooth_path = resample_path(result.path, n_frames=100)
+anim = animate_robot_path(
+    robot, smooth_path, scene=scene,
+    fps=20, trail_length=30, ghost_interval=10)
+anim.save("robot_motion.gif", writer='pillow', fps=20)
+```
+
+### 8.7 自由空间瓦片化 (v4.0)
+
+```python
+from planner import FreeSpaceTiler
+
+tiler = FreeSpaceTiler(robot, scene, min_width=0.2, max_depth=6)
+tiles = tiler.tile()
+print(f"{len(tiles)} 个无碰撞瓦片")
+nodes = tiler.tiles_to_box_nodes(tiles)  # 转为 BoxNode
+```
+
 ---
 
-## 8. 测试覆盖
+## 9. 测试覆盖
 
-项目包含全面的测试套件，共 **229 个测试**（227 通过，2 个跳过——Drake 相关）：
+项目包含全面的测试套件：
 
 | 测试文件 | 测试数量 | 覆盖范围 |
 |----------|---------|----------|
@@ -652,6 +891,10 @@ print(metrics.summary())
 | `test_gcs_optimizer.py` | 13 | GCS/Dijkstra/scipy |
 | `test_obstacles.py` | 20 | 场景管理 |
 | `test_panda_integration.py` | 22 | Panda 7DOF 集成测试 |
+| `test_aabb_cache.py` | 20 | AABB 缓存系统 (v4.0) |
+| `test_box_forest.py` | 8 | BoxForest + BoxForestQuery (v4.0) |
+| `test_dynamic_visualizer.py` | 6 | 动态可视化 (v4.0) |
+| `test_free_space_tiler.py` | 13 | 自由空间瓦片化 (v4.0) |
 | `test_interval_math.py` | 26 | 仿射算术 |
 | `test_calculator.py` | 22 | AABB 计算器 |
 | `test_robot.py` | 41 | Modified DH 机器人模型 |
@@ -659,16 +902,16 @@ print(metrics.summary())
 
 ---
 
-## 9. 性能数据
+## 10. 性能数据
 
-### 9.1 3DOF 平面机器人
+### 10.1 3DOF 平面机器人
 
 | 场景 | 路径点 | 路径长度 | 树数 | Box 数 | 时间 |
 |------|--------|---------|------|--------|------|
 | Wall | 5 | 4.246 | 2 | — | 4.8s |
 | Two-walls gap | 6 | 4.850 | 2 | — | 7.1s |
 
-### 9.2 Panda 7DOF
+### 10.2 Panda 7DOF
 
 | 场景 | 路径点 | 路径长度 | 树数 | Box 数 | 时间 | 长度比 | 平滑度 |
 |------|--------|---------|------|--------|------|--------|--------|
@@ -701,6 +944,11 @@ print(metrics.summary())
 | `metrics.py` | ~340 | 评价指标 |
 | `visualizer.py` | ~370 | 可视化 |
 | `parallel_collision.py` | ~260 | 并行碰撞 |
+| `aabb_cache.py` | ~400 | AABB 缓存 (v4.0) |
+| `box_forest.py` | ~230 | 可复用 BoxForest (v4.0) |
+| `box_query.py` | ~200 | Forest 查询规划 (v4.0) |
+| `dynamic_visualizer.py` | ~310 | 动态可视化 (v4.0) |
+| `free_space_tiler.py` | ~210 | 自由空间瓦片化 (v4.0) |
 | `interval_math.py` | ~420 | 仿射算术 |
 | `interval_fk.py` | ~150 | 区间 FK |
-| **合计** | **~4,400** | |
+| **合计** | **~5,750** | |
