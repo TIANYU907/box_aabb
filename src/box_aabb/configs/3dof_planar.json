@@ -1,12 +1,13 @@
 {
     "name": "3DOF-Planar",
-    "description": "3-DOF planar robot for path planning demo. With Modified DH, p3 depends on (q0, q1), creating non-trivial C-space obstacle topology.",
+    "description": "3-DOF planar robot with link lengths L1=1.0, L2=1.0, L3=0.5. In Modified DH, row 0 has a=0 (joint 0 at origin), rows 1-2 carry previous link lengths, tool_frame carries L3.",
     "dh_convention": "modified",
     "dh_params": [
+        {"alpha": 0, "a": 0.0, "d": 0.0, "theta": 0, "type": "revolute"},
         {"alpha": 0, "a": 1.0, "d": 0.0, "theta": 0, "type": "revolute"},
-        {"alpha": 0, "a": 1.0, "d": 0.0, "theta": 0, "type": "revolute"},
-        {"alpha": 0, "a": 0.5, "d": 0.0, "theta": 0, "type": "revolute"}
+        {"alpha": 0, "a": 1.0, "d": 0.0, "theta": 0, "type": "revolute"}
     ],
+    "tool_frame": {"alpha": 0, "a": 0.5, "d": 0.0},
     "joint_limits": [
         [-3.14159, 3.14159],
         [-3.14159, 3.14159],

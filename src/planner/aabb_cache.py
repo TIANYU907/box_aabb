@@ -19,6 +19,7 @@ import time
 import copy
 import pickle
 import logging
+from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Set
 from dataclasses import dataclass, field
 
@@ -27,6 +28,9 @@ import numpy as np
 from box_aabb.models import LinkAABBInfo
 
 logger = logging.getLogger(__name__)
+
+# 默认缓存目录（项目根目录下）
+DEFAULT_CACHE_DIR = Path(".cache") / "aabb"
 
 
 def _round_intervals(intervals: Tuple[Tuple[float, float], ...],
@@ -600,3 +604,101 @@ class AABBCache:
                 self._stores[rid]['numerical'].clear()
         else:
             self._stores.clear()
+
+    # ==================== 自动持久化 ====================
+
+    @staticmethod
+    def cache_path_for_robot(
+        robot,
+        cache_dir: Optional[Path] = None,
+    ) -> Path:
+        """获取指定机器人的缓存文件路径
+
+        文件命名格式: ``<robot_name>_<fingerprint[:12]>.pkl``
+        目录默认为 ``.cache/aabb/``。
+
+        Args:
+            robot: 机器人模型
+            cache_dir: 缓存目录路径（默认 DEFAULT_CACHE_DIR）
+
+        Returns:
+            缓存文件的 Path 对象
+        """
+        d = Path(cache_dir) if cache_dir is not None else DEFAULT_CACHE_DIR
+        # 安全文件名：小写、替换空格
+        safe_name = robot.name.lower().replace(' ', '_').replace('-', '_')
+        fp_short = robot.fingerprint()[:12]
+        return d / f"{safe_name}_{fp_short}.pkl"
+
+    @classmethod
+    def auto_load(
+        cls,
+        robot,
+        cache_dir: Optional[Path] = None,
+        max_entries_per_store: int = 100000,
+    ) -> 'AABBCache':
+        """自动加载机器人的包络缓存
+
+        若缓存文件存在且可成功读取，则返回已填充的 AABBCache 实例；
+        否则返回空的 AABBCache。
+
+        Args:
+            robot: 机器人模型
+            cache_dir: 缓存目录（默认 DEFAULT_CACHE_DIR）
+            max_entries_per_store: 每个库的最大条目数
+
+        Returns:
+            AABBCache 实例
+
+        Example:
+            >>> cache = AABBCache.auto_load(robot)
+            >>> stats = cache.get_stats(robot)
+        """
+        path = cls.cache_path_for_robot(robot, cache_dir)
+        if path.exists():
+            try:
+                cache = cls.load(str(path))
+                stats = cache.get_stats(robot)
+                total = stats.get('interval', 0) + stats.get('numerical', 0)
+                logger.info(
+                    "自动加载缓存: %s (%d 条目, interval=%d, numerical=%d)",
+                    path, total, stats.get('interval', 0),
+                    stats.get('numerical', 0),
+                )
+                return cache
+            except Exception as e:
+                logger.warning("缓存文件读取失败 (%s): %s，创建空缓存", path, e)
+        else:
+            logger.info("无已有缓存文件: %s，创建空缓存", path)
+        return cls(max_entries_per_store=max_entries_per_store)
+
+    def auto_save(
+        self,
+        robot,
+        cache_dir: Optional[Path] = None,
+    ) -> Path:
+        """自动保存当前缓存到磁盘
+
+        自动创建缓存目录（若不存在）。
+
+        Args:
+            robot: 机器人模型
+            cache_dir: 缓存目录（默认 DEFAULT_CACHE_DIR）
+
+        Returns:
+            保存的文件路径
+
+        Example:
+            >>> cache.auto_save(robot)
+            PosixPath('.cache/aabb/panda_abc123def456.pkl')
+        """
+        path = self.cache_path_for_robot(robot, cache_dir)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.save(str(path))
+        stats = self.get_stats(robot)
+        total = stats.get('interval', 0) + stats.get('numerical', 0)
+        logger.info(
+            "自动保存缓存: %s (%d 条目)",
+            path, total,
+        )
+        return path

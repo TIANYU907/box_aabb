@@ -81,6 +81,20 @@ def compute_interval_aabb(
         T = _mat_mul_interval(T, A)
         transforms.append([row[:] for row in T])
 
+    # 工具坐标系（可选末端固定连杆）
+    if robot.tool_frame is not None:
+        tf = robot.tool_frame
+        ca_t, sa_t = math.cos(tf['alpha']), math.sin(tf['alpha'])
+        # theta = 0 (固定)
+        A_tool = [
+            [1.0, 0.0, 0.0, tf['a']],
+            [0.0, ca_t, -sa_t, -tf['d'] * sa_t],
+            [0.0, sa_t, ca_t, tf['d'] * ca_t],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+        T = _mat_mul_interval(T, A_tool)
+        transforms.append([row[:] for row in T])
+
     # 构建 LinkAABBInfo
     link_aabbs: List[LinkAABBInfo] = []
     for li in range(1, len(transforms)):

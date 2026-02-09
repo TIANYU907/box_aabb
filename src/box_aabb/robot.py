@@ -46,6 +46,7 @@ class Robot:
         coupled_triples: Optional[List[Tuple[int, int, int]]] = None,
         name: str = "Robot",
         joint_limits: Optional[List[Tuple[float, float]]] = None,
+        tool_frame: Optional[Dict] = None,
     ):
         """初始化机器人
 
@@ -60,6 +61,11 @@ class Robot:
             coupled_triples: 耦合关节三元组（用于采样策略 5-6），默认 None
             name: 机器人名称，默认 "Robot"
             joint_limits: 关节限制列表 [(lo, hi), ...]，默认 None
+            tool_frame: 末端工具坐标系 DH 参数 {alpha, a, d}，默认 None
+                        用于在最后一个关节之后附加一段固定连杆。
+                        在 Modified DH 中，最后一个 DH 行的 `a` 参数提供的
+                        平移在最后一帧位置中不可见（它将在下一帧才体现），
+                        因此需要 tool_frame 来表示末端连杆。
         """
         self.name = name
         self.dh_params = [self._normalize_param(p) for p in dh_params]
@@ -70,6 +76,14 @@ class Robot:
             [(float(lo), float(hi)) for lo, hi in joint_limits]
             if joint_limits else None
         )
+        # 末端工具坐标系（可选，提供最后一段固定连杆的 DH 参数）
+        self.tool_frame: Optional[Dict] = None
+        if tool_frame is not None:
+            self.tool_frame = {
+                'alpha': float(tool_frame.get('alpha', 0.0)),
+                'a': float(tool_frame.get('a', 0.0)),
+                'd': float(tool_frame.get('d', 0.0)),
+            }
     
     @staticmethod
     def _normalize_param(p: Dict) -> Dict:
@@ -134,12 +148,14 @@ class Robot:
             [tuple(t) for t in data['coupled_triples']]
             if 'coupled_triples' in data else None
         )
+        tool_frame = data.get('tool_frame', None)
         return cls(
             dh_params=dh_list,
             coupled_pairs=coupled_pairs,
             coupled_triples=coupled_triples,
             name=name,
             joint_limits=joint_limits,
+            tool_frame=tool_frame,
         )
 
     @classmethod
@@ -236,7 +252,18 @@ class Robot:
             A = self.dh_transform(alpha, a, d, theta)
             T = T @ A
             transforms.append(T.copy())
-        
+
+        # 工具坐标系（可选末端固定连杆）
+        if self.tool_frame is not None:
+            A_tool = self.dh_transform(
+                self.tool_frame['alpha'],
+                self.tool_frame['a'],
+                self.tool_frame['d'],
+                0.0,  # 无关节旋转
+            )
+            T = T @ A_tool
+            transforms.append(T.copy())
+
         return transforms if return_all else transforms[-1]
     
     def get_link_positions(self, joint_values: List[float]) -> List[np.ndarray]:
@@ -342,6 +369,10 @@ class Robot:
         for i, param in enumerate(self.dh_params):
             if abs(param['a']) < 1e-10 and abs(param['d']) < 1e-10:
                 result.add(i + 1)
+        # tool_frame 连杆索引 = n_joints + 1
+        if self.tool_frame is not None:
+            if abs(self.tool_frame['a']) < 1e-10 and abs(self.tool_frame['d']) < 1e-10:
+                result.add(self.n_joints + 1)
         return result
 
     def fingerprint(self) -> str:
@@ -357,6 +388,7 @@ class Robot:
             'name': self.name,
             'dh_params': self.dh_params,
             'n_joints': self.n_joints,
+            'tool_frame': self.tool_frame,
         }, sort_keys=True, ensure_ascii=False)
         return hashlib.sha256(data.encode('utf-8')).hexdigest()
 

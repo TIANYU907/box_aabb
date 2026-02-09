@@ -46,6 +46,7 @@ from .box_forest import BoxForest
 from .box_query import BoxForestQuery
 from .free_space_tiler import FreeSpaceTiler, FreeSpaceTile
 from .dynamic_visualizer import animate_robot_path, resample_path
+from .interactive_viewer import launch_viewer
 
 __all__ = [
     # 数据模型
@@ -79,4 +80,5 @@ __all__ = [
     'FreeSpaceTile',
     'animate_robot_path',
     'resample_path',
+    'launch_viewer',
 ]

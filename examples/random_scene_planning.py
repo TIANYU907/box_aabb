@@ -2,21 +2,22 @@
 """
 examples/random_scene_planning.py - 随机场景规划完整演示
 
-随机化一个 2DOF 场景（包括障碍物和始末点），运行 Box-RRT 规划，
-并对每一步的中间结果做详细记录。最终生成四张可视化图片：
-  1. C-space box tree + 路径
-  2. C-space 碰撞地图叠加
-  3. 工作空间多姿态
-  4. 动态动画 GIF
+随机化场景（包括障碍物和始末点），运行 Box-RRT 规划，
+并对每一步的中间结果做详细记录。支持跨场景复用 robot 配置。
 
 输出：
   - 终端详细日志
   - examples/output/random_scene_<timestamp>/  目录下所有产物
+    - scene.json  (含 robot_name 元信息, 跨任务可复用)
+    - report.md   (含 box tree 详情)
+    - *.png / *.gif
 
 运行：
-    python examples/random_scene_planning.py
-    python examples/random_scene_planning.py --seed 123
-    python examples/random_scene_planning.py --robot 3dof_planar --n-obs 5
+    python -m examples.random_scene_planning
+    python -m examples.random_scene_planning --seed 123
+    python -m examples.random_scene_planning --robot panda --n-obs 3
+    # 复用已有场景 JSON:
+    python -m examples.random_scene_planning --robot panda --scene-json path/to/scene.json
 """
 
 from __future__ import annotations
@@ -42,6 +43,7 @@ from planner import (
     Scene,
     AABBCache,
 )
+from planner.aabb_cache import DEFAULT_CACHE_DIR
 from planner.metrics import evaluate_result, PathMetrics
 from planner.visualizer import (
     plot_cspace_boxes,
@@ -60,17 +62,13 @@ logger = logging.getLogger("random_scene_planning")
 # 1. 随机场景生成
 # =====================================================================
 
+
 def random_scene_2d(
     robot: Robot,
     n_obstacles: int,
     rng: np.random.Generator,
-    q_start: np.ndarray | None = None,
-    q_goal: np.ndarray | None = None,
 ) -> Scene:
     """为 2D 平面机器人随机生成障碍物场景
-
-    如果提供了 q_start/q_goal，至少一个障碍物会放在路径中间的
-    工作空间位置附近，迫使规划器必须绕行。
 
     Returns:
         Scene 对象
@@ -81,33 +79,7 @@ def random_scene_2d(
         reach = 2.0  # fallback
 
     scene = Scene()
-
-    # 若提供了始末点，先在路径中间工作空间位置放置"阻挡"障碍物
-    n_blocking = 0
-    if q_start is not None and q_goal is not None and n_obstacles >= 2:
-        n_blocking = max(1, n_obstacles // 3)
-        for i in range(n_blocking):
-            # 在 C-space 路径上均匀插值
-            t = (i + 1) / (n_blocking + 1)
-            q_mid = (1 - t) * q_start + t * q_goal
-            pos_mid = robot.get_link_positions(q_mid)
-            # 选末端执行器位置附近放障碍物
-            ee = pos_mid[-1]
-            # 小偏移 + 随机扰动
-            dx = rng.uniform(-0.1 * reach, 0.1 * reach)
-            dy = rng.uniform(-0.1 * reach, 0.1 * reach)
-            cx = ee[0] + dx
-            cy = ee[1] + dy
-            hw = rng.uniform(0.04 * reach, 0.10 * reach)
-            hh = rng.uniform(0.04 * reach, 0.10 * reach)
-            scene.add_obstacle(
-                min_point=[cx - hw, cy - hh],
-                max_point=[cx + hw, cy + hh],
-                name=f"block_{i}",
-            )
-
-    # 剩余障碍物随机散布
-    for i in range(n_obstacles - n_blocking):
+    for i in range(n_obstacles):
         r = rng.uniform(0.3 * reach, 0.9 * reach)
         theta = rng.uniform(-math.pi, math.pi)
         cx = r * math.cos(theta)
@@ -225,13 +197,19 @@ def log_scene_info(scene: Scene) -> str:
         vol = obs.volume
         total_vol += vol
         sz = obs.size
-        lines.append(
-            f"  [{obs.name}]  "
-            f"min=({obs.min_point[0]:+.3f}, {obs.min_point[1]:+.3f})  "
-            f"max=({obs.max_point[0]:+.3f}, {obs.max_point[1]:+.3f})  "
-            f"size=({sz[0]:.3f}×{sz[1]:.3f})  "
-        )
-    lines.append(f"  障碍物总 '面积' (2D): {total_vol:.4f}")
+        ndim = len(obs.min_point)
+        if ndim >= 3 and abs(obs.min_point[2]) < 900:
+            # 真 3D 障碍物
+            mn = f"({obs.min_point[0]:+.3f}, {obs.min_point[1]:+.3f}, {obs.min_point[2]:+.3f})"
+            mx = f"({obs.max_point[0]:+.3f}, {obs.max_point[1]:+.3f}, {obs.max_point[2]:+.3f})"
+            szs = f"{sz[0]:.3f}×{sz[1]:.3f}×{sz[2]:.3f}"
+        else:
+            # 2D（或 z 设为 ±1e3 的伪 3D）
+            mn = f"({obs.min_point[0]:+.3f}, {obs.min_point[1]:+.3f})"
+            mx = f"({obs.max_point[0]:+.3f}, {obs.max_point[1]:+.3f})"
+            szs = f"{sz[0]:.3f}×{sz[1]:.3f}"
+        lines.append(f"  [{obs.name}]  min={mn}  max={mx}  size=({szs})")
+    lines.append(f"  障碍物总体积: {total_vol:.4f}")
     lines.append("-" * 60)
     text = "\n".join(lines)
     logger.info("\n%s", text)
@@ -482,9 +460,15 @@ def write_report(
     lines.append(f"| 名称 | min | max | 尺寸 |")
     lines.append(f"|------|-----|-----|------|")
     for obs in scene.get_obstacles():
-        mn = f"({obs.min_point[0]:+.3f}, {obs.min_point[1]:+.3f})"
-        mx = f"({obs.max_point[0]:+.3f}, {obs.max_point[1]:+.3f})"
-        sz = f"{obs.size[0]:.3f} × {obs.size[1]:.3f}"
+        ndim = len(obs.min_point)
+        if ndim >= 3 and abs(obs.min_point[2]) < 900:
+            mn = f"({obs.min_point[0]:+.3f}, {obs.min_point[1]:+.3f}, {obs.min_point[2]:+.3f})"
+            mx = f"({obs.max_point[0]:+.3f}, {obs.max_point[1]:+.3f}, {obs.max_point[2]:+.3f})"
+            sz = f"{obs.size[0]:.3f} × {obs.size[1]:.3f} × {obs.size[2]:.3f}"
+        else:
+            mn = f"({obs.min_point[0]:+.3f}, {obs.min_point[1]:+.3f})"
+            mx = f"({obs.max_point[0]:+.3f}, {obs.max_point[1]:+.3f})"
+            sz = f"{obs.size[0]:.3f} × {obs.size[1]:.3f}"
         lines.append(f"| {obs.name} | {mn} | {mx} | {sz} |")
     lines.append(f"")
 
@@ -528,14 +512,49 @@ def write_report(
     if result.box_trees:
         lines.append(f"### Box Tree 明细")
         lines.append(f"")
-        lines.append(f"| 树 ID | 节点数 | 总体积 |")
-        lines.append(f"|-------|--------|--------|")
+        lines.append(f"| 树 ID | 节点数 | 总体积 | 叶节点数 |")
+        lines.append(f"|-------|--------|--------|----------|")
         for tree in result.box_trees:
+            n_leaf = len(tree.get_leaf_nodes())
             lines.append(
                 f"| {tree.tree_id} | {tree.n_nodes} "
-                f"| {tree.total_volume:.4f} |"
+                f"| {tree.total_volume:.4f} | {n_leaf} |"
             )
         lines.append(f"")
+
+        # 图连接统计
+        n_edges = len(result.edges)
+        n_intra = sum(1 for e in result.edges if e.source_tree_id == e.target_tree_id)
+        n_inter = n_edges - n_intra
+        lines.append(f"### 图连接统计")
+        lines.append(f"")
+        lines.append(f"| 指标 | 值 |")
+        lines.append(f"|------|----|")
+        lines.append(f"| 总边数 | {n_edges} |")
+        lines.append(f"| 树内边数 | {n_intra} |")
+        lines.append(f"| 树间边数 | {n_inter} |")
+        lines.append(f"")
+
+        # 所有 box 汇总（按体积降序，最多列出 20 个）
+        all_boxes = []
+        for tree in result.box_trees:
+            for node in tree.nodes.values():
+                all_boxes.append(node)
+        all_boxes.sort(key=lambda b: b.volume, reverse=True)
+        show_n = min(20, len(all_boxes))
+        if all_boxes:
+            lines.append(f"### Box 详情（前 {show_n}/{len(all_boxes)} 个，按体积降序）")
+            lines.append(f"")
+            hdr = "| # | 树 ID | 节点 ID | 体积 | 各维宽度 |"
+            lines.append(hdr)
+            lines.append("|" + "|".join("---" for _ in hdr.split("|")[1:-1]) + "|")
+            for idx, box in enumerate(all_boxes[:show_n]):
+                widths_str = ", ".join(f"{w:.3f}" for w in box.widths)
+                lines.append(
+                    f"| {idx} | {box.tree_id} | {box.node_id} "
+                    f"| {box.volume:.4f} | [{widths_str}] |"
+                )
+            lines.append(f"")
 
     # ── 6. 质量指标 ──
     if metrics is not None and result.success:
@@ -604,6 +623,8 @@ def main():
                         help="机器人配置名 (默认: 2dof_planar)")
     parser.add_argument("--n-obs", type=int, default=5,
                         help="障碍物数量 (默认: 5)")
+    parser.add_argument("--scene-json", type=str, default=None,
+                        help="加载已有场景 JSON (跳过随机生成)")
     parser.add_argument("--max-iter", type=int, default=500,
                         help="最大迭代数 (默认: 500)")
     parser.add_argument("--max-boxes", type=int, default=200,
@@ -651,7 +672,7 @@ def main():
     q_start = random_collision_free_config(robot, empty_scene, rng)
     q_goal = random_collision_free_config(robot, empty_scene, rng)
     # 确保始末点距离足够远（至少 2.0 rad），使场景具有实际规划难度
-    min_dist = 2.0
+    min_dist = 1.5
     attempts = 0
     while float(np.linalg.norm(q_goal - q_start)) < min_dist and attempts < 200:
         q_goal = random_collision_free_config(robot, empty_scene, rng)
@@ -660,45 +681,67 @@ def main():
     logger.info("  完成 (%.3fs, %d 次重采样)", time.time() - t_step, attempts)
 
     # ────────────────────────────────────────────────────────
-    # Step 3: 随机生成场景（利用始末点信息放置阻挡障碍物）
+    # Step 3: 加载或随机生成场景
     # ────────────────────────────────────────────────────────
     logger.info("")
-    logger.info("▶ Step 3/7: 随机生成场景 (%d 个障碍物)", args.n_obs)
     t_step = time.time()
-    if is_planar:
-        scene = random_scene_2d(robot, args.n_obs, rng,
-                                q_start=q_start, q_goal=q_goal)
-    else:
-        scene = random_scene_3d(robot, args.n_obs, rng)
-    # 验证始末点在新场景中仍然无碰撞；若碰撞则移除冲突障碍物
+
     from planner.collision import CollisionChecker as _CC
+
+    if args.scene_json:
+        logger.info("▶ Step 3/7: 从 JSON 加载场景: %s", args.scene_json)
+        scene = Scene.from_json(args.scene_json)
+    else:
+        logger.info("▶ Step 3/7: 随机生成场景 (%d 个障碍物)", args.n_obs)
+        if is_planar:
+            scene = random_scene_2d(robot, args.n_obs, rng)
+        else:
+            scene = random_scene_3d(robot, args.n_obs, rng)
+
+    # 移除与始末点冲突的障碍物
     _checker = _CC(robot, scene)
-    removed = []
+    _removed: list[str] = []
     while _checker.check_config_collision(q_start) or \
           _checker.check_config_collision(q_goal):
-        # 移除最后添加的障碍物并重试
         obs_list = scene.get_obstacles()
         if not obs_list:
             break
         last = obs_list[-1]
         scene.remove_obstacle(last.name)
-        removed.append(last.name)
+        _removed.append(last.name)
         _checker = _CC(robot, scene)
-    if removed:
-        logger.info("  移除了 %d 个与始末点冲突的障碍物: %s",
-                     len(removed), ", ".join(removed))
+    if _removed:
+        logger.info("  移除了 %d 个冲突障碍物: %s",
+                     len(_removed), ", ".join(_removed))
+
     scene_text = log_scene_info(scene)
-    # 保存场景 JSON
-    scene_json = str(output_dir / "scene.json")
-    scene.to_json(scene_json)
-    logger.info("  场景 JSON 已保存到 %s", scene_json)
+    # 场景 JSON — 同时嵌入 robot_name 方便跨任务复用
+    scene_json_path = str(output_dir / "scene.json")
+    scene.to_json(scene_json_path)
+    # 在 scene.json 中追加 robot_name 元信息
+    import json as _json
+    with open(scene_json_path, 'r', encoding='utf-8') as _f:
+        _sdata = _json.load(_f)
+    _sdata['robot_name'] = robot.name
+    _sdata['robot_config'] = args.robot
+    with open(scene_json_path, 'w', encoding='utf-8') as _f:
+        _json.dump(_sdata, _f, indent=2, ensure_ascii=False)
+    logger.info("  场景 JSON 已保存到 %s (含 robot_name)", scene_json_path)
     logger.info("  完成 (%.3fs)", time.time() - t_step)
 
     # ────────────────────────────────────────────────────────
-    # Step 4: 配置规划器
+    # Step 4: 配置规划器 + 加载 AABB 缓存
     # ────────────────────────────────────────────────────────
     logger.info("")
     logger.info("▶ Step 4/7: 配置规划器")
+
+    # 自动加载该机器人的 AABB 包络缓存
+    aabb_cache = AABBCache.auto_load(robot)
+    cache_stats_before = aabb_cache.get_stats(robot)
+    logger.info("  AABB 缓存: interval=%d, numerical=%d",
+                cache_stats_before.get('interval', 0),
+                cache_stats_before.get('numerical', 0))
+
     config = PlannerConfig(
         max_iterations=args.max_iter,
         max_box_nodes=args.max_boxes,
@@ -710,12 +753,11 @@ def main():
         connection_max_attempts=80,
         path_shortcut_iters=200,
         segment_collision_resolution=0.03,
-        use_aabb_cache=False,
+        use_aabb_cache=True,
         verbose=True,
     )
     config_text = log_planner_config(config)
-
-    planner = BoxRRT(robot, scene, config)
+    planner = BoxRRT(robot, scene, config, aabb_cache=aabb_cache)
 
     # ────────────────────────────────────────────────────────
     # Step 5: 执行规划
@@ -728,6 +770,29 @@ def main():
     dt_plan = time.time() - t_plan
     result_text = log_planner_result(result)
     logger.info("  规划耗时: %.3f s", dt_plan)
+
+    # 自动保存更新后的 AABB 缓存
+    cache_stats_after = aabb_cache.get_stats(robot)
+    delta_i = cache_stats_after.get('interval', 0) - cache_stats_before.get('interval', 0)
+    delta_n = cache_stats_after.get('numerical', 0) - cache_stats_before.get('numerical', 0)
+    if delta_i > 0 or delta_n > 0:
+        cache_path = aabb_cache.auto_save(robot)
+        logger.info("  AABB 缓存已更新: +%d interval, +%d numerical → %s",
+                    delta_i, delta_n, cache_path)
+    else:
+        logger.info("  AABB 缓存无新增条目，跳过保存")
+
+    # 保存路径 JSON（方便后续交互式可视化回放）
+    path_json_path: str | None = None
+    if result.success:
+        path_json_path = result.save_path(
+            output_dir / "path.json",
+            robot_config=args.robot,
+            scene_json=scene_json_path,
+            q_start=q_start,
+            q_goal=q_goal,
+        )
+        logger.info("  路径 JSON 已保存到 %s", path_json_path)
 
     # ────────────────────────────────────────────────────────
     # Step 6: 评估质量指标
@@ -784,6 +849,10 @@ def main():
     logger.info("  报告    : %s", report_path)
     for f in saved_files:
         logger.info("  图片    : %s", os.path.basename(f))
+    if path_json_path:
+        logger.info("  路径 JSON: %s", path_json_path)
+        logger.info("")
+        logger.info("  📺 交互式回放: python -m examples.view_path %s", path_json_path)
     logger.info("=" * 60)
 
 

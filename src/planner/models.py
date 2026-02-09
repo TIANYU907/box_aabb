@@ -5,7 +5,9 @@ planner/models.py - 规划器数据模型
 PlannerConfig、PlannerResult、Edge。
 """
 
+import json
 import numpy as np
+from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -308,3 +310,81 @@ class PlannerResult:
             length += float(np.linalg.norm(self.path[i] - self.path[i - 1]))
         self.path_length = length
         return length
+
+    # ── 路径序列化 ─────────────────────────────────────────
+
+    def save_path(
+        self,
+        filepath: str | Path,
+        robot_config: str = "",
+        scene_json: str = "",
+        q_start: Optional[np.ndarray] = None,
+        q_goal: Optional[np.ndarray] = None,
+    ) -> str:
+        """将规划路径保存为 JSON 文件
+
+        Args:
+            filepath: 输出 JSON 路径
+            robot_config: 机器人配置名称 (如 'panda')
+            scene_json: 关联的场景 JSON 路径
+            q_start: 起点配置 (可选, 默认取 path[0])
+            q_goal: 终点配置 (可选, 默认取 path[-1])
+
+        Returns:
+            保存的文件路径字符串
+        """
+        filepath = Path(filepath)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        data: Dict[str, Any] = {
+            "robot_config": robot_config,
+            "scene_json": str(scene_json) if scene_json else "",
+            "success": self.success,
+            "path": [q.tolist() for q in self.path],
+            "n_waypoints": len(self.path),
+            "path_length": self.path_length,
+            "computation_time": self.computation_time,
+            "n_boxes_created": self.n_boxes_created,
+            "n_collision_checks": self.n_collision_checks,
+            "message": self.message,
+            "timestamp": self.timestamp,
+        }
+        if q_start is not None:
+            data["q_start"] = np.asarray(q_start).tolist()
+        elif self.path:
+            data["q_start"] = self.path[0].tolist()
+        if q_goal is not None:
+            data["q_goal"] = np.asarray(q_goal).tolist()
+        elif len(self.path) >= 2:
+            data["q_goal"] = self.path[-1].tolist()
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+        return str(filepath)
+
+    @staticmethod
+    def load_path(filepath: str | Path) -> Dict[str, Any]:
+        """从 JSON 文件加载规划路径
+
+        Args:
+            filepath: 路径 JSON 文件
+
+        Returns:
+            字典, 包含:
+              - robot_config (str)
+              - scene_json (str)
+              - path (List[np.ndarray])
+              - path_length (float)
+              - 及其它元数据
+        """
+        filepath = Path(filepath)
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        data['path'] = [np.array(q, dtype=np.float64) for q in data['path']]
+        if 'q_start' in data:
+            data['q_start'] = np.array(data['q_start'], dtype=np.float64)
+        if 'q_goal' in data:
+            data['q_goal'] = np.array(data['q_goal'], dtype=np.float64)
+        return data
