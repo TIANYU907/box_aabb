@@ -238,14 +238,24 @@ def visualize(
     trees = manager.get_all_trees()
     tree_colors = cm.Set3(np.linspace(0, 1, max(len(trees), 1)))
 
-    total_box_area = 0.0
+    # ── 用栅格法计算 box 真实 union 覆盖面积（去重）──
+    box_mask = np.zeros_like(collision_map, dtype=bool)   # same grid as collision_map
+    cell_area = resolution * resolution
+
+    total_box_area_raw = 0.0   # 未去重的 box 面积之和（仅用于信息展示）
     for t_idx, tree in enumerate(trees):
         color = tree_colors[t_idx % len(tree_colors)]
         for box in tree.nodes.values():
             lo0, hi0 = box.joint_intervals[0]
             lo1, hi1 = box.joint_intervals[1]
             w, h = hi0 - lo0, hi1 - lo1
-            total_box_area += w * h
+            total_box_area_raw += w * h
+            # 在 grid 上标记此 box 覆盖的像素
+            j0 = max(int((lo0 - lo_x) / resolution), 0)
+            j1 = min(int(np.ceil((hi0 - lo_x) / resolution)), len(xs))
+            i0 = max(int((lo1 - lo_y) / resolution), 0)
+            i1 = min(int(np.ceil((hi1 - lo_y) / resolution)), len(ys))
+            box_mask[i0:i1, j0:j1] = True
             rect = Rectangle(
                 (lo0, lo1), w, h,
                 linewidth=0.6, edgecolor=color, facecolor=color, alpha=0.30)
@@ -255,7 +265,9 @@ def visualize(
                      '.', color=color, markersize=2, alpha=0.7)
 
     cspace_area = (hi_x - lo_x) * (hi_y - lo_y)
-    coverage = total_box_area / cspace_area * 100
+    union_pixels = int(np.sum(box_mask))
+    coverage = union_pixels / n_total * 100        # 去重后的真实覆盖率
+    coverage_raw = total_box_area_raw / cspace_area * 100  # 未去重（含重叠）
 
     ax2.set_xlim(lo_x - 0.1, hi_x + 0.1)
     ax2.set_ylim(lo_y - 0.1, hi_y + 0.1)
@@ -263,7 +275,8 @@ def visualize(
     ax2.set_ylabel('q1 (rad)')
     ax2.set_title(
         f'C-Space Box Tree  ({manager.total_nodes} boxes, '
-        f'{manager.n_trees} trees, coverage={coverage:.1f}%)')
+        f'{manager.n_trees} trees, coverage={coverage:.1f}%, '
+        f'raw={coverage_raw:.1f}%)')
     ax2.set_aspect('equal')
     ax2.grid(True, alpha=0.2)
     p2 = output_dir / "cspace_boxes.png"
@@ -311,7 +324,7 @@ def visualize(
     plt.close(fig3)
     logger.info("  保存: %s", p3)
 
-    return [str(p1), str(p2), str(p3)], coverage, free_ratio
+    return [str(p1), str(p2), str(p3)], coverage, coverage_raw, free_ratio
 
 
 # ─────────────────────────────────────────────────────────
@@ -390,7 +403,7 @@ def main():
     # 4. 可视化
     logger.info("")
     logger.info("▶ 生成可视化 ...")
-    saved_files, coverage, free_ratio = visualize(
+    saved_files, coverage, coverage_raw, free_ratio = visualize(
         robot=robot,
         scene=scene,
         manager=manager,
@@ -412,8 +425,9 @@ def main():
         f"  树数量       : {manager.n_trees}",
         f"  Box 总数     : {manager.total_nodes}",
         f"  总体积       : {manager.get_total_volume():.4f}",
-        f"  C-space 覆盖 : {coverage:.1f}%",
-        f"  自由空间比例 : {free_ratio*100:.1f}%",
+        f"  C-space 覆盖 : {coverage:.1f}%  (去重 union)",
+        f"  C-space 覆盖(raw): {coverage_raw:.1f}%  (未去重，含 box 重叠)",
+        f"  自由空间比例 : {free_ratio*100:.1f}%  (grid 扫描)",
         f"  碰撞检测次数 : {n_checks}",
         "",
         f"  Box 体积  — mean={np.mean(volumes):.4f}  "
