@@ -6,8 +6,8 @@ test/planner/test_gcs_optimizer.py - GCS 优化器集成测试
 import pytest
 import numpy as np
 
-from box_aabb.planner.gcs_optimizer import GCSOptimizer, HAS_DRAKE, HAS_SCIPY
-from box_aabb.planner.models import BoxNode, Edge
+from planner.gcs_optimizer import GCSOptimizer, HAS_DRAKE, HAS_SCIPY
+from planner.models import BoxNode, Edge
 
 
 # ==================== Fixtures ====================

@@ -5,8 +5,8 @@ import os
 import numpy as np
 import pytest
 
-from box_aabb.planner.models import Obstacle
-from box_aabb.planner.obstacles import Scene
+from planner.models import Obstacle
+from planner.obstacles import Scene
 
 
 class TestObstacle:

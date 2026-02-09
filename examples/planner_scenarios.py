@@ -15,7 +15,7 @@ import time
 import numpy as np
 
 from box_aabb.robot import load_robot
-from box_aabb.planner import (
+from planner import (
     BoxRRT, Scene, PlannerConfig, PlannerResult,
     evaluate_result, PathMetrics, format_comparison_table,
 )
@@ -196,7 +196,7 @@ def main():
     try:
         import matplotlib
         matplotlib.use('TkAgg')
-        from box_aabb.planner.visualizer import (
+        from planner.visualizer import (
             plot_cspace_boxes, plot_workspace_result,
         )
 

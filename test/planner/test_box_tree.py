@@ -3,8 +3,8 @@ import math
 import numpy as np
 import pytest
 
-from box_aabb.planner.models import BoxNode, BoxTree
-from box_aabb.planner.box_tree import BoxTreeManager
+from planner.models import BoxNode, BoxTree
+from planner.box_tree import BoxTreeManager
 
 
 class TestBoxNode:

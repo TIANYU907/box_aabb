@@ -3,8 +3,8 @@ import math
 import numpy as np
 import pytest
 
-from box_aabb.planner.collision import CollisionChecker, aabb_overlap
-from box_aabb.planner.obstacles import Scene
+from planner.collision import CollisionChecker, aabb_overlap
+from planner.obstacles import Scene
 
 
 class TestAabbOverlap:

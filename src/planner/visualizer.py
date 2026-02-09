@@ -13,7 +13,7 @@ from typing import List, Dict, Optional, Tuple, Any
 
 import numpy as np
 
-from ..robot import Robot
+from box_aabb.robot import Robot
 from .models import BoxNode, BoxTree, PlannerResult, Obstacle
 from .obstacles import Scene
 from .collision import CollisionChecker

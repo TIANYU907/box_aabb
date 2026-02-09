@@ -1,7 +1,10 @@
 """
-box_aabb.planner - Box-RRT 机械臂避障路径规划
+planner - Box-RRT 机械臂避障路径规划
 
-基于关节区间(box)拓展的 RRT 路径规划算法。核心思路：
+独立于 box_aabb 的路径规划包，调用 box_aabb 提供的区间 AABB 计算
+和机器人运动学模型进行碰撞检测与区间拓展。
+
+核心思路：
 1. 在 C-space 中随机采样无碰撞 seed 点
 2. 启发式拓展 box（优先拓展雅可比范数小的方向）
 3. 在 box 边界上再采样 seed 点，继续拓展

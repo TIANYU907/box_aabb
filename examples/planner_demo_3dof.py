@@ -20,10 +20,10 @@ import math
 import numpy as np
 
 from box_aabb.robot import load_robot
-from box_aabb.planner import (
+from planner import (
     BoxRRT, Scene, PlannerConfig, PlannerResult,
 )
-from box_aabb.planner.visualizer import (
+from planner.visualizer import (
     plot_cspace_boxes,
     plot_cspace_with_collision,
     plot_workspace_result,
@@ -81,7 +81,7 @@ def main():
     print(f"终点: q = [{q_goal[0]:.3f}, {q_goal[1]:.3f}, {q_goal[2]:.3f}]")
 
     # 验证起终点
-    from box_aabb.planner.collision import CollisionChecker
+    from planner.collision import CollisionChecker
     checker = CollisionChecker(robot, scene)
     assert not checker.check_config_collision(q_start), "起点有碰撞！"
     assert not checker.check_config_collision(q_goal), "终点有碰撞！"

@@ -17,7 +17,7 @@ Panda 特性:
 import numpy as np
 
 from box_aabb.robot import load_robot
-from box_aabb.planner import (
+from planner import (
     BoxRRT, Scene, PlannerConfig, PlannerResult,
     evaluate_result,
 )
@@ -82,7 +82,7 @@ def main():
     print(f"终点: q = {np.array2string(q_goal[:7], precision=3)}")
 
     # 验证起终点无碰撞
-    from box_aabb.planner.collision import CollisionChecker
+    from planner.collision import CollisionChecker
     checker = CollisionChecker(robot, scene)
     start_collision = checker.check_config_collision(q_start)
     goal_collision = checker.check_config_collision(q_goal)

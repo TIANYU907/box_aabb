@@ -28,7 +28,7 @@ all = ["box-aabb[optimize,viz]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["box_aabb*"]
+include = ["box_aabb*", "planner*"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]

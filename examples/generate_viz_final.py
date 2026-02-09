@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import numpy as np
 from box_aabb.robot import load_robot
-from box_aabb.planner import BoxRRT, Scene, PlannerConfig, evaluate_result
-from box_aabb.planner.visualizer import (
+from planner import BoxRRT, Scene, PlannerConfig, evaluate_result
+from planner.visualizer import (
     plot_cspace_boxes, plot_workspace_result, plot_cspace_with_collision)
 
 D = os.path.dirname(__file__)

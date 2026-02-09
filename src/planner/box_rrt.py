@@ -23,7 +23,7 @@ from typing import List, Tuple, Optional
 
 import numpy as np
 
-from ..robot import Robot
+from box_aabb.robot import Robot
 from .models import PlannerConfig, PlannerResult, BoxNode
 from .obstacles import Scene
 from .collision import CollisionChecker

@@ -14,10 +14,10 @@ import math
 import numpy as np
 
 from box_aabb.robot import load_robot
-from box_aabb.planner import (
+from planner import (
     BoxRRT, Scene, PlannerConfig, PlannerResult,
 )
-from box_aabb.planner.visualizer import (
+from planner.visualizer import (
     plot_cspace_boxes,
     plot_cspace_with_collision,
     plot_workspace_result,

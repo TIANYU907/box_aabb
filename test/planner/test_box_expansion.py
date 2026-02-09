@@ -3,10 +3,10 @@ import math
 import numpy as np
 import pytest
 
-from box_aabb.planner.box_expansion import BoxExpander
-from box_aabb.planner.collision import CollisionChecker
-from box_aabb.planner.obstacles import Scene
-from box_aabb.planner.models import BoxNode
+from planner.box_expansion import BoxExpander
+from planner.collision import CollisionChecker
+from planner.obstacles import Scene
+from planner.models import BoxNode
 
 
 class TestBoxExpander:

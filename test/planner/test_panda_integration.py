@@ -10,11 +10,11 @@ import pytest
 import numpy as np
 
 from box_aabb.robot import load_robot
-from box_aabb.planner import (
+from planner import (
     BoxRRT, Scene, PlannerConfig, PlannerResult,
     CollisionChecker, BoxExpander, BoxTreeManager,
 )
-from box_aabb.planner.path_smoother import compute_path_length
+from planner.path_smoother import compute_path_length
 
 
 # ==================== Panda Fixtures ====================

@@ -4,14 +4,14 @@ import numpy as np
 import pytest
 
 from box_aabb.robot import load_robot
-from box_aabb.planner.models import PlannerConfig, BoxNode, Edge
-from box_aabb.planner.obstacles import Scene
-from box_aabb.planner.collision import CollisionChecker
-from box_aabb.planner.box_expansion import BoxExpander
-from box_aabb.planner.box_tree import BoxTreeManager
-from box_aabb.planner.connector import TreeConnector
-from box_aabb.planner.path_smoother import PathSmoother, compute_path_length
-from box_aabb.planner.box_rrt import BoxRRT
+from planner.models import PlannerConfig, BoxNode, Edge
+from planner.obstacles import Scene
+from planner.collision import CollisionChecker
+from planner.box_expansion import BoxExpander
+from planner.box_tree import BoxTreeManager
+from planner.connector import TreeConnector
+from planner.path_smoother import PathSmoother, compute_path_length
+from planner.box_rrt import BoxRRT
 
 
 class TestPathSmoother:

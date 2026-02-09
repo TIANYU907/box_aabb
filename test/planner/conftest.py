@@ -4,11 +4,11 @@ import pytest
 import numpy as np
 
 from box_aabb.robot import Robot, load_robot
-from box_aabb.planner.obstacles import Scene
-from box_aabb.planner.collision import CollisionChecker
-from box_aabb.planner.box_expansion import BoxExpander
-from box_aabb.planner.box_tree import BoxTreeManager
-from box_aabb.planner.models import PlannerConfig
+from planner.obstacles import Scene
+from planner.collision import CollisionChecker
+from planner.box_expansion import BoxExpander
+from planner.box_tree import BoxTreeManager
+from planner.models import PlannerConfig
 
 
 # ==================== 2DOF 平面机械臂 ====================

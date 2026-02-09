@@ -41,9 +41,11 @@
 本项目实现的 **Box-RRT** 算法，借鉴了 Marcucci et al. 在 *Science Robotics* (2023) 上提出的 **Graph of Convex Sets (GCS)** 框架思想：
 
 - 在关节空间（C-space）中将无碰撞区域分解为一组**凸超矩形（box）**
-- 使用 **区间/仿射算术** 保守验证 box 的无碰撞性
+- 调用 **`box_aabb`** 库提供的 **区间/仿射算术** 和 **区间正运动学** 保守验证 box 的无碰撞性
 - 在 box 之间建立连接构成 **凸集图**
 - 在图上搜索/优化"经过凸集序列"的最短路径
+
+> **架构关系**: `planner` 是独立于 `box_aabb` 的 Python 包。planner 通过 `from box_aabb.robot import Robot` 和 `from box_aabb.interval_fk import compute_interval_aabb` 调用 box_aabb 的机器人模型和区间 FK 能力。
 
 ### 1.2 核心特性
 
@@ -61,14 +63,24 @@
 ## 2. 系统架构
 
 ```
-box_aabb/
-├── interval_math.py         # 仿射算术引擎 (Interval, AffineForm)
-├── interval_fk.py           # 区间正运动学
-├── robot.py                 # Modified DH 机器人模型
-└── planner/
+src/
+├── box_aabb/                # 区间 AABB 计算库（被 planner 调用）
+│   ├── __init__.py
+│   ├── aabb_calculator.py
+│   ├── interval_fk.py       # 区间正运动学
+│   ├── interval_math.py     # 仿射算术引擎
+│   ├── models.py
+│   ├── optimization.py
+│   ├── report.py
+│   ├── robot.py             # Modified DH 机器人模型
+│   ├── visualizer.py
+│   ├── configs/
+│   └── strategies/
+└── planner/                 # ★ 独立路径规划包（调用 box_aabb）
+    ├── __init__.py
     ├── models.py            # 数据模型 (BoxNode, BoxTree, Edge, ...)
     ├── obstacles.py         # 障碍物场景管理 (Scene)
-    ├── collision.py         # 碰撞检测 (点/box/线段/采样)
+    ├── collision.py         # 碰撞检测 (调用 box_aabb.interval_fk)
     ├── box_expansion.py     # 启发式 Box 拓展
     ├── box_tree.py          # Box 树管理
     ├── box_rrt.py           # ★ 主规划器入口 (BoxRRT)
@@ -80,20 +92,21 @@ box_aabb/
     └── parallel_collision.py # 并行碰撞检测 + 空间索引
 ```
 
-**依赖关系图**:
+**依赖关系图**（planner 调用 box_aabb）:
 
 ```
+  planner 包                              box_aabb 包
+  ─────────                              ──────────
                      BoxRRT (box_rrt.py)
                     /    |    |    \     \
          BoxExpander  TreeMgr Connector  Smoother  GCSOptimizer
               |         |        |          |           |
        CollisionChecker  BoxTree  CollisionChecker  Dijkstra/Drake
               |
-     interval_fk.py
-              |
-     interval_math.py (AffineForm, smart_sin/cos)
-              |
-        robot.py (Modified DH FK)
+              ├─── box_aabb.interval_fk.compute_interval_aabb()
+              └─── box_aabb.robot.Robot
+                        |
+                   box_aabb.interval_math (AffineForm, smart_sin/cos)
 ```
 
 ---
@@ -571,7 +584,7 @@ $$x \cdot y = x_0 y_0 + \sum_i (x_0 y_i + y_0 x_i) \varepsilon_i + \delta \varep
 
 ```python
 from box_aabb.robot import load_robot
-from box_aabb.planner import BoxRRT, Scene, PlannerConfig
+from planner import BoxRRT, Scene, PlannerConfig
 
 # 加载机器人
 robot = load_robot('panda')  # 或 '3dof_planar'
@@ -598,7 +611,7 @@ if result.success:
 ### 7.2 可视化
 
 ```python
-from box_aabb.planner.visualizer import plot_cspace_boxes, plot_workspace_result
+from planner.visualizer import plot_cspace_boxes, plot_workspace_result
 
 # C-space box 投影
 fig1 = plot_cspace_boxes(result, joint_limits=robot.joint_limits,
@@ -613,7 +626,7 @@ fig2.savefig("workspace.png")
 ### 7.3 评价指标
 
 ```python
-from box_aabb.planner import evaluate_result
+from planner import evaluate_result
 
 metrics = evaluate_result(result, robot, scene)
 print(metrics.summary())

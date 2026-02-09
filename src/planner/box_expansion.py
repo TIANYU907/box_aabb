@@ -16,7 +16,7 @@ from typing import List, Tuple, Optional
 
 import numpy as np
 
-from ..robot import Robot
+from box_aabb.robot import Robot
 from .collision import CollisionChecker
 from .models import BoxNode
 

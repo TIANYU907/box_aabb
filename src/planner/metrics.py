@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ..robot import Robot
+from box_aabb.robot import Robot
 from .models import PlannerResult, BoxNode
 from .obstacles import Scene
 from .collision import CollisionChecker

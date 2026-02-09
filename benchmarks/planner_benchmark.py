@@ -22,12 +22,12 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from box_aabb.robot import load_robot, Robot
-from box_aabb.planner import (
+from planner import (
     BoxRRT, Scene, PlannerConfig, PlannerResult,
     CollisionChecker, BoxExpander, BoxTreeManager,
     evaluate_result, PathMetrics, format_comparison_table,
 )
-from box_aabb.planner.parallel_collision import ParallelCollisionChecker
+from planner.parallel_collision import ParallelCollisionChecker
 
 
 # ==================== 配置 ====================
