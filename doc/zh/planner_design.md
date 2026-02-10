@@ -1,6 +1,6 @@
 # Box-RRT 路径规划器 — 设计与实现文档
 
-> **版本**: v4.0.0 &nbsp;|&nbsp; **日期**: 2026-02-08 &nbsp;|&nbsp; **机器人支持**: 2/3DOF 平面 + Panda 7DOF
+> **版本**: v4.1.0 &nbsp;|&nbsp; **日期**: 2026-02-10 &nbsp;|&nbsp; **机器人支持**: 2/3DOF 平面 + Panda 7DOF
 
 ---
 
@@ -60,10 +60,13 @@
 |------|------|
 | 保守碰撞检测 | 基于仿射算术的区间 FK，确保 `check_box_collision=False` 时 box 绝对无碰撞 |
 | 采样辅助拓展 | 高自由度（>4DOF）时自动启用 hybrid 模式：区间 FK 判碰撞后用采样复核 |
+| 平衡拓展策略 | v4.1 默认 balanced 策略，交替步进避免 box 细长（宽度比中位数 4.1 vs greedy 48.5） |
 | 启发式维度排序 | 按 Jacobian 列范数排序，优先拓展对末端影响小的关节 |
 | 多树并行生长 | 支持多棵 box tree 独立生长后连接 |
 | GCS 优化 | 支持 Drake GCS 凸优化（可选），默认 Dijkstra + scipy fallback |
 | 路径后处理 | Shortcut 优化 + 移动平均平滑，保证平滑后仍无碰撞 |
+| AABB 缓存 | v4.1 全局接入 BoxRRT/BoxForest/动画脚本，避免重复区间 FK |
+| JSON 配置 | PlannerConfig 支持 JSON 序列化，预设 2dof/panda 配置文件 |
 
 ---
 
@@ -88,7 +91,7 @@ src/
     ├── models.py            # 数据模型 (BoxNode, BoxTree, Edge, ...)
     ├── obstacles.py         # 障碍物场景管理 (Scene)
     ├── collision.py         # 碰撞检测 (调用 box_aabb.interval_fk)
-    ├── box_expansion.py     # 启发式 Box 拓展
+    ├── box_expansion.py     # Box 拓展（balanced/greedy 策略）
     ├── box_tree.py          # Box 树管理
     ├── box_rrt.py           # ★ 主规划器入口 (BoxRRT)
     ├── connector.py         # 树间/始末点连接
@@ -97,7 +100,7 @@ src/
     ├── metrics.py           # 路径评价指标
     ├── visualizer.py        # C-space / workspace 可视化
     ├── parallel_collision.py # 并行碰撞检测 + 空间索引
-    ├── aabb_cache.py        # ★ AABB 缓存系统 (v4.0)
+    ├── aabb_cache.py        # ★ AABB 缓存系统 (v4.0, v4.1 全局接入)
     ├── box_forest.py        # ★ 可复用 BoxForest (v4.0)
     ├── box_query.py         # Forest 查询规划 (v4.0)
     ├── dynamic_visualizer.py # 动态可视化动画 (v4.0)
@@ -167,14 +170,18 @@ plan(q_start, q_goal)
 ```
 1. 在 seed 处计算数值 Jacobian
 2. 按 ||∂p/∂qi|| 从小到大排列维度
-3. for round in max_rounds:
-     for dim in dimension_order:
-       向正/负方向各做二分搜索:
-         test_intervals[dim] = (lo, mid) 或 (mid, hi)
-         if check_collision(test_intervals) == False:
-           safe = mid  // 安全边界拓展
-         else:
-           test = mid  // 缩小搜索范围
+3. if strategy == 'balanced':
+     _expand_balanced():
+       候选池 = {(dim, +1), (dim, -1)} for all dims
+       for step in max_steps:
+         评估所有候选的体积增益
+         执行最优候选（自适应步长 + 二分精炼）
+         淘汰已耗尽候选
+   else:  # greedy
+     _expand_greedy():
+       for round in max_rounds:
+         for dim in dimension_order:
+           向正/负方向各做二分搜索到碰撞边界
 4. 返回 BoxNode(intervals)
 ```
 
@@ -204,7 +211,7 @@ if interval_result == True && use_sampling == True:
 | `BoxNode` | C-space 无碰撞 box 节点 | `joint_intervals`, `seed_config`, `volume`, `tree_id` |
 | `BoxTree` | Box 树结构 | `nodes: Dict[int, BoxNode]`, `root_id` |
 | `Edge` | 两个 box 之间的连接边 | `source_box_id`, `target_box_id`, `source_config`, `target_config`, `cost` |
-| `PlannerConfig` | 规划器参数配置 | 15 个可调参数（见下表） |
+| `PlannerConfig` | 规划器参数配置 | 25+ 个可调参数（见下表），支持 JSON 文件加载 |
 | `PlannerResult` | 规划结果 | `success`, `path`, `box_trees`, `edges`, `computation_time` |
 
 **BoxNode 关键方法**:
@@ -224,15 +231,31 @@ if interval_result == True && use_sampling == True:
 | `min_box_volume` | 1e-6 | box 体积下限 |
 | `goal_bias` | 0.1 | 目标偏向采样概率 |
 | `expansion_resolution` | 0.01 | 二分搜索精度 (rad) |
-| `max_expansion_rounds` | 3 | box 拓展最大轮数 |
+| `max_expansion_rounds` | 3 | greedy 策略 box 拓展最大轮数 |
 | `jacobian_delta` | 0.01 | Jacobian 数值差分步长 |
+| `min_initial_half_width` | 0.001 | box 初始半宽 (rad) |
+| `expansion_strategy` | `'balanced'` | 拓展策略：`'balanced'` 或 `'greedy'` |
+| `balanced_step_fraction` | 0.5 | balanced 每步推进剩余空间的比例 |
+| `balanced_max_steps` | 200 | balanced 策略最大步数 |
+| `use_sampling` | None (自动) | hybrid 碰撞检测：`None`=自动, `True`=启用, `False`=关闭 |
+| `sampling_n` | 80 | hybrid 碰撞检测采样数 |
 | `segment_collision_resolution` | 0.05 | 线段碰撞检测间隔 |
 | `connection_max_attempts` | 50 | 树间连接最大尝试次数 |
 | `connection_radius` | 2.0 | 连接搜索半径 (rad) |
 | `path_shortcut_iters` | 100 | Shortcut 优化迭代次数 |
 | `use_gcs` | False | 是否使用 Drake GCS |
 | `gcs_bezier_degree` | 3 | Bézier 曲线阶数 |
+| `use_aabb_cache` | True | 是否启用 AABB 缓存 |
 | `verbose` | False | 详细日志 |
+
+**JSON 配置化** (v4.1):
+```python
+# 保存 / 加载
+config.to_json("my_config.json")
+config = PlannerConfig.from_json("src/planner/configs/panda.json")
+
+# 预设配置: default.json, 2dof_planar.json, panda.json
+```
 
 ---
 
@@ -263,16 +286,31 @@ if interval_result == True && use_sampling == True:
 
 ### 4.3 Box 拓展 (box_expansion.py)
 
-**文件**: `src/box_aabb/planner/box_expansion.py` — ~310 行
+**文件**: `src/planner/box_expansion.py` — ~750 行
 
 `BoxExpander` 类实现从 seed 配置启发式拓展无碰撞 box 的核心逻辑。
 
-**拓展策略**:
+**两种拓展策略** (v4.1):
 
-1. **Jacobian 启发式维度排序**: 在 seed 处数值计算 $\|{\partial p}/{\partial q_i}\|$，范数越小说明该关节变化对末端位置影响越小，优先拓展
-2. **逐维度二分搜索**: 对每个维度分别向正/负方向二分搜索碰撞边界（最多 50 步，精度 `resolution`）
-3. **多轮迭代**: 第一轮拓展后，先拓展的维度可能有了更大空间，执行第二轮
-4. **体积收敛停止**: 若新一轮体积增长 < 0.1%，提前停止
+#### Balanced 策略（默认）
+
+维护 $2n$ 个候选方向（每维度 ±），每步选体积增益最大的方向推进一个自适应小步（`remaining × step_fraction`）。解决了 greedy 策略导致 box 形状极度细长的问题。
+
+```
+for step in max_steps:
+    评估所有候选方向的体积增益
+    执行增益最大的候选
+    移除已耗尽的候选
+```
+
+- 宽度比中位数：greedy 48.5 → **balanced 4.1**（改善 12 倍）
+
+#### Greedy 策略（旧版）
+
+1. **Jacobian 启发式维度排序**: 在 seed 处数值计算 $\|{\partial p}/{\partial q_i}\|$，范数越小优先拓展
+2. **逐维度二分搜索**: 对每个维度分别向正/负方向一次性搜索到碰撞边界
+3. **多轮迭代**: 重复直到体积不再增长
+4. **缺陷**: 先扩展维度占据过宽区间，导致后续维度区间 FK 严重过估计
 
 **Hybrid 模式** (高 DOF 自动启用):
 
@@ -326,7 +364,7 @@ def _check_collision(self, test_intervals):
 
 **构造函数** 自动配置：
 - `CollisionChecker` — 碰撞检测器
-- `BoxExpander` — Box 拓展器（高 DOF 自动启用采样）
+- `BoxExpander` — Box 拓展器（支持 balanced/greedy 策略，高 DOF 自动启用采样）
 - `BoxTreeManager` — 树管理器
 - `TreeConnector` — 树间连接器
 - `PathSmoother` — 路径平滑器

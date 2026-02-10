@@ -146,6 +146,27 @@ class BoxNode:
                 return False
         return True
 
+    def overlap_volume(self, other: 'BoxNode') -> float:
+        """计算与另一个 box 的交集体积
+
+        对每个维度取区间交集 [max(lo1,lo2), min(hi1,hi2)]，
+        若任意维度交集为空则返回 0。
+
+        Args:
+            other: 另一个 BoxNode
+
+        Returns:
+            交集区域的体积（超矩形体积）
+        """
+        vol = 1.0
+        for (lo1, hi1), (lo2, hi2) in zip(self.joint_intervals, other.joint_intervals):
+            lo = max(lo1, lo2)
+            hi = min(hi1, hi2)
+            if lo >= hi:
+                return 0.0
+            vol *= (hi - lo)
+        return vol
+
     def nearest_point_to(self, config: np.ndarray) -> np.ndarray:
         """返回 box 内离给定配置最近的点"""
         nearest = np.empty(self.n_dims)
@@ -236,6 +257,12 @@ class PlannerConfig:
         expansion_resolution: box 拓展时二分搜索精度
         max_expansion_rounds: box 拓展最大迭代轮数
         jacobian_delta: 计算 Jacobian 范数的数值差分步长
+        min_initial_half_width: box 初始半宽 (seed 两侧)
+        expansion_strategy: box 拓展策略 ('greedy' / 'balanced')
+        balanced_step_fraction: balanced 策略的初始比例步长 (0,1]
+        balanced_max_steps: balanced 策略最大步数
+        use_sampling: 是否使用采样辅助碰撞检测 (None=自动)
+        sampling_n: 采样辅助碰撞检测的采样数
         segment_collision_resolution: 线段碰撞检测采样间隔 (rad)
         connection_max_attempts: 树间连接最大尝试次数
         connection_radius: 树间连接最大搜索半径 (rad)
@@ -257,6 +284,12 @@ class PlannerConfig:
     expansion_resolution: float = 0.01
     max_expansion_rounds: int = 3
     jacobian_delta: float = 0.01
+    min_initial_half_width: float = 0.001
+    expansion_strategy: str = 'balanced'
+    balanced_step_fraction: float = 0.5
+    balanced_max_steps: int = 200
+    use_sampling: Optional[bool] = None
+    sampling_n: int = 80
     segment_collision_resolution: float = 0.05
     connection_max_attempts: int = 50
     connection_radius: float = 2.0
@@ -270,7 +303,54 @@ class PlannerConfig:
     forest_path: Optional[str] = None
     # v4.0 新增：自适应阈值与缓存
     interval_width_threshold: float = 1.0
-    use_aabb_cache: bool = False
+    use_aabb_cache: bool = True
+    # v4.2 新增：重叠惩罚
+    overlap_weight: float = 1.0
+
+    # ── JSON 序列化 ──
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转为字典"""
+        from dataclasses import fields as dc_fields
+        return {f.name: getattr(self, f.name) for f in dc_fields(self)}
+
+    def to_json(self, filepath: str | Path) -> str:
+        """保存到 JSON 文件
+
+        Args:
+            filepath: 输出路径
+
+        Returns:
+            保存的文件路径字符串
+        """
+        filepath = Path(filepath)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
+        return str(filepath)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PlannerConfig':
+        """从字典创建（忽略未知字段，缺失字段用默认值）"""
+        from dataclasses import fields as dc_fields
+        valid_fields = {f.name for f in dc_fields(cls)}
+        filtered = {k: v for k, v in data.items() if k in valid_fields}
+        return cls(**filtered)
+
+    @classmethod
+    def from_json(cls, filepath: str | Path) -> 'PlannerConfig':
+        """从 JSON 文件加载
+
+        Args:
+            filepath: JSON 配置文件路径
+
+        Returns:
+            PlannerConfig 实例
+        """
+        filepath = Path(filepath)
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return cls.from_dict(data)
 
 
 @dataclass

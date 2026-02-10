@@ -30,6 +30,7 @@ from .obstacles import Scene
 from .collision import CollisionChecker
 from .box_expansion import BoxExpander
 from .box_tree import BoxTreeManager
+from .aabb_cache import AABBCache
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ class BoxForest:
         config: Optional[PlannerConfig] = None,
         joint_limits: Optional[List[Tuple[float, float]]] = None,
         seed: Optional[int] = None,
+        aabb_cache: Optional[AABBCache] = None,
     ) -> 'BoxForest':
         """构建 Box 森林
 
@@ -81,6 +83,7 @@ class BoxForest:
             config: 规划参数
             joint_limits: 关节限制
             seed: 随机数种子
+            aabb_cache: AABB 包络缓存（可选，传入即启用）
 
         Returns:
             构建好的 BoxForest 实例
@@ -97,8 +100,17 @@ class BoxForest:
 
         n_dims = len(joint_limits)
 
-        checker = CollisionChecker(robot=robot, scene=scene)
-        _use_sampling = robot.n_joints > 4
+        # AABB 缓存
+        _cache = aabb_cache if config.use_aabb_cache else None
+
+        checker = CollisionChecker(robot=robot, scene=scene, aabb_cache=_cache)
+
+        # 自动决定是否启用采样辅助
+        if config.use_sampling is not None:
+            _use_sampling = config.use_sampling
+        else:
+            _use_sampling = robot.n_joints > 4
+
         expander = BoxExpander(
             robot=robot,
             collision_checker=checker,
@@ -107,6 +119,12 @@ class BoxForest:
             max_rounds=config.max_expansion_rounds,
             jacobian_delta=config.jacobian_delta,
             use_sampling=_use_sampling,
+            sampling_n=config.sampling_n,
+            min_initial_half_width=config.min_initial_half_width,
+            strategy=config.expansion_strategy,
+            balanced_step_fraction=config.balanced_step_fraction,
+            balanced_max_steps=config.balanced_max_steps,
+            overlap_weight=config.overlap_weight,
         )
         tree_mgr = BoxTreeManager()
 
@@ -128,7 +146,8 @@ class BoxForest:
                 continue
 
             node_id = tree_mgr.allocate_node_id()
-            box = expander.expand(q_seed, node_id=node_id, rng=rng)
+            box = expander.expand(q_seed, node_id=node_id, rng=rng,
+                                  existing_boxes=tree_mgr.get_all_boxes())
             if box is None or box.volume < config.min_box_volume:
                 continue
 
@@ -275,9 +294,12 @@ def _boundary_expand_forest(
             break
         if checker.check_config_collision(q_seed):
             continue
+        if tree_mgr.find_containing_box(q_seed) is not None:
+            continue
 
         node_id = tree_mgr.allocate_node_id()
-        new_box = expander.expand(q_seed, node_id=node_id, rng=rng)
+        new_box = expander.expand(q_seed, node_id=node_id, rng=rng,
+                                  existing_boxes=tree_mgr.get_all_boxes())
         if new_box is None or new_box.volume < config.min_box_volume:
             continue
 

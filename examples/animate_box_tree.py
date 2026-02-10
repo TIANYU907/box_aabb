@@ -31,7 +31,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 from box_aabb.robot import Robot, load_robot
-from planner.box_expansion import BoxExpander
+from planner.box_expansion import BoxExpander, ExpansionLog
 from planner.box_tree import BoxTreeManager
 from planner.collision import CollisionChecker
 from planner.models import BoxNode
@@ -54,6 +54,7 @@ class GrowthEvent:
     box: Optional[BoxNode] = None
     tree_id: int = -1
     source: str = 'random'  # 'random' / 'boundary'
+    expansion_log: Optional[ExpansionLog] = None  # 拓展详情日志
 
 
 @dataclass
@@ -107,6 +108,13 @@ def record_growth(
     max_rounds: int,
     seed_batch: int,
     rng_seed: int,
+    expansion_strategy: str = 'balanced',
+    balanced_step_fraction: float = 0.5,
+    balanced_max_steps: int = 200,
+    min_initial_half_width: float = 0.001,
+    use_sampling: bool = False,
+    sampling_n: int = 80,
+    overlap_weight: float = 1.0,
 ) -> Tuple[List[GrowthEvent], BoxTreeManager]:
     """运行 box forest 生长并记录所有事件"""
     rng = np.random.default_rng(rng_seed)
@@ -116,6 +124,13 @@ def record_growth(
         joint_limits=joint_limits,
         expansion_resolution=expansion_resolution,
         max_rounds=max_rounds,
+        min_initial_half_width=min_initial_half_width,
+        strategy=expansion_strategy,
+        balanced_step_fraction=balanced_step_fraction,
+        balanced_max_steps=balanced_max_steps,
+        use_sampling=use_sampling,
+        sampling_n=sampling_n,
+        overlap_weight=overlap_weight,
     )
     manager = BoxTreeManager()
     events: List[GrowthEvent] = []
@@ -135,7 +150,9 @@ def record_growth(
             continue
 
         nid = manager.allocate_node_id()
-        box = expander.expand(q, node_id=nid, rng=rng)
+        box = expander.expand(q, node_id=nid, rng=rng, enable_log=True,
+                              existing_boxes=manager.get_all_boxes())
+        exp_log = expander.get_last_log()
         if box is None or box.volume < 1e-6:
             events.append(GrowthEvent('reject_collision', q.copy()))
             continue
@@ -146,7 +163,8 @@ def record_growth(
         else:
             manager.create_tree(box)
         events.append(GrowthEvent('box_added', q.copy(), box=box,
-                                  tree_id=box.tree_id, source='random'))
+                                  tree_id=box.tree_id, source='random',
+                                  expansion_log=exp_log))
 
         # 边界重采样
         if box.tree_id >= 0 and manager.total_nodes < max_boxes:
@@ -160,7 +178,9 @@ def record_growth(
                 if manager.find_containing_box(qs) is not None:
                     continue
                 nid2 = manager.allocate_node_id()
-                child = expander.expand(qs, node_id=nid2, rng=rng)
+                child = expander.expand(qs, node_id=nid2, rng=rng, enable_log=True,
+                                        existing_boxes=manager.get_all_boxes())
+                child_log = expander.get_last_log()
                 if child is None or child.volume < 1e-6:
                     continue
                 nearest_in = manager.find_nearest_box_in_tree(box.tree_id, qs)
@@ -169,7 +189,8 @@ def record_growth(
                                     parent_id=nearest_in.node_id)
                 events.append(GrowthEvent('box_added', qs.copy(), box=child,
                                           tree_id=child.tree_id,
-                                          source='boundary'))
+                                          source='boundary',
+                                          expansion_log=child_log))
 
         if (iteration + 1) % 500 == 0:
             logger.info("  growth iter %d/%d: %d boxes",
@@ -354,11 +375,18 @@ def render_animation(
 
     # ── 视频写入器 ──
     import imageio
-    writer = imageio.get_writer(
-        str(output_path), fps=fps, codec='libx264',
-        quality=8,                        # 1-10, higher = better
-        output_params=['-pix_fmt', 'yuv420p'],  # 兼容性
-    )
+    try:
+        writer = imageio.get_writer(
+            str(output_path), fps=fps, codec='libx264',
+            quality=8,                        # 1-10, higher = better
+            output_params=['-pix_fmt', 'yuv420p'],  # 兼容性
+            format='FFMPEG',
+        )
+    except (ImportError, OSError):
+        # ffmpeg 不可用时 fallback 到 GIF
+        output_path = output_path.with_suffix('.gif')
+        logger.warning("ffmpeg not available, falling back to GIF: %s", output_path)
+        writer = imageio.get_writer(str(output_path), fps=fps, format='GIF')
 
     def capture():
         fig.canvas.draw()
@@ -559,6 +587,21 @@ def main():
                         help="视频帧率")
     parser.add_argument("--expansion-detail", type=int, default=20,
                         help="前 N 个 box 显示 3 帧拓展动画")
+    parser.add_argument("--expansion-strategy", type=str, default='balanced',
+                        choices=['balanced', 'greedy'],
+                        help="box 拓展策略")
+    parser.add_argument("--balanced-step-fraction", type=float, default=0.5,
+                        help="balanced 策略比例步长")
+    parser.add_argument("--balanced-max-steps", type=int, default=200,
+                        help="balanced 策略最大步数")
+    parser.add_argument("--min-initial-half-width", type=float, default=0.001,
+                        help="box 初始半宽")
+    parser.add_argument("--use-sampling", action='store_true', default=False,
+                        help="启用 hybrid 碰撞检测（num 方法生成 AABB）")
+    parser.add_argument("--sampling-n", type=int, default=80,
+                        help="hybrid 碰撞检测采样数")
+    parser.add_argument("--overlap-weight", type=float, default=1.0,
+                        help="重叠惩罚权重 (0=无惩罚, 1=纯新增体积, >1=激进去重)")
     args = parser.parse_args()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -606,11 +649,39 @@ def main():
         expansion_resolution=args.expansion_res,
         max_rounds=args.max_rounds,
         seed_batch=args.boundary_batch, rng_seed=args.seed,
+        expansion_strategy=args.expansion_strategy,
+        balanced_step_fraction=args.balanced_step_fraction,
+        balanced_max_steps=args.balanced_max_steps,
+        min_initial_half_width=args.min_initial_half_width,
+        use_sampling=args.use_sampling,
+        sampling_n=args.sampling_n,
+        overlap_weight=args.overlap_weight,
     )
     dt = time.time() - t0
     n_boxes = sum(1 for e in events if e.event_type == 'box_added')
     n_rej = sum(1 for e in events if e.event_type != 'box_added')
     logger.info("  生长完成: %d boxes, %d 拒绝, %.1fs", n_boxes, n_rej, dt)
+
+    # 3.5 写入拓展详情到独立文件
+    detail_path = output_dir / "expansion_detail.txt"
+    box_idx = 0
+    with open(detail_path, 'w', encoding='utf-8') as f:
+        f.write("Box Expansion Detail Report\n")
+        f.write(f"Generated: {datetime.now().isoformat()}\n")
+        f.write(f"Robot: {robot.name}, {robot.n_joints}DOF\n")
+        f.write(f"Seed: {args.seed}, Obstacles: {args.n_obs}\n")
+        f.write(f"Expansion resolution: {args.expansion_res} rad\n")
+        f.write(f"Max rounds: {args.max_rounds}\n")
+        f.write(f"Total boxes: {n_boxes}, Rejected: {n_rej}\n")
+        f.write("=" * 70 + "\n\n")
+        for evt in events:
+            if evt.event_type == 'box_added' and evt.expansion_log is not None:
+                f.write(f"[source: {evt.source}]  ")
+                f.write(f"tree_id={evt.tree_id}\n")
+                f.write(evt.expansion_log.to_text(box_index=box_idx))
+                f.write("\n")
+                box_idx += 1
+    logger.info("  拓展详情: %s (%d boxes)", detail_path, box_idx)
 
     # 4. 构建帧序列
     frames = build_frames(events, n_expansion_detail=args.expansion_detail)

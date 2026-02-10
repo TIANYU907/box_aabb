@@ -96,3 +96,119 @@ class TestBoxExpander:
         assert box1 is not None and box2 is not None
         # 中心应不同
         assert not np.allclose(box1.center, box2.center)
+
+
+class TestBoxNodeOverlapVolume:
+    """BoxNode.overlap_volume() 测试"""
+
+    def test_overlap_volume_identical(self):
+        """完全重合的两个 box，overlap_volume 等于自身体积"""
+        box = BoxNode(node_id=0, joint_intervals=[(0.0, 1.0), (0.0, 2.0)],
+                      seed_config=np.array([0.5, 1.0]))
+        vol = box.overlap_volume(box)
+        assert vol == pytest.approx(2.0, abs=1e-10)
+
+    def test_overlap_volume_no_overlap(self):
+        """不重叠的两个 box，overlap_volume = 0"""
+        a = BoxNode(node_id=0, joint_intervals=[(0.0, 1.0), (0.0, 1.0)],
+                    seed_config=np.array([0.5, 0.5]))
+        b = BoxNode(node_id=1, joint_intervals=[(2.0, 3.0), (0.0, 1.0)],
+                    seed_config=np.array([2.5, 0.5]))
+        assert a.overlap_volume(b) == 0.0
+
+    def test_overlap_volume_partial(self):
+        """部分重叠: [0,2]×[0,2] ∩ [1,3]×[1,3] = [1,2]×[1,2] = 1.0"""
+        a = BoxNode(node_id=0, joint_intervals=[(0.0, 2.0), (0.0, 2.0)],
+                    seed_config=np.array([1.0, 1.0]))
+        b = BoxNode(node_id=1, joint_intervals=[(1.0, 3.0), (1.0, 3.0)],
+                    seed_config=np.array([2.0, 2.0]))
+        assert a.overlap_volume(b) == pytest.approx(1.0, abs=1e-10)
+
+    def test_overlap_volume_contained(self):
+        """a 完全包含 b，overlap_volume = b 的体积"""
+        a = BoxNode(node_id=0, joint_intervals=[(0.0, 4.0), (0.0, 4.0)],
+                    seed_config=np.array([2.0, 2.0]))
+        b = BoxNode(node_id=1, joint_intervals=[(1.0, 2.0), (1.0, 2.0)],
+                    seed_config=np.array([1.5, 1.5]))
+        assert a.overlap_volume(b) == pytest.approx(1.0, abs=1e-10)
+
+    def test_overlap_volume_touch_edge(self):
+        """边界恰好相切（共享一条边），overlap_volume = 0"""
+        a = BoxNode(node_id=0, joint_intervals=[(0.0, 1.0), (0.0, 1.0)],
+                    seed_config=np.array([0.5, 0.5]))
+        b = BoxNode(node_id=1, joint_intervals=[(1.0, 2.0), (0.0, 1.0)],
+                    seed_config=np.array([1.5, 0.5]))
+        assert a.overlap_volume(b) == 0.0
+
+
+class TestOverlapAwareExpansion:
+    """测试 overlap-aware 拓展"""
+
+    def test_expand_with_existing_boxes_smaller(
+        self, robot_2dof, checker_2dof, joint_limits_2dof
+    ):
+        """有 existing_boxes 时，新 box 体积 ≤ 无 existing_boxes 时"""
+        seed = np.array([math.pi / 2, 0.0])
+        # 无重叠惩罚
+        expander0 = BoxExpander(
+            robot_2dof, checker_2dof, joint_limits_2dof,
+            expansion_resolution=0.02, strategy='balanced',
+            overlap_weight=0.0,
+        )
+        box_free = expander0.expand(seed, node_id=0)
+        assert box_free is not None
+
+        # 构造一个覆盖 seed 附近的大 existing box
+        big_box = BoxNode(
+            node_id=99,
+            joint_intervals=[(seed[0] - 0.5, seed[0] + 0.5),
+                             (seed[1] - 0.5, seed[1] + 0.5)],
+            seed_config=seed.copy(),
+        )
+
+        # 有重叠惩罚
+        expander1 = BoxExpander(
+            robot_2dof, checker_2dof, joint_limits_2dof,
+            expansion_resolution=0.02, strategy='balanced',
+            overlap_weight=1.0,
+        )
+        box_penalized = expander1.expand(seed, node_id=1,
+                                         existing_boxes=[big_box])
+        assert box_penalized is not None
+        # 有惩罚的 box 体积应 ≤ 无惩罚的
+        assert box_penalized.volume <= box_free.volume + 1e-6
+
+    def test_overlap_weight_zero_matches_legacy(
+        self, robot_2dof, checker_2dof, joint_limits_2dof
+    ):
+        """overlap_weight=0 应与不传 existing_boxes 结果相同"""
+        seed = np.array([math.pi / 2, 0.0])
+        rng1 = np.random.default_rng(42)
+        rng2 = np.random.default_rng(42)
+
+        expander = BoxExpander(
+            robot_2dof, checker_2dof, joint_limits_2dof,
+            expansion_resolution=0.02, strategy='balanced',
+            overlap_weight=0.0,
+        )
+
+        big_box = BoxNode(
+            node_id=99,
+            joint_intervals=[(seed[0] - 0.5, seed[0] + 0.5),
+                             (seed[1] - 0.5, seed[1] + 0.5)],
+            seed_config=seed.copy(),
+        )
+
+        box_no_list = expander.expand(seed, node_id=0, rng=rng1)
+        box_with_list = expander.expand(seed, node_id=1, rng=rng2,
+                                        existing_boxes=[big_box])
+        assert box_no_list is not None and box_with_list is not None
+        # overlap_weight=0 → existing_boxes 不影响
+        assert box_no_list.volume == pytest.approx(box_with_list.volume, rel=1e-6)
+
+    def test_expand_existing_boxes_default_none(self, expander_2dof):
+        """不传 existing_boxes 应正常工作（默认 None）"""
+        seed = np.array([math.pi / 2, 0.0])
+        box = expander_2dof.expand(seed, node_id=0)
+        assert box is not None
+        assert box.volume > 0

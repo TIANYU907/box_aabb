@@ -220,14 +220,15 @@ box_aabb/
 │   │   ├── visualizer.py         # Matplotlib 3D 可视化
 │   │   ├── configs/              # 机器人配置文件目录
 │   │   └── strategies/           # 采样策略 (critical/random/hybrid)
-│   └── planner/              # ★ 路径规划包 (v4.0)
+│   └── planner/              # ★ 路径规划包 (v4.1)
 │       ├── box_rrt.py            # 主规划器入口
 │       ├── collision.py          # 碰撞检测 (集成 AABB 缓存)
-│       ├── box_expansion.py      # Box 拓展
+│       ├── box_expansion.py      # Box 拓展 (balanced/greedy 策略)
 │       ├── box_tree.py           # Box 树管理
 │       ├── aabb_cache.py         # AABB 缓存系统
 │       ├── box_forest.py         # 可复用 BoxForest
 │       ├── box_query.py          # Forest 查询规划
+│       ├── configs/              # 规划器预设 JSON 配置
 │       ├── dynamic_visualizer.py # 动态可视化动画
 │       ├── free_space_tiler.py   # 自由空间瓦片化
 │       └── ...                   # connector, smoother, GCS, metrics 等
@@ -321,7 +322,7 @@ for aabb in result.link_aabbs:
 pytest test/ -v
 ```
 
-## Planner 模块 (v4.0)
+## Planner 模块 (v4.1)
 
 独立路径规划包 `planner`，基于 Box-RRT 算法实现碰撞-free 路径规划。
 
@@ -329,7 +330,9 @@ pytest test/ -v
 
 | 模块 | 功能 | 说明 |
 |------|------|------|
-| `aabb_cache` | AABB 缓存系统 | 双层存储（interval/numerical），NumPy 向量化查询，LRU 淘汰，pickle 持久化 |
+| `box_expansion` | **Balanced 拓展策略** | v4.1 默认交替步进策略，box 宽度比中位数从 48 降至 4 |
+| `models` | **JSON 配置化** | `PlannerConfig.to_json()` / `from_json()`，预设 2dof/panda 配置文件 |
+| `aabb_cache` | AABB 缓存系统 | 双层存储（interval/numerical），v4.1 全局接入 BoxRRT/BoxForest |
 | `box_forest` | 可复用 BoxForest | 预构建碰撞-free box 树，支持保存/加载、robot 指纹校验 |
 | `box_query` | Forest 查询规划 | 复用 forest 快速规划新查询，局部扩展 + 图搜索 |
 | `dynamic_visualizer` | 动态可视化 | FuncAnimation 动画、EE 轨迹、ghost frames、等弧长重采样 |
@@ -343,7 +346,10 @@ from planner import BoxRRT, PlannerConfig, Scene, AABBCache
 
 robot = load_robot('2dof_planar')
 scene = Scene()
-config = PlannerConfig(use_aabb_cache=True)
+
+# 从 JSON 加载配置（或使用默认值）
+config = PlannerConfig.from_json("src/planner/configs/2dof_planar.json")
+# config = PlannerConfig(expansion_strategy='balanced', use_aabb_cache=True)
 
 # 带缓存的规划
 cache = AABBCache()
