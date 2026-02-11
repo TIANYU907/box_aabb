@@ -47,10 +47,12 @@ from planner.aabb_cache import DEFAULT_CACHE_DIR
 from planner.metrics import evaluate_result, PathMetrics
 from planner.visualizer import (
     plot_cspace_boxes,
+    plot_cspace_forest,
     plot_cspace_with_collision,
     plot_workspace_result,
 )
 from planner.dynamic_visualizer import animate_robot_path, resample_path
+from planner.report import PlannerReportGenerator
 
 # ── 日志配置 ──────────────────────────────────────────────
 LOG_FMT = "[%(asctime)s] %(levelname)-7s %(name)s: %(message)s"
@@ -73,8 +75,10 @@ def random_scene_2d(
     Returns:
         Scene 对象
     """
-    # 估算可达半径：所有连杆长度之和
+    # 估算可达半径：所有连杆长度之和（含 tool_frame）
     reach = sum(p['a'] for p in robot.dh_params)
+    if hasattr(robot, 'tool_frame') and robot.tool_frame is not None:
+        reach += robot.tool_frame.get('a', 0.0)
     if reach < 1e-6:
         reach = 2.0  # fallback
 
@@ -355,6 +359,22 @@ def save_visualizations(
         saved.append(p)
         logger.info("  ✓ 保存到 %s (%.2fs)", p, time.time() - t0)
 
+    # ---- 图1b: C-space BoxForest (adjacency-degree 着色) ----
+    if hasattr(result, "forest") and result.forest is not None:
+        logger.info("▶ 生成图1b: C-space BoxForest ...")
+        t0 = time.time()
+        fig1b = plot_cspace_forest(
+            result,
+            joint_limits=joint_limits,
+            title=f"C-Space BoxForest ({robot.name})",
+        )
+        if fig1b is not None:
+            p = str(output_dir / "01b_cspace_forest.png")
+            fig1b.savefig(p, dpi=150, bbox_inches="tight")
+            plt.close(fig1b)
+            saved.append(p)
+            logger.info("  ✓ 保存到 %s (%.2fs)", p, time.time() - t0)
+
     # ---- 图2: C-space 碰撞地图叠加 ----
     is_2dof = (robot.n_joints <= 3)
     if is_2dof:
@@ -405,11 +425,34 @@ def save_visualizations(
                 show_ee_trail=True,
                 ghost_interval=10,
             )
-            p = str(output_dir / "04_animation.gif")
-            anim.save(p, writer="pillow", fps=20)
+            # GIF
+            p_gif = str(output_dir / "04_animation.gif")
+            anim.save(p_gif, writer="pillow", fps=20)
+            saved.append(p_gif)
+            logger.info("  ✓ GIF 保存到 %s (%.2fs)", p_gif, time.time() - t0)
+            # MP4 (通过 imageio-ffmpeg)
+            try:
+                import imageio
+                t1 = time.time()
+                p_mp4 = str(output_dir / "04_animation.mp4")
+                # 从 matplotlib 动画逐帧提取为 numpy 数组写入 MP4
+                from matplotlib.backends.backend_agg import FigureCanvasAgg
+                fig_anim = anim._fig
+                canvas = FigureCanvasAgg(fig_anim)
+                writer = imageio.get_writer(p_mp4, fps=20)
+                for frame_i in range(len(smooth_path)):
+                    anim._func(frame_i)
+                    canvas.draw()
+                    w, h = canvas.get_width_height()
+                    buf = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8)
+                    img = buf.reshape(h, w, 4)[:, :, :3]  # RGBA → RGB
+                    writer.append_data(img)
+                writer.close()
+                saved.append(p_mp4)
+                logger.info("  ✓ MP4 保存到 %s (%.2fs)", p_mp4, time.time() - t1)
+            except Exception as e_mp4:
+                logger.warning("  ⊘ MP4 保存失败 (ffmpeg?): %s", e_mp4)
             plt.close("all")
-            saved.append(p)
-            logger.info("  ✓ 保存到 %s (%.2fs)", p, time.time() - t0)
         except Exception as e:
             logger.warning("  ✗ 动画生成失败: %s", e)
 
@@ -631,6 +674,8 @@ def main():
                         help="最大 box 数 (默认: 200)")
     parser.add_argument("--no-viz", action="store_true",
                         help="跳过可视化")
+    parser.add_argument("--no-scipy", action="store_true",
+                        help="禁用 scipy 平滑 (规避 scipy segfault)")
     args = parser.parse_args()
 
     rng_seed = args.seed if args.seed is not None else int(time.time()) % 100000
@@ -663,25 +708,7 @@ def main():
     )
 
     # ────────────────────────────────────────────────────────
-    # Step 2: 随机采样始末点（在空场景中）
-    # ────────────────────────────────────────────────────────
-    logger.info("")
-    logger.info("▶ Step 2/7: 随机采样始末点")
-    t_step = time.time()
-    empty_scene = Scene()  # 空场景：保证无碰撞
-    q_start = random_collision_free_config(robot, empty_scene, rng)
-    q_goal = random_collision_free_config(robot, empty_scene, rng)
-    # 确保始末点距离足够远（至少 2.0 rad），使场景具有实际规划难度
-    min_dist = 1.5
-    attempts = 0
-    while float(np.linalg.norm(q_goal - q_start)) < min_dist and attempts < 200:
-        q_goal = random_collision_free_config(robot, empty_scene, rng)
-        attempts += 1
-    endpoint_text = log_endpoints(q_start, q_goal)
-    logger.info("  完成 (%.3fs, %d 次重采样)", time.time() - t_step, attempts)
-
-    # ────────────────────────────────────────────────────────
-    # Step 3: 加载或随机生成场景
+    # Step 2: 加载或随机生成场景
     # ────────────────────────────────────────────────────────
     logger.info("")
     t_step = time.time()
@@ -689,36 +716,38 @@ def main():
     from planner.collision import CollisionChecker as _CC
 
     if args.scene_json:
-        logger.info("▶ Step 3/7: 从 JSON 加载场景: %s", args.scene_json)
+        logger.info("▶ Step 2/7: 从 JSON 加载场景: %s", args.scene_json)
         scene = Scene.from_json(args.scene_json)
     else:
-        logger.info("▶ Step 3/7: 随机生成场景 (%d 个障碍物)", args.n_obs)
+        logger.info("▶ Step 2/7: 随机生成场景 (%d 个障碍物)", args.n_obs)
         if is_planar:
             scene = random_scene_2d(robot, args.n_obs, rng)
         else:
             scene = random_scene_3d(robot, args.n_obs, rng)
 
-    # 移除与始末点冲突的障碍物
-    _checker = _CC(robot, scene)
-    _removed: list[str] = []
-    while _checker.check_config_collision(q_start) or \
-          _checker.check_config_collision(q_goal):
-        obs_list = scene.get_obstacles()
-        if not obs_list:
-            break
-        last = obs_list[-1]
-        scene.remove_obstacle(last.name)
-        _removed.append(last.name)
-        _checker = _CC(robot, scene)
-    if _removed:
-        logger.info("  移除了 %d 个冲突障碍物: %s",
-                     len(_removed), ", ".join(_removed))
-
     scene_text = log_scene_info(scene)
+    logger.info("  完成 (%.3fs)", time.time() - t_step)
+
+    # ────────────────────────────────────────────────────────
+    # Step 3: 随机采样始末点（在当前场景中保证无碰撞）
+    # ────────────────────────────────────────────────────────
+    logger.info("")
+    logger.info("▶ Step 3/7: 随机采样无碰撞始末点")
+    t_step = time.time()
+    q_start = random_collision_free_config(robot, scene, rng)
+    q_goal = random_collision_free_config(robot, scene, rng)
+    # 确保始末点 C-space 距离足够远（≥1.5 rad），有实际规划难度
+    min_dist = 1.5
+    attempts = 0
+    while float(np.linalg.norm(q_goal - q_start)) < min_dist and attempts < 200:
+        q_goal = random_collision_free_config(robot, scene, rng)
+        attempts += 1
+    endpoint_text = log_endpoints(q_start, q_goal)
+    logger.info("  完成 (%.3fs, %d 次重采样)", time.time() - t_step, attempts)
+
     # 场景 JSON — 同时嵌入 robot_name 方便跨任务复用
     scene_json_path = str(output_dir / "scene.json")
     scene.to_json(scene_json_path)
-    # 在 scene.json 中追加 robot_name 元信息
     import json as _json
     with open(scene_json_path, 'r', encoding='utf-8') as _f:
         _sdata = _json.load(_f)
@@ -727,7 +756,6 @@ def main():
     with open(scene_json_path, 'w', encoding='utf-8') as _f:
         _json.dump(_sdata, _f, indent=2, ensure_ascii=False)
     logger.info("  场景 JSON 已保存到 %s (含 robot_name)", scene_json_path)
-    logger.info("  完成 (%.3fs)", time.time() - t_step)
 
     # ────────────────────────────────────────────────────────
     # Step 4: 配置规划器 + 加载 AABB 缓存
@@ -754,10 +782,17 @@ def main():
         path_shortcut_iters=200,
         segment_collision_resolution=0.03,
         use_aabb_cache=True,
+        hard_overlap_reject=True,
         verbose=True,
     )
     config_text = log_planner_config(config)
     planner = BoxRRT(robot, scene, config, aabb_cache=aabb_cache)
+
+    # 禁用 scipy 平滑（规避 segfault）
+    if args.no_scipy:
+        import planner.gcs_optimizer as _gcs_mod
+        _gcs_mod.HAS_SCIPY = False
+        logger.info("  scipy 平滑已禁用 (--no-scipy)")
 
     # ────────────────────────────────────────────────────────
     # Step 5: 执行规划
@@ -830,11 +865,23 @@ def main():
     # ────────────────────────────────────────────────────────
     logger.info("")
     logger.info("▶ 生成 Markdown 报告")
-    report_path = write_report(
-        output_dir, robot, scene, config,
-        q_start, q_goal, result, metrics,
-        saved_files, rng_seed,
+    report_gen = PlannerReportGenerator()
+    report_md = report_gen.generate(
+        robot=robot,
+        scene=scene,
+        config=config,
+        q_start=q_start,
+        q_goal=q_goal,
+        result=result,
+        metrics=metrics,
+        cache_stats_before=cache_stats_before,
+        cache_stats_after=cache_stats_after,
+        rng_seed=rng_seed,
+        saved_files=saved_files,
     )
+    report_path = str(output_dir / "report.md")
+    Path(report_path).write_text(report_md, encoding="utf-8")
+    logger.info("报告已保存到 %s", report_path)
 
     # ── 最终总结 ──
     logger.info("")

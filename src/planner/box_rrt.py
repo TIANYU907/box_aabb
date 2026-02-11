@@ -3,23 +3,30 @@ planner/box_rrt.py - Box-RRT 主规划器
 
 基于关节区间(box)拓展的 RRT 路径规划算法。
 
+v5.0 更新：
+- 集成 BoxForest 扁平无重叠 box 集合
+- 扩展时边界截断（避免重叠已有 box）
+- deoverlap 后处理保证零重叠
+- 邻接图搜索 + 共享面 waypoint 优化
+- 路径限制在 box 内（box-aware shortcut + smoothing）
+- BoxForest 跨场景持久化
+
 算法流程：
-1. 初始化碰撞检测器、box 拓展器、树管理器
+1. 加载 BoxForest（如有缓存）+ AABB 缓存
 2. 验证始末点无碰撞
-3. 主采样循环：
-   a. 随机/目标偏向采样 seed 点
-   b. 拓展 box
-   c. 创建/加入 box tree
-   d. 在叶子 box 边界上再采样并拓展
-   e. 检查停止条件
-4. 连接各树 + 始末点
-5. 图搜索 / GCS 优化
-6. 路径平滑后处理
+3. 尝试直连
+4. 扩展 box（边界截断避免重叠）
+5. deoverlap + 邻接图构建
+6. 惰性碰撞验证
+7. Dijkstra 搜 box 序列
+8. 共享面 waypoint 优化
+9. Box-aware shortcut + smoothing
+10. 保存 BoxForest + AABB 缓存
 """
 
 import time
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set, Dict
 
 import numpy as np
 
@@ -29,10 +36,12 @@ from .obstacles import Scene
 from .collision import CollisionChecker
 from .box_expansion import BoxExpander
 from .box_tree import BoxTreeManager
+from .box_forest import BoxForest
 from .connector import TreeConnector
 from .path_smoother import PathSmoother, compute_path_length
 from .gcs_optimizer import GCSOptimizer
 from .aabb_cache import AABBCache
+from .deoverlap import deoverlap, compute_adjacency
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +91,17 @@ class BoxRRT:
 
         self._n_dims = len(self.joint_limits)
 
-        # AABB 缓存
-        _cache = aabb_cache if self.config.use_aabb_cache else None
+        # AABB 缓存：若启用但未传入，自动从磁盘加载
+        if self.config.use_aabb_cache:
+            if aabb_cache is not None:
+                _cache = aabb_cache
+            else:
+                _cache = AABBCache.auto_load(robot)
+                logger.info("BoxRRT: 自动创建 AABB 缓存")
+        else:
+            _cache = None
+        self._aabb_cache = _cache
+        self._owns_cache = (aabb_cache is None and _cache is not None)
 
         # 初始化子模块
         self.collision_checker = CollisionChecker(
@@ -110,6 +128,7 @@ class BoxRRT:
             balanced_step_fraction=self.config.balanced_step_fraction,
             balanced_max_steps=self.config.balanced_max_steps,
             overlap_weight=self.config.overlap_weight,
+            hard_overlap_reject=self.config.hard_overlap_reject,
         )
         self.tree_manager = BoxTreeManager()
         self.connector = TreeConnector(
@@ -152,6 +171,20 @@ class BoxRRT:
 
         result = PlannerResult()
 
+        try:
+            return self._plan_impl(q_start, q_goal, rng, t0, result)
+        finally:
+            self._auto_save_cache()
+
+    def _plan_impl(
+        self,
+        q_start: np.ndarray,
+        q_goal: np.ndarray,
+        rng: np.random.Generator,
+        t0: float,
+        result: PlannerResult,
+    ) -> PlannerResult:
+        """plan() 的实际实现（由 plan 调用，try/finally 确保缓存保存）"""
         # ---- Step 0: 验证始末点 ----
         if self.collision_checker.check_config_collision(q_start):
             result.message = "起始配置存在碰撞"
@@ -177,121 +210,252 @@ class BoxRRT:
             logger.info(result.message)
             return result
 
-        # ---- Step 1: 从始末点创建初始 box tree ----
-        self._create_initial_trees(q_start, q_goal, rng)
+        # ---- Step 1: 加载/初始化 BoxForest ----
+        forest = self._load_or_create_forest()
 
-        # ---- Step 2: 主采样循环 ----
-        n_boxes = self.tree_manager.total_nodes
+        # ---- Step 2: 验证已有 box 在当前场景的碰撞状态 ----
+        colliding_ids = forest.validate_boxes(self.collision_checker)
+        # 构建有效 box 集合（排除碰撞的）
+        valid_boxes = {
+            bid: box for bid, box in forest.boxes.items()
+            if bid not in colliding_ids
+        }
+
+        # ---- Step 3: 扩展新 box ----
+        existing_list = list(valid_boxes.values())
+        raw_new_boxes: List[BoxNode] = []
+
+        # 从始末点扩展
+        for q_seed in [q_start, q_goal]:
+            if any(b.contains(q_seed) for b in existing_list):
+                continue
+            nid = forest.allocate_id()
+            box = self.box_expander.expand(
+                q_seed, node_id=nid, rng=rng,
+                existing_boxes=existing_list + raw_new_boxes,
+            )
+            if box is not None and box.volume >= self.config.min_box_volume:
+                raw_new_boxes.append(box)
+
+        # 主采样循环
+        n_boxes = len(existing_list) + len(raw_new_boxes)
         for iteration in range(self.config.max_iterations):
             if n_boxes >= self.config.max_box_nodes:
                 break
 
-            # 采样 seed 点
             q_seed = self._sample_seed(q_start, q_goal, rng)
             if q_seed is None:
                 continue
 
-            # 拓展 box
-            node_id = self.tree_manager.allocate_node_id()
-            box = self.box_expander.expand(q_seed, node_id=node_id, rng=rng,
-                                           existing_boxes=self.tree_manager.get_all_boxes())
+            # 跳过已覆盖的 seed
+            already_covered = (
+                any(b.contains(q_seed) for b in existing_list)
+                or any(b.contains(q_seed) for b in raw_new_boxes)
+            )
+            if already_covered:
+                continue
+
+            nid = forest.allocate_id()
+            box = self.box_expander.expand(
+                q_seed, node_id=nid, rng=rng,
+                existing_boxes=existing_list + raw_new_boxes,
+            )
             if box is None or box.volume < self.config.min_box_volume:
                 continue
 
-            # 加入最近的树或创建新树
-            self._add_box_to_tree(box, rng)
-            n_boxes = self.tree_manager.total_nodes
+            raw_new_boxes.append(box)
+            n_boxes = len(existing_list) + len(raw_new_boxes)
 
-            # 边界再采样和拓展
-            if box.tree_id >= 0:
-                self._boundary_expand(box.tree_id, rng)
-                n_boxes = self.tree_manager.total_nodes
-
-            # 每隔一段时间尝试桥接采样（针对窄通道）
-            if (iteration + 1) % 10 == 0:
-                self._bridge_sampling(rng)
-                n_boxes = self.tree_manager.total_nodes
-
-            # 定期检查连通性
             if (iteration + 1) % 20 == 0 and self.config.verbose:
                 logger.info(
-                    "迭代 %d: %d 棵树, %d 个 box, 总体积 %.4f",
-                    iteration + 1, self.tree_manager.n_trees,
-                    n_boxes, self.tree_manager.get_total_volume(),
+                    "迭代 %d: %d 已有 box + %d 新 box",
+                    iteration + 1, len(existing_list), len(raw_new_boxes),
                 )
 
-        # ---- Step 3: 连接各树 ----
-        intra_edges = self.connector.connect_within_trees()
-        inter_edges = self.connector.connect_between_trees()
-        endpoint_edges, start_box_id, goal_box_id = \
-            self.connector.connect_endpoints(q_start, q_goal)
+        # ---- Step 4: deoverlap + 邻接图 ----
+        if raw_new_boxes:
+            forest.add_boxes_incremental(raw_new_boxes)
 
-        all_edges = intra_edges + inter_edges + endpoint_edges
+        # 再次排除碰撞 box（新 box 也需要验证）
+        new_colliding = set()
+        for box in raw_new_boxes:
+            # 新 box 的碎片可能有新 ID
+            pass
+        # 简化：对所有 box 做惰性验证（新增的通常很少）
+        all_colliding = forest.validate_boxes(self.collision_checker)
+
+        valid_boxes = {
+            bid: box for bid, box in forest.boxes.items()
+            if bid not in all_colliding
+        }
+        valid_adjacency = {
+            bid: neighbors - all_colliding
+            for bid, neighbors in forest.adjacency.items()
+            if bid not in all_colliding
+        }
+
+        result.n_boxes_created = len(forest.boxes)
+
+        # ---- Step 5: 构建搜索图 + 连接端点 ----
+        adj_edges = self.connector.build_adjacency_edges(
+            valid_boxes, valid_adjacency)
+        endpoint_edges, start_box_id, goal_box_id = \
+            self.connector.connect_endpoints_to_forest(
+                q_start, q_goal, valid_boxes)
+
+        all_edges = adj_edges + endpoint_edges
         result.edges = all_edges
 
         if start_box_id is None or goal_box_id is None:
-            result.message = "无法将始末点连接到 box tree"
+            result.message = "无法将始末点连接到 box forest"
             result.computation_time = time.time() - t0
-            result.box_trees = self.tree_manager.get_all_trees()
-            result.n_boxes_created = self.tree_manager.total_nodes
             result.n_collision_checks = self.collision_checker.n_collision_checks
             logger.warning(result.message)
             return result
 
-        # ---- Step 4: 图搜索/GCS 优化 ----
-        boxes_dict = {b.node_id: b for b in self.tree_manager.get_all_boxes()}
-        graph = self.connector.build_adjacency_graph(
-            all_edges, q_start, q_goal, start_box_id, goal_box_id,
+        graph = self.connector.build_forest_graph(
+            adj_edges, endpoint_edges,
+            q_start, q_goal, start_box_id, goal_box_id,
+            valid_boxes,
         )
 
-        path = self._graph_search(graph, boxes_dict, q_start, q_goal)
-
-        # ---- Step 4b: 连通性修复 ----
-        if path is None or len(path) < 2:
-            logger.info("初次搜索失败，尝试连通性修复...")
+        # ---- Step 6: Dijkstra 搜索 box 序列 ----
+        path_nodes = self.gcs_optimizer._dijkstra(graph)
+        if path_nodes is None:
+            # 尝试桥接修复
+            logger.info("Dijkstra 失败，尝试桥接修复...")
             bridge_edges = self._bridge_disconnected(
-                graph, boxes_dict, q_start, q_goal,
+                graph, valid_boxes, q_start, q_goal,
                 start_box_id, goal_box_id,
             )
             if bridge_edges:
                 all_edges = all_edges + bridge_edges
                 result.edges = all_edges
-                graph = self.connector.build_adjacency_graph(
-                    all_edges, q_start, q_goal, start_box_id, goal_box_id,
+                graph = self.connector.build_forest_graph(
+                    adj_edges + bridge_edges, endpoint_edges,
+                    q_start, q_goal, start_box_id, goal_box_id,
+                    valid_boxes,
                 )
-                path = self._graph_search(graph, boxes_dict, q_start, q_goal)
+                path_nodes = self.gcs_optimizer._dijkstra(graph)
 
-        if path is None or len(path) < 2:
-            result.message = "图搜索/GCS 优化未找到路径"
+        if path_nodes is None:
+            result.message = "图搜索未找到路径"
             result.computation_time = time.time() - t0
-            result.box_trees = self.tree_manager.get_all_trees()
-            result.n_boxes_created = self.tree_manager.total_nodes
             result.n_collision_checks = self.collision_checker.n_collision_checks
             logger.warning(result.message)
             return result
 
-        # ---- Step 5: 路径后处理 ----
-        path = self.path_smoother.shortcut(
-            path, max_iters=self.config.path_shortcut_iters, rng=rng,
+        # 提取 box 序列
+        box_sequence = []
+        for node_id in path_nodes:
+            if node_id in ('start', 'goal'):
+                continue
+            if node_id in valid_boxes:
+                box_sequence.append(valid_boxes[node_id])
+
+        # ---- Step 7: 共享面 waypoint 优化 ----
+        path = self.gcs_optimizer.optimize_box_sequence(
+            box_sequence, q_start, q_goal,
+            allow_scipy=self.config.use_gcs,
         )
-        path = self.path_smoother.smooth_moving_average(path)
+
+        if path is None or len(path) < 2:
+            result.message = "路径优化失败"
+            result.computation_time = time.time() - t0
+            result.n_collision_checks = self.collision_checker.n_collision_checks
+            return result
+
+        # ---- Step 8: Box-aware 路径后处理 ----
+        # 构建路径点与 box 的对应关系
+        path_boxes = self._assign_boxes_to_path(path, box_sequence)
+
+        path, path_boxes = self.path_smoother.shortcut_in_boxes(
+            path, path_boxes,
+            max_iters=self.config.path_shortcut_iters, rng=rng,
+        )
+        path = self.path_smoother.smooth_in_boxes(
+            path, path_boxes,
+        )
+
+        # ---- Step 9: 保存 BoxForest ----
+        self._save_forest(forest)
 
         # ---- 组装结果 ----
         result.success = True
         result.path = path
         result.path_length = compute_path_length(path)
-        result.box_trees = self.tree_manager.get_all_trees()
-        result.n_boxes_created = self.tree_manager.total_nodes
+        result.forest = forest
+        result.box_trees = self.tree_manager.get_all_trees()  # legacy 兼容
+        result.n_boxes_created = len(forest.boxes)
         result.n_collision_checks = self.collision_checker.n_collision_checks
         result.computation_time = time.time() - t0
         result.message = (
             f"规划成功: {len(path)} 个路径点, "
             f"路径长度 {result.path_length:.4f}, "
-            f"{self.tree_manager.n_trees} 棵树, "
-            f"{result.n_boxes_created} 个 box"
+            f"{len(forest.boxes)} 个 box (forest), "
+            f"{sum(len(v) for v in forest.adjacency.values()) // 2} 条邻接边"
         )
         logger.info(result.message)
         return result
+
+    def _load_or_create_forest(self) -> BoxForest:
+        """加载或创建 BoxForest"""
+        forest_path = self.config.forest_path
+        if forest_path:
+            try:
+                forest = BoxForest.load(forest_path, self.robot)
+                logger.info("从 %s 加载 BoxForest", forest_path)
+                return forest
+            except Exception as e:
+                logger.warning("加载 BoxForest 失败: %s, 创建新实例", e)
+
+        return BoxForest(
+            robot_fingerprint=self.robot.fingerprint(),
+            joint_limits=self.joint_limits,
+            config=self.config,
+        )
+
+    def _save_forest(self, forest: BoxForest) -> None:
+        """保存 BoxForest（如果配置了路径）"""
+        forest_path = self.config.forest_path
+        if forest_path:
+            try:
+                forest.save(forest_path)
+            except Exception as e:
+                logger.warning("保存 BoxForest 失败: %s", e)
+
+    def _assign_boxes_to_path(
+        self,
+        path: List[np.ndarray],
+        box_sequence: List[BoxNode],
+    ) -> List[BoxNode]:
+        """为路径的每个点分配对应的 box
+
+        分配策略：
+        - 首先尝试在 box_sequence 中找包含该点的 box
+        - 找不到就用最近的 box
+        """
+        result = []
+        for pt in path:
+            best = None
+            for box in box_sequence:
+                if box.contains(pt):
+                    best = box
+                    break
+            if best is None and box_sequence:
+                # 找最近的
+                best = min(box_sequence,
+                           key=lambda b: b.distance_to_config(pt))
+            result.append(best if best is not None else box_sequence[0])
+        return result
+
+    def _auto_save_cache(self) -> None:
+        """若本实例自动创建了缓存，plan 结束后自动保存到磁盘"""
+        if self._owns_cache and self._aabb_cache is not None:
+            try:
+                self._aabb_cache.auto_save(self.robot)
+            except Exception as e:
+                logger.warning("AABB 缓存自动保存失败: %s", e)
 
     # ==================== 辅助方法 ====================
 

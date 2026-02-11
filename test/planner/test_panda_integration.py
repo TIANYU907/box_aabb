@@ -2,8 +2,7 @@
 test/planner/test_panda_integration.py - 7DOF Panda 集成测试
 
 测试 Box-RRT 规划器在 7DOF Panda 机器人上的完整工作流程。
-Panda 有 8 个 DH 参数（7 revolute + 1 固定指关节 q=0），
-所有 a=0.0，仅 d 值定义连杆长度。
+Panda 有 7 个 revolute 关节，夹爪连杆通过 tool_frame 表示（无额外 C-space 维度）。
 """
 import math
 import pytest
@@ -21,13 +20,13 @@ from planner.path_smoother import compute_path_length
 
 @pytest.fixture(scope='module')
 def robot_panda():
-    """7DOF Panda (8 DH params, finger fixed at q=0)"""
+    """7DOF Panda (7 DH params + tool_frame)"""
     return load_robot('panda')
 
 
 @pytest.fixture(scope='module')
 def joint_limits_panda(robot_panda):
-    """Panda 的 8 个关节限制 (含固定指关节 [0,0])"""
+    """Panda 的 7 个关节限制"""
     return robot_panda.joint_limits
 
 
@@ -75,18 +74,18 @@ class TestPandaRobotBasic:
     """Panda 机器人基础属性验证"""
 
     def test_panda_n_joints(self, robot_panda):
-        assert robot_panda.n_joints == 8
+        assert robot_panda.n_joints == 7
 
     def test_panda_joint_limits_count(self, joint_limits_panda):
-        assert len(joint_limits_panda) == 8
+        assert len(joint_limits_panda) == 7
 
-    def test_panda_finger_fixed(self, joint_limits_panda):
-        """第 8 关节（指关节）限制为 [0, 0]"""
-        lo, hi = joint_limits_panda[7]
-        assert lo == 0.0 and hi == 0.0
+    def test_panda_has_tool_frame(self, robot_panda):
+        """夹爪连杆通过 tool_frame 表示"""
+        assert robot_panda.tool_frame is not None
+        assert abs(robot_panda.tool_frame['d'] - 0.107) < 1e-6
 
     def test_panda_active_joints(self, joint_limits_panda):
-        """前 7 个关节有非零范围"""
+        """所有 7 个关节有非零范围"""
         for i in range(7):
             lo, hi = joint_limits_panda[i]
             assert hi > lo, f"关节 {i} 限制无效: [{lo}, {hi}]"
@@ -98,15 +97,18 @@ class TestPandaRobotBasic:
 
     def test_panda_fk_home(self, robot_panda):
         """零位 FK 不抛出异常"""
-        q_home = np.zeros(8)
+        q_home = np.zeros(7)
         positions = robot_panda.get_link_positions(q_home)
         assert len(positions) >= 2
 
-    def test_panda_fk_with_fixed_finger(self, robot_panda):
-        """使用非零关节值（指关节=0）不抛出异常"""
-        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
+    def test_panda_fk_with_tool_frame(self, robot_panda):
+        """使用非零关节值不抛出异常，tool_frame 正确附加"""
+        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
         positions = robot_panda.get_link_positions(q)
         assert len(positions) >= 2
+        # tool_frame 应该产生比关节数多一个位置
+        transforms = robot_panda.forward_kinematics(q.tolist(), return_all=True)
+        assert len(transforms) == 7 + 1 + 1  # base + 7 joints + tool_frame
 
 
 # ==================== 碰撞检测测试 ====================
@@ -116,7 +118,7 @@ class TestPandaCollision:
 
     def test_collision_free_home(self, checker_panda):
         """零位通常无碰撞"""
-        q = np.zeros(8)
+        q = np.zeros(7)
         # 可能碰也可能不碰，取决于障碍物位置
         # 这里主要测试不抛异常
         result = checker_panda.check_config_collision(q)
@@ -124,15 +126,15 @@ class TestPandaCollision:
 
     def test_collision_empty_scene(self, checker_panda_empty):
         """空场景下任何配置都无碰撞"""
-        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
+        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
         assert not checker_panda_empty.check_config_collision(q)
 
     def test_collision_check_various_configs(self, checker_panda):
         """多种配置不抛异常"""
         configs = [
-            np.zeros(8),
-            np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3, 0.0]),
-            np.array([-1.0, 0.5, -0.5, -0.5, 1.0, 2.0, 1.0, 0.0]),
+            np.zeros(7),
+            np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3]),
+            np.array([-1.0, 0.5, -0.5, -0.5, 1.0, 2.0, 1.0]),
         ]
         for q in configs:
             result = checker_panda.check_config_collision(q)
@@ -142,15 +144,15 @@ class TestPandaCollision:
         """区间碰撞检测不抛异常"""
         intervals = [
             (-0.1, 0.1), (-0.6, -0.4), (-0.1, 0.1), (-2.1, -1.9),
-            (-0.1, 0.1), (1.4, 1.6), (-0.1, 0.1), (0.0, 0.0),
+            (-0.1, 0.1), (1.4, 1.6), (-0.1, 0.1),
         ]
         result = checker_panda.check_box_collision(intervals)
         assert isinstance(result, bool)
 
     def test_segment_collision_check(self, checker_panda):
         """线段碰撞检测不抛异常"""
-        q1 = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
-        q2 = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3, 0.0])
+        q1 = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
+        q2 = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3])
         result = checker_panda.check_segment_collision(q1, q2, 0.1)
         assert isinstance(result, bool)
 
@@ -168,30 +170,29 @@ class TestPandaBoxExpansion:
             expansion_resolution=0.05,
             max_rounds=1,
         )
-        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
+        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
         box = expander.expand(q, node_id=0)
         assert box is not None
-        # volume 为 0 因为第 8 维 (finger) 宽度为 0, 检查活跃维度的体积
+        # 检查活跃维度的体积
         active_vol = 1.0
         for i in range(7):
             lo, hi = box.joint_intervals[i]
             active_vol *= (hi - lo)
         assert active_vol > 0, "活跃关节的体积应 > 0"
-        assert box.n_dims == 8
+        assert box.n_dims == 7
 
-    def test_expand_finger_dimension_fixed(self, robot_panda, checker_panda_empty):
-        """指关节维度宽度应为 0"""
+    def test_expand_volume_positive(self, robot_panda, checker_panda_empty):
+        """空场景下 box 体积应> 0（7D 无退化维度）"""
         limits = robot_panda.joint_limits
         expander = BoxExpander(
             robot_panda, checker_panda_empty, limits,
             expansion_resolution=0.05,
             max_rounds=1,
         )
-        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
+        q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
         box = expander.expand(q, node_id=0)
         assert box is not None
-        lo, hi = box.joint_intervals[7]
-        assert abs(hi - lo) < 1e-10, "指关节区间应为零宽度"
+        assert box.volume > 0, "7D box 体积应 > 0"
 
     def test_expand_with_obstacles(self, robot_panda, checker_panda):
         """有障碍物时也能拓展"""
@@ -202,7 +203,7 @@ class TestPandaBoxExpansion:
             max_rounds=1,
         )
         # 选择一个远离障碍物的配置
-        q = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5, 0.0])
+        q = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5])
         box = expander.expand(q, node_id=0)
         assert box is not None
         # 至少某些活跃维度被拓展
@@ -226,8 +227,8 @@ class TestPandaBoxRRT:
             verbose=False,
         )
         planner = BoxRRT(robot_panda, scene_panda_empty, config)
-        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
-        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3, 0.0])
+        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
+        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3])
         result = planner.plan(q_start, q_goal, seed=42)
         assert result.success
         assert len(result.path) >= 2
@@ -243,13 +244,12 @@ class TestPandaBoxRRT:
         rng = np.random.default_rng(0)
         q_collision = None
         for _ in range(200):
-            q = np.zeros(8)
-            q[:7] = rng.uniform(-1, 1, size=7)
+            q = rng.uniform(-1, 1, size=7)
             if checker.check_config_collision(q):
                 q_collision = q
                 break
         if q_collision is not None:
-            q_goal = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5, 0.0])
+            q_goal = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5])
             result = planner.plan(q_collision, q_goal, seed=42)
             assert not result.success
             assert "碰撞" in result.message
@@ -258,24 +258,24 @@ class TestPandaBoxRRT:
         """PlannerResult 所有字段正确填充"""
         config = PlannerConfig(max_iterations=10, verbose=False)
         planner = BoxRRT(robot_panda, scene_panda_empty, config)
-        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
-        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3, 0.0])
+        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
+        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3])
         result = planner.plan(q_start, q_goal, seed=42)
         assert result.computation_time >= 0
         assert isinstance(result.message, str)
         assert result.n_collision_checks >= 0
 
     def test_plan_path_configs_valid(self, robot_panda, scene_panda_empty):
-        """路径上每个配置都是 8D 且在关节限制内"""
+        """路径上每个配置都是 7D 且在关节限制内"""
         config = PlannerConfig(max_iterations=10, verbose=False)
         planner = BoxRRT(robot_panda, scene_panda_empty, config)
-        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
-        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3, 0.0])
+        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
+        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3])
         result = planner.plan(q_start, q_goal, seed=42)
         assert result.success
         limits = robot_panda.joint_limits
         for q in result.path:
-            assert len(q) == 8
+            assert len(q) == 7
             for i, (lo, hi) in enumerate(limits):
                 assert q[i] >= lo - 1e-6, f"q[{i}]={q[i]} < {lo}"
                 assert q[i] <= hi + 1e-6, f"q[{i}]={q[i]} > {hi}"
@@ -297,8 +297,8 @@ class TestPandaBoxRRT:
         )
         planner = BoxRRT(robot_panda, scene_panda_simple, config)
         # 选择两个远离障碍物的安全配置
-        q_start = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5, 0.0])
-        q_goal = np.array([-1.0, 0.5, 1.0, -1.0, -0.5, 2.5, -0.5, 0.0])
+        q_start = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5])
+        q_goal = np.array([-1.0, 0.5, 1.0, -1.0, -0.5, 2.5, -0.5])
         result = planner.plan(q_start, q_goal, seed=42)
         # 不要求一定成功, 但不应抛异常
         assert isinstance(result, PlannerResult)
@@ -307,15 +307,15 @@ class TestPandaBoxRRT:
 
     @pytest.mark.slow
     def test_plan_multi_obstacle(self, robot_panda, scene_panda_multi):
-        """多障碍物场景下不崩溃"""
+        """多障碑物场景下不崩溃"""
         config = PlannerConfig(
             max_iterations=100,
             max_box_nodes=50,
             verbose=False,
         )
         planner = BoxRRT(robot_panda, scene_panda_multi, config)
-        q_start = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5, 0.0])
-        q_goal = np.array([-1.0, 0.5, 1.0, -1.0, -0.5, 2.5, -0.5, 0.0])
+        q_start = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5])
+        q_goal = np.array([-1.0, 0.5, 1.0, -1.0, -0.5, 2.5, -0.5])
         result = planner.plan(q_start, q_goal, seed=123)
         assert isinstance(result, PlannerResult)
 
@@ -324,8 +324,8 @@ class TestPandaBoxRRT:
         config = PlannerConfig(max_iterations=30, max_box_nodes=20, verbose=False)
         planner1 = BoxRRT(robot_panda, scene_panda_empty, config)
         planner2 = BoxRRT(robot_panda, scene_panda_empty, config)
-        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0, 0.0])
-        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3, 0.0])
+        q_start = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
+        q_goal = np.array([0.5, -0.3, 0.2, -1.5, 0.1, 1.0, -0.3])
         r1 = planner1.plan(q_start, q_goal, seed=99)
         r2 = planner2.plan(q_start, q_goal, seed=99)
         assert r1.success == r2.success

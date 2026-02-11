@@ -174,6 +174,31 @@ class BoxNode:
             nearest[i] = np.clip(config[i], lo, hi)
         return nearest
 
+    def is_adjacent_to(self, other: 'BoxNode', tol: float = 1e-8) -> bool:
+        """检查是否与另一个 box 邻接（面相接或微小重叠）
+
+        邻接条件：恰好一个维度面相接，其余维度投影有正面积重叠。
+        微小重叠也视为邻接。
+        """
+        n_contact = 0
+        n_overlap = 0
+        for (a_lo, a_hi), (b_lo, b_hi) in zip(
+            self.joint_intervals, other.joint_intervals
+        ):
+            overlap = min(a_hi, b_hi) - max(a_lo, b_lo)
+            if overlap < -tol:
+                return False  # 分离
+            elif overlap <= tol:
+                n_contact += 1
+            else:
+                n_overlap += 1
+        if n_contact == 1 and n_overlap == self.n_dims - 1:
+            return True
+        # 微小全重叠也视为邻接
+        if n_overlap == self.n_dims:
+            return self.overlap_volume(other) < tol * 100
+        return False
+
 
 @dataclass
 class BoxTree:
@@ -306,6 +331,10 @@ class PlannerConfig:
     use_aabb_cache: bool = True
     # v4.2 新增：重叠惩罚
     overlap_weight: float = 1.0
+    # v5.0 新增：无重叠 BoxForest
+    min_fragment_volume: float = 1e-6
+    adjacency_tolerance: float = 1e-8
+    hard_overlap_reject: bool = True
 
     # ── JSON 序列化 ──
 
@@ -361,6 +390,7 @@ class PlannerResult:
         success: 是否成功找到路径
         path: 关节空间路径点序列 [q_start, ..., q_goal]
         box_trees: 构建的 box tree 列表
+        forest: BoxForest 实例（v5 无重叠 box 集合）
         edges: 连接边列表
         computation_time: 总计算时间 (s)
         path_length: 路径总长度 (L2 norm in joint space)
@@ -372,6 +402,7 @@ class PlannerResult:
     success: bool = False
     path: List[np.ndarray] = field(default_factory=list)
     box_trees: List[BoxTree] = field(default_factory=list)
+    forest: Any = None  # BoxForest (avoid circular import)
     edges: List[Edge] = field(default_factory=list)
     computation_time: float = 0.0
     path_length: float = 0.0

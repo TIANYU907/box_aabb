@@ -41,6 +41,140 @@ except ImportError:
     HAS_MATPLOTLIB = False
 
 
+# ============================================================
+# BoxForest v5 可视化
+# ============================================================
+
+
+def plot_cspace_forest(
+    result: PlannerResult,
+    joint_limits: Optional[List[Tuple[float, float]]] = None,
+    dim_x: int = 0,
+    dim_y: int = 1,
+    ax: Optional[Any] = None,
+    show_path: bool = True,
+    show_adjacency: bool = True,
+    title: str = "C-Space BoxForest（无重叠）",
+    figsize: Tuple[float, float] = (10, 8),
+) -> Any:
+    """绘制 BoxForest 无重叠 box 集合 + 邻接边 + 路径
+
+    每个 box 按邻接度着色，邻接 box 之间用虚线连接共享面中心。
+
+    Args:
+        result: PlannerResult（需含 forest 属性）
+        joint_limits: 关节限制
+        dim_x, dim_y: 投影维度
+        ax: matplotlib Axes
+        show_path: 绘制路径
+        show_adjacency: 绘制邻接边（共享面中心连线）
+        title: 标题
+        figsize: 图形尺寸
+
+    Returns:
+        matplotlib figure
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib 不可用")
+        return None
+
+    forest = getattr(result, 'forest', None)
+    if forest is None:
+        logger.warning("PlannerResult 无 forest 属性，回退到 plot_cspace_boxes")
+        return plot_cspace_boxes(result, joint_limits, dim_x, dim_y, ax,
+                                 show_path, title=title, figsize=figsize)
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+    else:
+        fig = ax.figure
+
+    boxes = forest.boxes
+    adjacency = forest.adjacency
+
+    # 邻接度 → 颜色映射
+    degrees = {bid: len(adjacency.get(bid, set())) for bid in boxes}
+    max_deg = max(degrees.values()) if degrees else 1
+    cmap = plt.cm.viridis
+
+    for bid, box in boxes.items():
+        lo_x = box.joint_intervals[dim_x][0]
+        hi_x = box.joint_intervals[dim_x][1]
+        lo_y = box.joint_intervals[dim_y][0]
+        hi_y = box.joint_intervals[dim_y][1]
+
+        deg = degrees.get(bid, 0)
+        color = cmap(deg / max(max_deg, 1))
+
+        rect = Rectangle(
+            (lo_x, lo_y), hi_x - lo_x, hi_y - lo_y,
+            linewidth=0.6, edgecolor=color,
+            facecolor=color, alpha=0.25,
+        )
+        ax.add_patch(rect)
+
+    # 邻接边：共享面中心连线
+    if show_adjacency:
+        from .deoverlap import shared_face_center
+        seen = set()
+        for bid, neighbors in adjacency.items():
+            if bid not in boxes:
+                continue
+            for nb in neighbors:
+                if nb not in boxes:
+                    continue
+                key = (min(bid, nb), max(bid, nb))
+                if key in seen:
+                    continue
+                seen.add(key)
+                wp = shared_face_center(boxes[bid], boxes[nb])
+                if wp is None:
+                    continue
+                ca = np.array(boxes[bid].center)
+                cb = np.array(boxes[nb].center)
+                # 画邻接虚线
+                ax.plot(
+                    [ca[dim_x], wp[dim_x], cb[dim_x]],
+                    [ca[dim_y], wp[dim_y], cb[dim_y]],
+                    'k--', linewidth=0.3, alpha=0.25,
+                )
+                # 共享面中心点
+                ax.plot(wp[dim_x], wp[dim_y], 's',
+                        color='orange', markersize=2.5, alpha=0.6, zorder=4)
+
+    # 路径
+    if show_path and result.path:
+        path_x = [p[dim_x] for p in result.path]
+        path_y = [p[dim_y] for p in result.path]
+        ax.plot(path_x, path_y, 'b-', linewidth=2.0, label='Path', zorder=5)
+        ax.plot(path_x[0], path_y[0], 'go', markersize=10,
+                label='Start', zorder=6)
+        ax.plot(path_x[-1], path_y[-1], 'r*', markersize=12,
+                label='Goal', zorder=6)
+
+    if joint_limits:
+        lim_x = joint_limits[dim_x]
+        lim_y = joint_limits[dim_y]
+        ax.set_xlim(lim_x[0] - 0.1, lim_x[1] + 0.1)
+        ax.set_ylim(lim_y[0] - 0.1, lim_y[1] + 0.1)
+
+    ax.set_xlabel(f'q{dim_x} (rad)')
+    ax.set_ylabel(f'q{dim_y} (rad)')
+    ax.set_title(title)
+    ax.set_aspect('equal')
+
+    # 色条
+    sm = plt.cm.ScalarMappable(
+        cmap=cmap, norm=plt.Normalize(vmin=0, vmax=max_deg))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, shrink=0.6, label='邻接度')
+
+    ax.legend(loc='upper right', fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    return fig
+
+
 def plot_cspace_boxes(
     result: PlannerResult,
     joint_limits: Optional[List[Tuple[float, float]]] = None,

@@ -93,7 +93,7 @@ class TestResultStructure:
         """Each non-zero-length link should produce exactly 1 AABB (n_sub=1)."""
         res = panda_calc.compute_envelope(
             narrow_panda_intervals, method='numerical', sampling='critical')
-        # Total aabb entries should equal n_joints (8)
+        # Total aabb entries should equal n_joints + tool_frame (7 + 1 = 8)
         assert len(res.link_aabbs) == 8
 
     def test_aabb_ordered(self, panda_calc, narrow_panda_intervals):

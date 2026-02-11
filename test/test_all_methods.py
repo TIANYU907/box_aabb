@@ -21,7 +21,6 @@ def test_all_methods():
         (-0.2, 0.2),      # Joint 5
         (1.2, 1.8),       # Joint 6
         (-0.3, 0.3),      # Joint 7
-        (0.04, 0.04),     # Finger (fixed)
     ]
     
     calc = AABBCalculator(robot, skip_first_link=True)

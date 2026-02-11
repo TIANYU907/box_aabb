@@ -32,6 +32,7 @@ from typing import List, Tuple
 import numpy as np
 
 from box_aabb.robot import Robot, load_robot
+from planner.aabb_cache import AABBCache
 from planner.models import BoxNode, PlannerConfig
 from planner.obstacles import Scene
 from planner.collision import CollisionChecker
@@ -93,7 +94,8 @@ def grow_box_forest(
     """
     rng = np.random.default_rng(rng_seed)
 
-    checker = CollisionChecker(robot, scene)
+    aabb_cache = AABBCache.auto_load(robot)
+    checker = CollisionChecker(robot, scene, aabb_cache=aabb_cache)
     expander = BoxExpander(
         robot=robot,
         collision_checker=checker,
@@ -106,10 +108,14 @@ def grow_box_forest(
     t0 = time.time()
     n_sampled = 0
     n_farthest_fails = 0
+    t_last_log = t0
 
     for iteration in range(max_iters):
         if manager.total_nodes >= max_boxes:
+            logger.info("达到 max_boxes=%d，停止", max_boxes)
             break
+
+        t_iter_start = time.time()
 
         # ── 最远点采样: 批量候选 → 选最远 ──
         candidates = []
@@ -124,9 +130,12 @@ def grow_box_forest(
             dist = nearest.distance_to_config(q) if nearest else float('inf')
             candidates.append((q, dist))
 
+        t_after_sample = time.time()
+
         if not candidates:
             n_farthest_fails += 1
             if n_farthest_fails > 50:
+                logger.info("连续 50 次采样无候选，停止 (iter=%d)", iteration)
                 break
             continue
         n_farthest_fails = 0
@@ -135,8 +144,12 @@ def grow_box_forest(
 
         # ── 拓展 box ──
         node_id = manager.allocate_node_id()
+        t_expand_start = time.time()
         box = expander.expand(q_seed, node_id=node_id, rng=rng)
+        t_expand_end = time.time()
         if box is None or box.volume < 1e-6:
+            logger.debug("iter %d: expand 返回 None/tiny (%.3fs)",
+                         iteration, t_expand_end - t_expand_start)
             continue
 
         # ── 加入最近树或建新树 ──
@@ -147,10 +160,11 @@ def grow_box_forest(
             manager.create_tree(box)
 
         # ── 边界再采样拓展（让树生长） ──
+        n_boundary_added = 0
         if box.tree_id >= 0 and manager.total_nodes < max_boxes:
             samples = manager.get_boundary_samples(
                 box.tree_id, n_samples=seed_batch, rng=rng)
-            for qs in samples:
+            for s_idx, qs in enumerate(samples):
                 if manager.total_nodes >= max_boxes:
                     break
                 if checker.check_config_collision(qs):
@@ -158,21 +172,34 @@ def grow_box_forest(
                 if manager.find_containing_box(qs) is not None:
                     continue
                 nid = manager.allocate_node_id()
+                t_child_start = time.time()
                 child = expander.expand(qs, node_id=nid, rng=rng)
+                t_child_end = time.time()
                 if child is None or child.volume < 1e-6:
                     continue
                 nearest_in = manager.find_nearest_box_in_tree(box.tree_id, qs)
                 if nearest_in is not None:
                     manager.add_box(box.tree_id, child,
                                     parent_id=nearest_in.node_id)
+                    n_boundary_added += 1
 
-        # 进度日志
-        if (iteration + 1) % 200 == 0:
+        t_iter_end = time.time()
+
+        # 进度日志 — 每 10 次迭代 或 每 2 秒打印一次
+        if (iteration + 1) % 10 == 0 or (t_iter_end - t_last_log) > 2.0:
             logger.info(
-                "iter %d/%d: %d trees, %d boxes, volume=%.3f (sampled %d seeds)",
-                iteration + 1, max_iters, manager.n_trees,
-                manager.total_nodes, manager.get_total_volume(), n_sampled,
+                "iter %4d/%d | boxes=%3d/%d trees=%d | "
+                "sample=%.3fs expand=%.3fs boundary=+%d iter=%.3fs | "
+                "total=%.1fs",
+                iteration + 1, max_iters, manager.total_nodes, max_boxes,
+                manager.n_trees,
+                t_after_sample - t_iter_start,
+                t_expand_end - t_expand_start,
+                n_boundary_added,
+                t_iter_end - t_iter_start,
+                t_iter_end - t0,
             )
+            t_last_log = t_iter_end
 
     dt = time.time() - t0
     logger.info(
@@ -181,6 +208,11 @@ def grow_box_forest(
         manager.n_trees, manager.total_nodes, manager.get_total_volume(),
         dt, n_sampled, checker.n_collision_checks,
     )
+    # 自动保存 AABB 缓存
+    try:
+        aabb_cache.auto_save(robot)
+    except Exception as e:
+        logger.warning("AABB 缓存自动保存失败: %s", e)
     return manager, checker.n_collision_checks
 
 
@@ -212,16 +244,24 @@ def visualize(
     lo_x, hi_x = joint_limits[0]
     lo_y, hi_y = joint_limits[1]
 
-    # ── 扫描 C-space 碰撞地图 ──
+    # ── 扫描 C-space 碰撞地图（向量化） ──
     logger.info("扫描 C-space 碰撞地图 (resolution=%.3f) ...", resolution)
     xs = np.arange(lo_x, hi_x, resolution)
     ys = np.arange(lo_y, hi_y, resolution)
-    collision_map = np.zeros((len(ys), len(xs)), dtype=np.float32)
+    n_rows = len(ys)
+    n_cols = len(xs)
+    logger.info("  C-space 大小: %d x %d = %d cells", n_rows, n_cols, n_rows * n_cols)
+    collision_map = np.zeros((n_rows, n_cols), dtype=np.float32)
+    t_scan_start = time.time()
     for i, y in enumerate(ys):
-        for j, x in enumerate(xs):
-            if checker.check_config_collision(np.array([x, y])):
-                collision_map[i, j] = 1.0
-    logger.info("  C-space 大小: %d x %d", len(xs), len(ys))
+        # 构造该行所有配置 (n_cols, 2)
+        row_configs = np.column_stack([xs, np.full(n_cols, y)])
+        row_collisions = checker.check_config_collision_batch(row_configs)
+        collision_map[i, :] = row_collisions.astype(np.float32)
+        if (i + 1) % 50 == 0 or i == n_rows - 1:
+            elapsed = time.time() - t_scan_start
+            logger.info("  扫描进度: %d/%d 行 (%.1f%%) %.1fs",
+                        i + 1, n_rows, (i + 1) / n_rows * 100, elapsed)
 
     # 计算自由空间比例
     n_free = int(np.sum(collision_map == 0))
@@ -240,9 +280,10 @@ def visualize(
     ax1.set_aspect('equal')
     ax1.grid(True, alpha=0.2)
     p1 = output_dir / "cspace_collision.png"
+    logger.info("  正在保存 cspace_collision.png ...")
     fig1.savefig(p1, dpi=150, bbox_inches='tight')
     plt.close(fig1)
-    logger.info("  保存: %s", p1)
+    logger.info("  已保存: %s", p1)
 
     # ──── 图 2: Box tree + 碰撞地图 ────
     fig2, ax2 = plt.subplots(figsize=(10, 8))
@@ -295,9 +336,10 @@ def visualize(
     ax2.set_aspect('equal')
     ax2.grid(True, alpha=0.2)
     p2 = output_dir / "cspace_boxes.png"
+    logger.info("  正在保存 cspace_boxes.png ...")
     fig2.savefig(p2, dpi=150, bbox_inches='tight')
     plt.close(fig2)
-    logger.info("  保存: %s", p2)
+    logger.info("  已保存: %s", p2)
 
     # ──── 图 3: 工作空间 ────
     fig3, ax3 = plt.subplots(figsize=(10, 8))
@@ -335,9 +377,10 @@ def visualize(
     ax3.set_aspect('equal')
     ax3.grid(True, alpha=0.3)
     p3 = output_dir / "workspace.png"
+    logger.info("  正在保存 workspace.png ...")
     fig3.savefig(p3, dpi=150, bbox_inches='tight')
     plt.close(fig3)
-    logger.info("  保存: %s", p3)
+    logger.info("  已保存: %s", p3)
 
     return [str(p1), str(p2), str(p3)], coverage, coverage_raw, free_ratio
 

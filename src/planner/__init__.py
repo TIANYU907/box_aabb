@@ -35,14 +35,16 @@ from .models import (
 )
 from .obstacles import Scene
 from .collision import CollisionChecker
-from .box_expansion import BoxExpander, ExpansionRecord
+from .box_expansion import BoxExpander, ExpansionLog
 from .box_tree import BoxTreeManager
 from .box_rrt import BoxRRT
 from .connector import TreeConnector
 from .path_smoother import PathSmoother
 from .metrics import PathMetrics, evaluate_result, compare_results, format_comparison_table
+from .report import PlannerReportGenerator
 from .aabb_cache import AABBCache, IntervalStore, CacheEntry
 from .box_forest import BoxForest
+from .deoverlap import deoverlap, compute_adjacency, compute_adjacency_incremental
 from .box_query import BoxForestQuery
 from .free_space_tiler import FreeSpaceTiler, FreeSpaceTile
 from .dynamic_visualizer import animate_robot_path, resample_path
@@ -61,7 +63,7 @@ __all__ = [
     'CollisionChecker',
     # 核心算法
     'BoxExpander',
-    'ExpansionRecord',
+    'ExpansionLog',
     'BoxTreeManager',
     'BoxRRT',
     'TreeConnector',
@@ -71,11 +73,16 @@ __all__ = [
     'evaluate_result',
     'compare_results',
     'format_comparison_table',
+    # 报告生成
+    'PlannerReportGenerator',
     # v4.0 新增
     'AABBCache',
     'IntervalStore',
     'CacheEntry',
     'BoxForest',
+    'deoverlap',
+    'compute_adjacency',
+    'compute_adjacency_incremental',
     'BoxForestQuery',
     'FreeSpaceTiler',
     'FreeSpaceTile',

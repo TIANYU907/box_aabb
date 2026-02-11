@@ -13,7 +13,7 @@ planner/gcs_optimizer.py - GCS 路径优化
 
 import logging
 import heapq
-from typing import List, Dict, Tuple, Optional, Any
+from typing import List, Dict, Tuple, Optional, Any, Set
 
 import numpy as np
 
@@ -197,6 +197,142 @@ class GCSOptimizer:
 
         path.append(q_goal.copy())
         logger.info("Drake GCS 优化完成: %d 个路径点", len(path))
+        return path
+
+    # ==================== Box 序列路径优化 (v5.0) ====================
+
+    def optimize_box_sequence(
+        self,
+        box_sequence: List[BoxNode],
+        q_start: np.ndarray,
+        q_goal: np.ndarray,
+        adjacency: Dict[int, Set] = None,
+        allow_scipy: bool = True,
+    ) -> Optional[List[np.ndarray]]:
+        """在有序 box 序列上优化路径
+
+        每对相邻 box 的共享面放置 waypoint，用 scipy 优化这些
+        waypoints（约束在共享面范围内）使总路径长度最短。
+
+        Args:
+            box_sequence: 有序 BoxNode 列表 [B1, B2, ..., Bk]
+            q_start: 起点（在 B1 内）
+            q_goal: 终点（在 Bk 内）
+            adjacency: 邻接表（可选，用于获取共享面信息）
+            allow_scipy: 是否允许 scipy 优化（False 则仅用面中心）
+
+        Returns:
+            优化后的路径点列表，或 None
+        """
+        from .deoverlap import shared_face
+
+        if len(box_sequence) == 0:
+            return [q_start.copy(), q_goal.copy()]
+        if len(box_sequence) == 1:
+            return [q_start.copy(), q_goal.copy()]
+
+        n_dims = len(q_start)
+        n_transitions = len(box_sequence) - 1
+
+        if n_transitions == 0:
+            return [q_start.copy(), q_goal.copy()]
+
+        # 计算每个 transition 的共享面信息
+        faces = []
+        for i in range(n_transitions):
+            face = shared_face(box_sequence[i], box_sequence[i + 1])
+            if face is None:
+                # 无法找到共享面（不应发生），使用 box 中心
+                logger.warning(
+                    "box %d 和 %d 之间无共享面",
+                    box_sequence[i].node_id, box_sequence[i + 1].node_id,
+                )
+                faces.append(None)
+            else:
+                faces.append(face)
+
+        # 构建初始 waypoints（每个共享面的中心）
+        initial_waypoints = []
+        for face in faces:
+            if face is None:
+                # fallback: 两个 box 中心的中点
+                initial_waypoints.append(np.zeros(n_dims))
+            else:
+                dim, val, face_intervals = face
+                wp = np.array([(lo + hi) / 2.0 for lo, hi in face_intervals])
+                initial_waypoints.append(wp)
+
+        if not HAS_SCIPY or not allow_scipy:
+            path = [q_start.copy()]
+            path.extend(initial_waypoints)
+            path.append(q_goal.copy())
+            return path
+
+        # scipy L-BFGS-B 优化
+        # 变量：每个 transition waypoint 的自由坐标
+        # 固定坐标（shared_face 的 dim 维度）不参与优化
+        free_indices = []   # [(wp_idx, dim)] 列表，优化变量的排列
+        bounds_list = []
+
+        for wp_i, face in enumerate(faces):
+            if face is None:
+                # 无约束，所有维度自由
+                for d in range(n_dims):
+                    free_indices.append((wp_i, d))
+                    bounds_list.append((None, None))
+            else:
+                dim_fixed, val, face_intervals = face
+                for d in range(n_dims):
+                    if d == dim_fixed:
+                        continue  # 固定维度不优化
+                    free_indices.append((wp_i, d))
+                    f_lo, f_hi = face_intervals[d]
+                    bounds_list.append((f_lo, f_hi))
+
+        if not free_indices:
+            path = [q_start.copy()]
+            path.extend(initial_waypoints)
+            path.append(q_goal.copy())
+            return path
+
+        x0 = np.array([initial_waypoints[wi][d] for wi, d in free_indices])
+
+        def _reconstruct_waypoints(x):
+            wps = [wp.copy() for wp in initial_waypoints]
+            for idx, (wi, d) in enumerate(free_indices):
+                wps[wi][d] = x[idx]
+            return wps
+
+        def objective(x):
+            wps = _reconstruct_waypoints(x)
+            pts = [q_start] + wps + [q_goal]
+            length = 0.0
+            for i in range(1, len(pts)):
+                length += np.linalg.norm(pts[i] - pts[i - 1])
+            return length
+
+        try:
+            from scipy.optimize import minimize as scipy_min
+            result = scipy_min(
+                objective, x0, method='L-BFGS-B',
+                bounds=bounds_list,
+                options={'maxiter': 200, 'ftol': 1e-8},
+            )
+            if result.success:
+                opt_wps = _reconstruct_waypoints(result.x)
+                path = [q_start.copy()] + opt_wps + [q_goal.copy()]
+                logger.info(
+                    "Box 序列路径优化成功: %d 个 waypoints, "
+                    "长度 %.4f → %.4f",
+                    n_transitions, objective(x0), result.fun,
+                )
+                return path
+        except Exception as e:
+            logger.warning("Box 序列路径优化失败: %s", e)
+
+        path = [q_start.copy()]
+        path.extend(initial_waypoints)
+        path.append(q_goal.copy())
         return path
 
     # ==================== Fallback: Dijkstra + scipy ====================

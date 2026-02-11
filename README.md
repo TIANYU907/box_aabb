@@ -108,7 +108,7 @@ robot = Robot(
 
 # Robot 属性
 print(robot.name)            # "Panda"
-print(robot.n_joints)        # 8
+print(robot.n_joints)        # 7
 print(robot.joint_limits)    # [(-2.8973, 2.8973), ...]
 print(robot.coupled_pairs)   # [(0, 2), (1, 3)]
 print(robot.coupled_triples) # [(0, 2, 4), (1, 3, 5)]

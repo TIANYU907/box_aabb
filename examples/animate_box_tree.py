@@ -20,6 +20,7 @@ examples/animate_box_tree.py - Box Tree 生长过程动画
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import math
 import time
@@ -31,6 +32,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 from box_aabb.robot import Robot, load_robot
+from planner.aabb_cache import AABBCache
 from planner.box_expansion import BoxExpander, ExpansionLog
 from planner.box_tree import BoxTreeManager
 from planner.collision import CollisionChecker
@@ -40,6 +42,28 @@ from planner.obstacles import Scene
 LOG_FMT = "[%(asctime)s] %(levelname)-7s %(name)s: %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FMT, datefmt="%H:%M:%S")
 logger = logging.getLogger("box_tree_anim")
+
+
+def _sanitize_for_json(obj):
+    """递归清理 Python 对象中的非标准 JSON 值 (inf, nan, ndarray)"""
+    if isinstance(obj, float):
+        if math.isinf(obj) or math.isnan(obj):
+            return None
+        return round(obj, 6)
+    if isinstance(obj, np.floating):
+        v = float(obj)
+        if math.isinf(v) or math.isnan(v):
+            return None
+        return round(v, 6)
+    if isinstance(obj, (np.integer, int)):
+        return int(obj)
+    if isinstance(obj, np.ndarray):
+        return [_sanitize_for_json(x) for x in obj.tolist()]
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(x) for x in obj]
+    return obj
 
 
 # ──────────────────────────────────────────────────────────
@@ -118,7 +142,8 @@ def record_growth(
 ) -> Tuple[List[GrowthEvent], BoxTreeManager]:
     """运行 box forest 生长并记录所有事件"""
     rng = np.random.default_rng(rng_seed)
-    checker = CollisionChecker(robot, scene)
+    aabb_cache = AABBCache.auto_load(robot)
+    checker = CollisionChecker(robot, scene, aabb_cache=aabb_cache)
     expander = BoxExpander(
         robot=robot, collision_checker=checker,
         joint_limits=joint_limits,
@@ -195,6 +220,12 @@ def record_growth(
         if (iteration + 1) % 500 == 0:
             logger.info("  growth iter %d/%d: %d boxes",
                         iteration + 1, max_iters, manager.total_nodes)
+
+    # 自动保存 AABB 缓存
+    try:
+        aabb_cache.auto_save(robot)
+    except Exception as e:
+        logger.warning("AABB 缓存自动保存失败: %s", e)
 
     return events, manager
 
@@ -683,6 +714,47 @@ def main():
                 box_idx += 1
     logger.info("  拓展详情: %s (%d boxes)", detail_path, box_idx)
 
+    # 3.6 写入 growth_log.json
+    growth_log_path = output_dir / "growth_log.json"
+    growth_records = []
+    for evt in events:
+        if evt.event_type != 'box_added' or evt.box is None:
+            continue
+        b = evt.box
+        nearest = manager.find_nearest_box(evt.config)
+        ndist = nearest.distance_to_config(evt.config) if nearest else None
+        record = {
+            "type": evt.event_type,
+            "config": evt.config.tolist(),
+            "source": evt.source,
+            "nearest_box_dist": ndist,
+            "box_index": len(growth_records),
+            "tree_id": evt.tree_id,
+            "volume": b.volume,
+            "widths": list(b.widths),
+            "intervals": [list(iv) for iv in b.joint_intervals],
+        }
+        if evt.expansion_log is not None:
+            el = evt.expansion_log
+            record["expansion"] = {
+                "strategy": el.strategy,
+                "dim_order": el.dim_order,
+                "jacobian_norms": (
+                    [el.jacobian_norms[i] for i in range(len(el.jacobian_norms))]
+                    if el.jacobian_norms else None
+                ),
+                "total_rounds": el.total_rounds,
+                "total_steps": el.total_steps,
+                "final_volume": el.final_volume,
+                "early_stop": el.early_stop,
+                "early_stop_reason": el.early_stop_reason,
+            }
+        growth_records.append(record)
+    with open(growth_log_path, 'w', encoding='utf-8') as f:
+        json.dump(_sanitize_for_json(growth_records), f, indent=2,
+                  ensure_ascii=False)
+    logger.info("  growth log: %s (%d records)", growth_log_path, len(growth_records))
+
     # 4. 构建帧序列
     frames = build_frames(events, n_expansion_detail=args.expansion_detail)
     logger.info("  动画帧数: %d (+ intro/outro)", len(frames))
@@ -708,6 +780,7 @@ def main():
         f"Events: {len(events)} ({n_rej} rejected)\n"
         f"Frames: {len(frames)}\n"
         f"Video: {video_path}\n"
+        f"Growth log: {growth_log_path}\n"
     )
     (output_dir / "stats.txt").write_text(summary, encoding="utf-8")
 

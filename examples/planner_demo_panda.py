@@ -26,9 +26,9 @@ from planner import (
 def main():
     # ---- 1. 加载 Panda ----
     robot = load_robot('panda')
-    print(f"机器人: {robot.name}, {robot.n_joints} 个 DH 参数")
-    print(f"活跃关节: 7 (第 8 个指关节固定)")
+    print(f"机器人: {robot.name}, {robot.n_joints} 自由度")
     print(f"连杆 d 值: {[p['d'] for p in robot.dh_params]}")
+    print(f"tool_frame: {robot.tool_frame}")
     print(f"零长度连杆: {robot.zero_length_links}")
 
     # ---- 2. 设置障碍物场景 ----
@@ -54,7 +54,7 @@ def main():
               f"max={obs.max_point.tolist()}")
 
     # ---- 3. 配置规划器 ----
-    # Panda 是 8D (含固定指关节), 需要更多迭代和更大搜索空间
+    # Panda 是 7D, 需要更多迭代和更大搜索空间
     config = PlannerConfig(
         max_iterations=400,
         max_box_nodes=150,
@@ -73,13 +73,13 @@ def main():
 
     # ---- 4. 定义起终点 ----
     # 起点: Panda "就绪" 姿态
-    q_start = np.array([0.0, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785, 0.0])
+    q_start = np.array([0.0, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785])
 
     # 终点: 手臂向左伸展
-    q_goal = np.array([-1.5, -0.5, 1.0, -1.2, -0.5, 2.0, -0.3, 0.0])
+    q_goal = np.array([-1.5, -0.5, 1.0, -1.2, -0.5, 2.0, -0.3])
 
-    print(f"\n起点: q = {np.array2string(q_start[:7], precision=3)}")
-    print(f"终点: q = {np.array2string(q_goal[:7], precision=3)}")
+    print(f"\n起点: q = {np.array2string(q_start, precision=3)}")
+    print(f"终点: q = {np.array2string(q_goal, precision=3)}")
 
     # 验证起终点无碰撞
     from planner.collision import CollisionChecker
@@ -95,25 +95,25 @@ def main():
         rng = np.random.default_rng(42)
         if start_collision:
             for _ in range(100):
-                q_start[:7] += rng.normal(0, 0.1, size=7)
-                q_start[:7] = np.clip(
-                    q_start[:7],
-                    [l[0] for l in robot.joint_limits[:7]],
-                    [l[1] for l in robot.joint_limits[:7]],
+                q_start += rng.normal(0, 0.1, size=7)
+                q_start = np.clip(
+                    q_start,
+                    [l[0] for l in robot.joint_limits],
+                    [l[1] for l in robot.joint_limits],
                 )
                 if not checker.check_config_collision(q_start):
-                    print(f"  新起点: {np.array2string(q_start[:7], precision=3)}")
+                    print(f"  新起点: {np.array2string(q_start, precision=3)}")
                     break
         if goal_collision:
             for _ in range(100):
-                q_goal[:7] += rng.normal(0, 0.1, size=7)
-                q_goal[:7] = np.clip(
-                    q_goal[:7],
-                    [l[0] for l in robot.joint_limits[:7]],
-                    [l[1] for l in robot.joint_limits[:7]],
+                q_goal += rng.normal(0, 0.1, size=7)
+                q_goal = np.clip(
+                    q_goal,
+                    [l[0] for l in robot.joint_limits],
+                    [l[1] for l in robot.joint_limits],
                 )
                 if not checker.check_config_collision(q_goal):
-                    print(f"  新终点: {np.array2string(q_goal[:7], precision=3)}")
+                    print(f"  新终点: {np.array2string(q_goal, precision=3)}")
                     break
 
     # ---- 5. 执行规划 ----

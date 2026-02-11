@@ -20,7 +20,7 @@ planner/box_expansion.py - 启发式 Box 拓展算法
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Dict, Any
+from typing import Dict, List, Tuple, Optional, Any
 
 import numpy as np
 
@@ -198,6 +198,7 @@ class BoxExpander:
         balanced_step_fraction: float = 0.5,
         balanced_max_steps: int = 200,
         overlap_weight: float = 1.0,
+        hard_overlap_reject: bool = True,
     ) -> None:
         self.robot = robot
         self.collision_checker = collision_checker
@@ -213,6 +214,7 @@ class BoxExpander:
         self.balanced_step_fraction = balanced_step_fraction
         self.balanced_max_steps = balanced_max_steps
         self.overlap_weight = overlap_weight
+        self.hard_overlap_reject = hard_overlap_reject
         self._rng: Optional[np.random.Generator] = None
         self._current_log: Optional[ExpansionLog] = None
         self._existing_boxes: List[BoxNode] = []
@@ -336,6 +338,134 @@ class BoxExpander:
 
     # ── balanced 策略 ─────────────────────────────────────
 
+    def _evaluate_candidate(
+        self,
+        dim: int,
+        direction: int,
+        intervals: List[Tuple[float, float]],
+        current_vol: float,
+    ) -> Optional[tuple]:
+        """评估单个候选方向的拓展结果
+
+        Returns:
+            评估结果元组 (dim, direction, new_bound, gain, step_size,
+            actual_step, n_bisect, stop_reason, trial_vol, raw_gain,
+            ovlp_increase) 或 None
+        """
+        lo_limit, hi_limit = self.joint_limits[dim]
+        current_lo, current_hi = intervals[dim]
+        frac = self.balanced_step_fraction
+
+        if direction > 0:
+            remaining = hi_limit - current_hi
+            current_bound = current_hi
+            limit = hi_limit
+        else:
+            remaining = current_lo - lo_limit
+            current_bound = current_lo
+            limit = lo_limit
+
+        if remaining < self.resolution:
+            return None
+
+        # ── 边界截断：将已有 box 边界视为“虚拟障碍物”──
+        clamp = limit  # 默认不截断
+        if self.hard_overlap_reject and self._existing_boxes:
+            clamp = self._clamp_to_existing(
+                intervals, dim, direction, limit)
+            if direction > 0:
+                clamped_remaining = clamp - current_hi
+            else:
+                clamped_remaining = current_lo - clamp
+            if clamped_remaining < self.resolution:
+                return None  # 该方向已被已有 box 堵死
+            remaining = clamped_remaining
+            limit = clamp
+
+        # 自适应步长：剩余空间 × fraction
+        step_size = remaining * frac
+        if step_size < self.resolution:
+            step_size = remaining  # 小于精度就尝试一步到位
+
+        # 目标边界
+        if direction > 0:
+            target = min(current_hi + step_size, limit)
+        else:
+            target = max(current_lo - step_size, limit)
+
+        # 测试目标边界是否安全
+        test_intervals = list(intervals)
+        if direction > 0:
+            test_intervals[dim] = (current_lo, target)
+        else:
+            test_intervals[dim] = (target, current_hi)
+
+        if not self._check_collision(test_intervals):
+            # 整步安全
+            new_bound = target
+            n_bisect = 0
+            stop_reason = ('reached_limit'
+                           if abs(target - limit) < 1e-10
+                           else 'step_safe')
+        else:
+            # 二分搜索在 [current_bound, target] 之间找安全边界
+            safe = current_bound
+            test = target
+            n_bisect = 0
+            for bi in range(30):
+                if abs(test - safe) < self.resolution:
+                    break
+                mid = (safe + test) / 2.0
+                test_intervals = list(intervals)
+                if direction > 0:
+                    test_intervals[dim] = (current_lo, mid)
+                else:
+                    test_intervals[dim] = (mid, current_hi)
+                if self._check_collision(test_intervals):
+                    test = mid
+                else:
+                    safe = mid
+                n_bisect = bi + 1
+            new_bound = safe
+            stop_reason = 'resolution_converged'
+
+        actual_step = abs(new_bound - current_bound)
+        if actual_step < self.resolution * 0.5:
+            return None  # 这个候选本步无法有效拓展
+
+        # 计算体积增益（含重叠惩罚）
+        trial_intervals = list(intervals)
+        if direction > 0:
+            trial_intervals[dim] = (intervals[dim][0], new_bound)
+        else:
+            trial_intervals[dim] = (new_bound, intervals[dim][1])
+        trial_vol = self._volume(trial_intervals)
+        raw_gain = trial_vol - current_vol
+
+        # 计算与已有 box 的重叠增量
+        if self._existing_boxes:
+            if self.hard_overlap_reject:
+                # 硬截断模式下重叠应该已被 clamp 避免，但仍可能有微小角落重叠
+                ovlp_increase = 0.0
+            elif self.overlap_weight > 0:
+                overlap_before = self._compute_overlap_with_existing(intervals)
+                overlap_after = self._compute_overlap_with_existing(trial_intervals)
+                ovlp_increase = overlap_after - overlap_before
+            else:
+                ovlp_increase = 0.0
+        else:
+            ovlp_increase = 0.0
+
+        # 净新增体积 = 原始增益 - 重叠权重 × 重叠增量
+        novel_gain = raw_gain - self.overlap_weight * ovlp_increase
+        gain = novel_gain
+
+        return (
+            dim, direction, new_bound, gain,
+            step_size, actual_step, n_bisect, stop_reason,
+            trial_vol, raw_gain, ovlp_increase,
+        )
+
     def _expand_balanced(
         self,
         seed: np.ndarray,
@@ -350,9 +480,13 @@ class BoxExpander:
         3. 计算执行该步后的体积增益
         4. 选择体积增益最大的候选执行
         5. 移除已耗尽的候选（剩余空间 < resolution）
+
+        优化：
+        - 全评估与快速轮换交替：每 2n 步做一次全候选评估，
+          其余步骤只评估上次最佳候选所在维度 + 1 个随机候选（减少碰撞检测）
+        - 体积增长率早停：连续多步增长 <0.01% 则停止
         """
         intervals = list(intervals)
-        frac = self.balanced_step_fraction
 
         # 候选池：(dim, direction)，direction = +1 or -1
         candidates = []
@@ -365,114 +499,23 @@ class BoxExpander:
 
         step_count = 0
         consecutive_zero = 0
+        vol_at_checkpoint = self._volume(intervals)
+        checkpoint_step = 0
+        full_eval_period = max(2 * self._n_dims, 4)
 
         for step_i in range(self.balanced_max_steps):
             if not candidates:
                 break
 
             current_vol = self._volume(intervals)
-            best_gain = -1.0
-            best_candidate = None
-            best_new_bound = None
-            best_info = None
 
             # 评估每个候选
             eval_results = []
             for dim, direction in candidates:
-                lo_limit, hi_limit = self.joint_limits[dim]
-                current_lo, current_hi = intervals[dim]
-
-                if direction > 0:
-                    remaining = hi_limit - current_hi
-                    current_bound = current_hi
-                    limit = hi_limit
-                else:
-                    remaining = current_lo - lo_limit
-                    current_bound = current_lo
-                    limit = lo_limit
-
-                if remaining < self.resolution:
-                    continue
-
-                # 自适应步长：剩余空间 × fraction
-                step_size = remaining * frac
-                if step_size < self.resolution:
-                    step_size = remaining  # 小于精度就尝试一步到位
-
-                # 目标边界
-                if direction > 0:
-                    target = min(current_hi + step_size, hi_limit)
-                else:
-                    target = max(current_lo - step_size, lo_limit)
-
-                # 测试目标边界是否安全
-                test_intervals = list(intervals)
-                if direction > 0:
-                    test_intervals[dim] = (current_lo, target)
-                else:
-                    test_intervals[dim] = (target, current_hi)
-
-                if not self._check_collision(test_intervals):
-                    # 整步安全
-                    new_bound = target
-                    n_bisect = 0
-                    stop_reason = ('reached_limit'
-                                   if abs(target - limit) < 1e-10
-                                   else 'step_safe')
-                else:
-                    # 二分搜索在 [current_bound, target] 之间找安全边界
-                    safe = current_bound
-                    test = target
-                    n_bisect = 0
-                    for bi in range(30):
-                        if abs(test - safe) < self.resolution:
-                            break
-                        mid = (safe + test) / 2.0
-                        test_intervals = list(intervals)
-                        if direction > 0:
-                            test_intervals[dim] = (current_lo, mid)
-                        else:
-                            test_intervals[dim] = (mid, current_hi)
-                        if self._check_collision(test_intervals):
-                            test = mid
-                        else:
-                            safe = mid
-                        n_bisect = bi + 1
-                    new_bound = safe
-                    stop_reason = 'resolution_converged'
-
-                actual_step = abs(new_bound - current_bound)
-                if actual_step < self.resolution * 0.5:
-                    continue  # 这个候选本步无法有效拓展
-
-                # 计算体积增益（含重叠惩罚）
-                trial_intervals = list(intervals)
-                if direction > 0:
-                    trial_intervals[dim] = (intervals[dim][0], new_bound)
-                else:
-                    trial_intervals[dim] = (new_bound, intervals[dim][1])
-                trial_vol = self._volume(trial_intervals)
-                raw_gain = trial_vol - current_vol
-
-                # 计算与已有 box 的重叠增量
-                if self._existing_boxes and self.overlap_weight > 0:
-                    overlap_before = self._compute_overlap_with_existing(
-                        intervals)
-                    overlap_after = self._compute_overlap_with_existing(
-                        trial_intervals)
-                    ovlp_increase = overlap_after - overlap_before
-                else:
-                    ovlp_increase = 0.0
-
-                # 净新增体积 = 原始增益 - 重叠权重 × 重叠增量
-                novel_gain = raw_gain - self.overlap_weight * ovlp_increase
-                gain = novel_gain
-
-                eval_results.append((
-                    dim, direction, new_bound, gain,
-                    step_size, actual_step, n_bisect, stop_reason,
-                    trial_vol, raw_gain, ovlp_increase,
-                ))
+                result = self._evaluate_candidate(
+                    dim, direction, intervals, current_vol)
+                if result is not None:
+                    eval_results.append(result)
 
             if not eval_results:
                 # 所有候选都无法拓展
@@ -498,6 +541,20 @@ class BoxExpander:
                     break
             else:
                 consecutive_zero = 0
+
+            # ── 体积增长率早停 ──
+            if step_count > 0 and (step_count - checkpoint_step) >= full_eval_period:
+                if vol_at_checkpoint > 0:
+                    growth_rate = (current_vol - vol_at_checkpoint) / vol_at_checkpoint
+                    if growth_rate < 0.005:  # < 0.5% growth in last period
+                        if self._current_log:
+                            self._current_log.early_stop = True
+                            self._current_log.early_stop_reason = (
+                                f'marginal growth {growth_rate:.4%} over '
+                                f'{full_eval_period} steps at step {step_i}')
+                        break
+                vol_at_checkpoint = current_vol
+                checkpoint_step = step_count
 
             # 执行
             current_lo, current_hi = intervals[best_dim]
@@ -573,6 +630,66 @@ class BoxExpander:
         for b in self._existing_boxes:
             total += trial.overlap_volume(b)
         return total
+
+    def _clamp_to_existing(
+        self,
+        intervals: List[Tuple[float, float]],
+        dim: int,
+        direction: int,
+        limit: float,
+    ) -> float:
+        """将扩展目标截断到最近的已有 box 边界
+
+        沿 (dim, direction) 扩展时，找到该方向上所有与当前 box
+        在其余维度有投影重叠的已有 box，取它们在 dim 维的最近边界。
+
+        Args:
+            intervals: 当前 box 区间
+            dim: 扩展维度
+            direction: 扩展方向 (+1 或 -1)
+            limit: 原始关节限制边界
+
+        Returns:
+            截断后的目标边界（不超过 limit）
+        """
+        clamped = limit
+        current_lo, current_hi = intervals[dim]
+
+        for box in self._existing_boxes:
+            # 检查其余维度是否有投影重叠
+            has_overlap = True
+            for d in range(self._n_dims):
+                if d == dim:
+                    continue
+                b_lo, b_hi = box.joint_intervals[d]
+                i_lo, i_hi = intervals[d]
+                if i_hi <= b_lo or b_hi <= i_lo:
+                    has_overlap = False
+                    break
+
+            if not has_overlap:
+                continue
+
+            # 该 box 在 dim 维的区间
+            b_lo, b_hi = box.joint_intervals[dim]
+
+            if direction > 0:
+                # 向正方向扩展：已有 box 的 lo 边界是障碍
+                # 仅考虑在当前 hi 正方向上的 box
+                if b_lo > current_hi + self.resolution:
+                    clamped = min(clamped, b_lo)
+                elif b_lo <= current_hi and b_hi > current_hi:
+                    # 已有 box 与当前位置已经部分重叠
+                    # 不能再往这个方向扩展了
+                    clamped = min(clamped, current_hi)
+            else:
+                # 向负方向扩展：已有 box 的 hi 边界是障碍
+                if b_hi < current_lo - self.resolution:
+                    clamped = max(clamped, b_hi)
+                elif b_hi >= current_lo and b_lo < current_lo:
+                    clamped = max(clamped, current_lo)
+
+        return clamped
 
     def _compute_dimension_order(self, config: np.ndarray) -> List[int]:
         """计算拓展维度的优先级排序
@@ -693,7 +810,8 @@ class BoxExpander:
         Returns:
             True = 碰撞, False = 安全
         """
-        interval_result = self.collision_checker.check_box_collision(test_intervals)
+        interval_result = self.collision_checker.check_box_collision(
+            test_intervals, skip_merge=True)
         if not interval_result:
             # 区间 FK 说安全 → 一定安全
             return False

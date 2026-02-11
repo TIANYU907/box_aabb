@@ -44,7 +44,7 @@ sys.stdout.reconfigure(line_buffering=True)
 N_RUNS = 30               # 测试轮数
 N_RANDOM_SAMPLES = 5000   # 随机采样数量（设大一些以充分探索）
 MIN_GAP = 0.005           # gap 阈值，小于此值视为数值误差
-N_ACTIVE_JOINTS = 7       # 活跃关节数（Panda前7个，第8个finger固定）
+N_ACTIVE_JOINTS = 7       # 活跃关节数（Panda 7-DOF + tool_frame）
 INTERVAL_WIDTH_MIN = 0.3  # 关节区间最小宽度
 INTERVAL_WIDTH_MAX = 1.5  # 关节区间最大宽度
 
@@ -64,8 +64,6 @@ def generate_random_intervals(n_joints: int = N_ACTIVE_JOINTS, seed: int = None)
         hi = center + width / 2
         intervals.append((lo, hi))
     
-    # 第8关节（finger）固定
-    intervals.append((0.04, 0.04))
     return intervals
 
 

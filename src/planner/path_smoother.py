@@ -3,15 +3,17 @@ planner/path_smoother.py - 路径后处理
 
 提供路径平滑和优化功能：
 1. Shortcut 优化：随机选两点尝试直连，若无碰撞则移除中间点
-2. 等间距重采样
-3. 简单的 B-spline / 线性插值平滑
+2. Box-aware shortcut：路径限制在 box 内的 shortcut（v5.0）
+3. Box-aware smoothing：约束到 box 的移动平均平滑（v5.0）
+4. 等间距重采样
 """
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import numpy as np
 
+from .models import BoxNode
 from .collision import CollisionChecker
 
 logger = logging.getLogger(__name__)
@@ -164,6 +166,127 @@ class PathSmoother:
                         changed = True
                 else:
                     new_path.append(path[i].copy())
+
+            new_path.append(path[-1].copy())
+
+            if not changed:
+                break
+            path = new_path
+
+        return path
+
+    # ==================== Box-aware 方法 (v5.0) ====================
+
+    def shortcut_in_boxes(
+        self,
+        path: List[np.ndarray],
+        box_sequence: List[BoxNode],
+        max_iters: int = 100,
+        rng: Optional[np.random.Generator] = None,
+        n_samples: int = 10,
+    ) -> tuple:
+        """Box-aware shortcut：路径点必须在对应 box 内
+
+        跳过中间 box 的条件：path[i]→path[j] 的线段上所有采样点
+        都落在 box_sequence[i:j+1] 某个 box 内。
+
+        Args:
+            path: 路径点列表（与 box_sequence 一一对应，含首尾）
+            box_sequence: 对应的 box 序列（含首尾 box）
+            max_iters: 最大迭代
+            rng: 随机数生成器
+            n_samples: 线段采样点数
+
+        Returns:
+            (shortened_path, shortened_box_sequence)
+        """
+        if len(path) <= 2:
+            return list(path), list(box_sequence)
+
+        if rng is None:
+            rng = np.random.default_rng()
+
+        path = list(path)
+        boxes = list(box_sequence)
+        improved = 0
+
+        for _ in range(max_iters):
+            if len(path) <= 2:
+                break
+
+            i = rng.integers(0, len(path) - 2)
+            j = rng.integers(i + 2, len(path))
+
+            # 检查 path[i]→path[j] 是否在 boxes[i:j+1] 的联合内
+            valid = True
+            seg = path[j] - path[i]
+            for k in range(1, n_samples):
+                t = k / n_samples
+                pt = path[i] + t * seg
+                in_some_box = False
+                for bi in range(i, min(j + 1, len(boxes))):
+                    if boxes[bi].contains(pt):
+                        in_some_box = True
+                        break
+                if not in_some_box:
+                    valid = False
+                    break
+
+            if valid:
+                path = path[:i + 1] + path[j:]
+                boxes = boxes[:i + 1] + boxes[j:]
+                improved += 1
+
+        if improved > 0:
+            logger.info(
+                "Box-aware shortcut: %d 次简化, 路径 %d 个点",
+                improved, len(path),
+            )
+        return path, boxes
+
+    def smooth_in_boxes(
+        self,
+        path: List[np.ndarray],
+        box_sequence: List[BoxNode],
+        window: int = 3,
+        n_iters: int = 5,
+    ) -> List[np.ndarray]:
+        """Box-aware 移动平均平滑：约束到对应 box 内
+
+        移动平均后的点 clip 到对应 box 的边界，确保路径始终在 box 内。
+
+        Args:
+            path: 路径点列表
+            box_sequence: 对应的 box 序列
+            window: 平滑窗口
+            n_iters: 迭代次数
+
+        Returns:
+            平滑后的路径
+        """
+        if len(path) <= 2:
+            return list(path)
+
+        path = [p.copy() for p in path]
+        half_w = window // 2
+
+        for _ in range(n_iters):
+            new_path = [path[0].copy()]
+            changed = False
+
+            for i in range(1, len(path) - 1):
+                lo = max(0, i - half_w)
+                hi = min(len(path), i + half_w + 1)
+                avg = np.mean(path[lo:hi], axis=0)
+
+                # Clip 到对应 box 边界
+                if i < len(box_sequence):
+                    box = box_sequence[i]
+                    avg = box.nearest_point_to(avg)
+
+                if not np.allclose(avg, path[i]):
+                    changed = True
+                new_path.append(avg)
 
             new_path.append(path[-1].copy())
 

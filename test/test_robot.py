@@ -30,7 +30,7 @@ class TestRobotConstruction:
         assert simple_2dof_robot.n_joints == 2
 
     def test_panda_joint_count(self, panda_robot):
-        assert panda_robot.n_joints == 8
+        assert panda_robot.n_joints == 7
 
     def test_invalid_joint_type_raises(self):
         dh = [{"alpha": 0, "a": 1, "d": 0, "theta": 0, "type": "linear"}]
@@ -92,12 +92,12 @@ class TestForwardKinematics:
             simple_2dof_robot.forward_kinematics([0.0])
 
     def test_get_link_positions_length(self, panda_robot):
-        positions = panda_robot.get_link_positions([0] * 8)
-        assert len(positions) == 9  # base + 8 joints
+        positions = panda_robot.get_link_positions([0] * 7)
+        assert len(positions) == 9  # base + 7 joints + tool_frame
 
     def test_get_link_position_matches_fk(self, panda_robot):
         """get_link_position(q, i) should match forward_kinematics(q, all)[i]."""
-        q = [0.1, -0.2, 0.3, -1.5, 0.1, 1.0, -0.3, 0.0]
+        q = [0.1, -0.2, 0.3, -1.5, 0.1, 1.0, -0.3]
         all_pos = panda_robot.get_link_positions(q)
         for i in range(1, 9):
             pos_i = panda_robot.get_link_position(q, i)
@@ -163,15 +163,11 @@ class TestPandaPreset:
     """create_panda_robot() and PANDA_JOINT_LIMITS."""
 
     def test_joint_limits_length(self):
-        assert len(PANDA_JOINT_LIMITS) == 8
+        assert len(PANDA_JOINT_LIMITS) == 7
 
     def test_joint_limits_ordered(self):
         for lo, hi in PANDA_JOINT_LIMITS:
             assert lo <= hi
-
-    def test_finger_fixed(self):
-        lo, hi = PANDA_JOINT_LIMITS[7]
-        assert lo == 0 and hi == 0
 
 
 class TestRobotNameAndLimits:
@@ -218,7 +214,7 @@ class TestConfigSystem:
 
     def test_load_robot_panda(self):
         robot = load_robot('panda')
-        assert robot.n_joints == 8
+        assert robot.n_joints == 7
         assert robot.name == "Panda"
 
     def test_load_robot_case_insensitive(self):

@@ -19,7 +19,7 @@ from box_aabb.aabb_calculator import AABBCalculator
 
 @pytest.fixture(scope="session")
 def panda_robot() -> Robot:
-    """Franka Emika Panda robot (7+1 DOF)."""
+    """Franka Emika Panda robot (7 DOF + tool_frame)."""
     return create_panda_robot()
 
 
@@ -67,8 +67,8 @@ def simple_calc(simple_2dof_robot) -> AABBCalculator:
 
 @pytest.fixture()
 def narrow_panda_intervals():
-    """Small ±0.5 rad intervals for all 7 joints, finger fixed."""
-    return [(-0.5, 0.5)] * 7 + [(0, 0)]
+    """Small ±0.5 rad intervals for all 7 joints."""
+    return [(-0.5, 0.5)] * 7
 
 
 @pytest.fixture()

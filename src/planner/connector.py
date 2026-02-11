@@ -3,14 +3,13 @@ planner/connector.py - 树间连接与始末点连接
 
 负责：
 1. 连接不同 box tree（构建 graph of convex sets 的边）
-2. 连接规划起始点/目标点到最近的 box
-3. 构建整体邻接图用于路径搜索
+2. 基于无重叠邻接图构建边（v5.0）
+3. 连接规划起始点/目标点到最近的 box
+4. 构建整体图用于路径搜索
 
-连接策略：
-- 对每对树，找距离最近的 box 对
-- 在两个 box 表面各取最近点
-- 用线段碰撞检测验证直连可行性
-- 同一棵树内相邻 box（父子/兄弟有交集）自动连接
+连接策略（v5.0 更新）：
+- 邻接模式：从 deoverlap 后的邻接表直接构建边，transition 在共享面中心
+- Legacy 模式：兼容旧的 overlap-based 和 segment-based 连接
 """
 
 import logging
@@ -319,7 +318,206 @@ class TreeConnector:
         candidates.sort(key=lambda x: x[1])
         return [b for b, _ in candidates[:max_candidates]]
 
+    # ==================== 邻接图模式 (v5.0) ====================
+
+    def build_adjacency_edges(
+        self,
+        boxes: Dict[int, BoxNode],
+        adjacency: Dict[int, Set[int]],
+    ) -> List[Edge]:
+        """从无重叠邻接图构建边
+
+        每对邻接 box 的共享面中心作为 transition 点。
+
+        Args:
+            boxes: {node_id: BoxNode}
+            adjacency: {node_id: set of neighbor_ids}
+
+        Returns:
+            邻接边列表
+        """
+        from .deoverlap import shared_face_center
+
+        edges: List[Edge] = []
+        seen: Set[Tuple[int, int]] = set()
+
+        for box_id, neighbors in adjacency.items():
+            if box_id not in boxes:
+                continue
+            for nb_id in neighbors:
+                if nb_id not in boxes:
+                    continue
+                key = (min(box_id, nb_id), max(box_id, nb_id))
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                wp = shared_face_center(boxes[box_id], boxes[nb_id])
+                if wp is None:
+                    # fallback: 交集中心（微小重叠场景）
+                    wp = self._intersection_center(boxes[box_id], boxes[nb_id])
+
+                edge = Edge(
+                    edge_id=self._allocate_edge_id(),
+                    source_box_id=box_id,
+                    target_box_id=nb_id,
+                    source_config=wp,
+                    target_config=wp,
+                    source_tree_id=boxes[box_id].tree_id,
+                    target_tree_id=boxes[nb_id].tree_id,
+                    is_collision_free=True,  # box 内，自然无碰撞
+                )
+                edges.append(edge)
+
+        logger.info("邻接图边: %d 条", len(edges))
+        return edges
+
+    def connect_endpoints_to_forest(
+        self,
+        q_start: np.ndarray,
+        q_goal: np.ndarray,
+        boxes: Dict[int, BoxNode],
+    ) -> Tuple[List[Edge], Optional[int], Optional[int]]:
+        """将始末点连接到 BoxForest 的 box
+
+        优先检查包含，然后尝试自由空间线段连接。
+
+        Args:
+            q_start, q_goal: 起始和目标配置
+            boxes: 所有有效（非碰撞）的 box
+
+        Returns:
+            (edges, start_box_id, goal_box_id)
+        """
+        edges: List[Edge] = []
+
+        start_box_id = self._connect_point_to_boxes(
+            q_start, "start", edges, boxes)
+        goal_box_id = self._connect_point_to_boxes(
+            q_goal, "goal", edges, boxes)
+
+        return edges, start_box_id, goal_box_id
+
+    def _connect_point_to_boxes(
+        self,
+        config: np.ndarray,
+        label: str,
+        edges: List[Edge],
+        boxes: Dict[int, BoxNode],
+    ) -> Optional[int]:
+        """将一个点连接到 box 集合中最近的 box"""
+        # 1. 检查是否在某个 box 内
+        for box in boxes.values():
+            if box.contains(config):
+                logger.info("%s 点在 box %d 内", label, box.node_id)
+                return box.node_id
+
+        # 2. 找最近的 box + 线段碰撞检测
+        candidates = sorted(
+            boxes.values(),
+            key=lambda b: b.distance_to_config(config),
+        )
+
+        for box in candidates[:20]:
+            q_box = box.nearest_point_to(config)
+            if not self.collision_checker.check_segment_collision(
+                config, q_box, self.segment_resolution
+            ):
+                edge = Edge(
+                    edge_id=self._allocate_edge_id(),
+                    source_box_id=-1,
+                    target_box_id=box.node_id,
+                    source_config=config.copy(),
+                    target_config=q_box,
+                    source_tree_id=-1,
+                    target_tree_id=box.tree_id,
+                    is_collision_free=True,
+                )
+                edges.append(edge)
+                logger.info(
+                    "%s 点通过线段连接到 box %d (距离 %.4f)",
+                    label, box.node_id, box.distance_to_config(config),
+                )
+                return box.node_id
+
+        logger.warning("%s 点无法连接到任何 box", label)
+        return None
+
     # ==================== 图构建 ====================
+
+    def build_forest_graph(
+        self,
+        adjacency_edges: List[Edge],
+        endpoint_edges: List[Edge],
+        q_start: np.ndarray,
+        q_goal: np.ndarray,
+        start_box_id: Optional[int],
+        goal_box_id: Optional[int],
+        boxes: Dict[int, BoxNode],
+    ) -> Dict:
+        """构建基于 BoxForest 邻接图的搜索图
+
+        与 build_adjacency_graph 格式相同，但节点来自 boxes 参数
+        而非 tree_manager。
+
+        Args:
+            adjacency_edges: 邻接边
+            endpoint_edges: 端点连接边
+            q_start, q_goal: 起终点
+            start_box_id, goal_box_id: 端点连接的 box ID
+            boxes: 有效 box 字典
+
+        Returns:
+            搜索图字典
+        """
+        all_edges = adjacency_edges + endpoint_edges
+
+        nodes: Set = set()
+        adj: Dict = {}
+
+        # 收集所有 box 节点
+        for box_id in boxes:
+            nodes.add(box_id)
+            adj.setdefault(box_id, [])
+
+        # 添加边
+        for edge in all_edges:
+            src, tgt = edge.source_box_id, edge.target_box_id
+
+            if src == -1:
+                src = 'start' if np.allclose(edge.source_config, q_start) else 'goal'
+                nodes.add(src)
+                adj.setdefault(src, [])
+
+            if tgt == -1:
+                tgt = 'start' if np.allclose(edge.target_config, q_start) else 'goal'
+                nodes.add(tgt)
+                adj.setdefault(tgt, [])
+
+            adj.setdefault(src, []).append((tgt, edge.cost, edge))
+            adj.setdefault(tgt, []).append((src, edge.cost, edge))
+
+        # 确保 start/goal 在图中
+        if start_box_id is not None:
+            nodes.add('start')
+            adj.setdefault('start', []).append((start_box_id, 0.0, None))
+            adj.setdefault(start_box_id, []).append(('start', 0.0, None))
+
+        if goal_box_id is not None:
+            nodes.add('goal')
+            adj.setdefault('goal', []).append((goal_box_id, 0.0, None))
+            adj.setdefault(goal_box_id, []).append(('goal', 0.0, None))
+
+        return {
+            'nodes': nodes,
+            'edges': adj,
+            'start': 'start',
+            'goal': 'goal',
+            'start_box': start_box_id,
+            'goal_box': goal_box_id,
+        }
+
+    # ==================== 图构建 (legacy) ====================
 
     def build_adjacency_graph(
         self,

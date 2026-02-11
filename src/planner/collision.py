@@ -138,6 +138,7 @@ class CollisionChecker:
     def check_box_collision(
         self,
         joint_intervals: List[Tuple[float, float]],
+        skip_merge: bool = False,
     ) -> bool:
         """Box (区间) 碰撞检测（保守方法）
 
@@ -151,6 +152,10 @@ class CollisionChecker:
 
         Args:
             joint_intervals: 关节区间 [(lo_0, hi_0), ..., (lo_n, hi_n)]
+            skip_merge: 若 True 则跳过 O(M) 的 query_interval_merge
+                查询，仅保留 O(1) 的 exact match。适用于 box 拓展中
+                大量碰撞检测调用（区间很少精确重复，merge 命中率极低，
+                但扫描开销 O(M) 随缓存增长而增大）。
 
         Returns:
             True = 可能碰撞, False = 一定无碰撞
@@ -168,8 +173,8 @@ class CollisionChecker:
                 self.robot, joint_intervals, method='interval')
             if cache_entry is not None:
                 link_aabbs = cache_entry.link_aabbs
-            else:
-                # 尝试合并查询
+            elif not skip_merge:
+                # 尝试合并查询 (O(M), 在高频调用时可跳过)
                 merged, covered, gaps = self.aabb_cache.query_interval_merge(
                     self.robot, joint_intervals, method='interval')
                 if merged is not None and len(gaps) == 0:
@@ -322,3 +327,119 @@ class CollisionChecker:
             if joint_values[i] < lo - 1e-10 or joint_values[i] > hi + 1e-10:
                 return False
         return True
+
+    # ── 批量碰撞检测（向量化） ──────────────────────────────
+
+    def check_config_collision_batch(
+        self,
+        configs: np.ndarray,
+    ) -> np.ndarray:
+        """批量单配置碰撞检测（向量化 FK + AABB）
+
+        对 N 个关节配置同时做碰撞检测，利用 NumPy 向量化避免
+        Python for 循环。适用于 C-space 碰撞地图扫描。
+
+        Args:
+            configs: 关节配置矩阵 (N, n_joints)
+
+        Returns:
+            布尔数组 (N,)，True = 碰撞
+        """
+        obstacles = self.scene.get_obstacles()
+        N = configs.shape[0]
+        self._n_collision_checks += N
+        if not obstacles:
+            return np.zeros(N, dtype=bool)
+
+        result = np.zeros(N, dtype=bool)
+        margin = self.safety_margin
+
+        # 预提取障碍物 AABB 为数组 (M, ndim) 方便向量化
+        obs_mins = np.array([obs.min_point - margin for obs in obstacles])
+        obs_maxs = np.array([obs.max_point + margin for obs in obstacles])
+
+        # 批量 FK：对每个配置计算所有 link 端点位置
+        # 使用 DH 参数逐关节累乘变换矩阵（向量化 N 个配置）
+        robot = self.robot
+        n_joints = robot.n_joints
+
+        # 初始化：N 个单位矩阵
+        T = np.tile(np.eye(4), (N, 1, 1))  # (N, 4, 4)
+        all_positions = [T[:, :3, 3].copy()]  # base position (N, 3)
+
+        for i, param in enumerate(robot.dh_params):
+            alpha = param['alpha']
+            a = param['a']
+
+            if param['type'] == 'revolute':
+                d = param['d']
+                theta = configs[:, i] + param['theta']  # (N,)
+            else:
+                d = param['d'] + configs[:, i]
+                theta = np.full(N, param['theta'])
+
+            ca, sa = np.cos(alpha), np.sin(alpha)
+            ct = np.cos(theta)  # (N,)
+            st = np.sin(theta)  # (N,)
+
+            # 构造 N 个 DH 变换矩阵 (N, 4, 4)
+            A = np.zeros((N, 4, 4))
+            A[:, 0, 0] = ct
+            A[:, 0, 1] = -st
+            A[:, 0, 3] = a
+            A[:, 1, 0] = st * ca
+            A[:, 1, 1] = ct * ca
+            A[:, 1, 2] = -sa
+            if isinstance(d, np.ndarray):
+                A[:, 1, 3] = -d * sa
+            else:
+                A[:, 1, 3] = -d * sa
+            A[:, 2, 0] = st * sa
+            A[:, 2, 1] = ct * sa
+            A[:, 2, 2] = ca
+            if isinstance(d, np.ndarray):
+                A[:, 2, 3] = d * ca
+            else:
+                A[:, 2, 3] = d * ca
+            A[:, 3, 3] = 1.0
+
+            # T = T @ A  批量矩阵乘法
+            T = np.einsum('nij,njk->nik', T, A)
+            all_positions.append(T[:, :3, 3].copy())  # (N, 3)
+
+        # tool_frame
+        if robot.tool_frame is not None:
+            tf = robot.tool_frame
+            A_tool = robot.dh_transform(tf['alpha'], tf['a'], tf['d'], 0.0)
+            T = np.einsum('nij,jk->nik', T, A_tool)
+            all_positions.append(T[:, :3, 3].copy())
+
+        # 逐连杆段检查碰撞
+        n_links = len(all_positions)
+        for li in range(1, n_links):
+            if li in self._zero_length_links:
+                continue
+
+            p_start = all_positions[li - 1]  # (N, 3)
+            p_end = all_positions[li]        # (N, 3)
+
+            # 每个配置的 link AABB
+            link_min = np.minimum(p_start, p_end)  # (N, 3)
+            link_max = np.maximum(p_start, p_end)   # (N, 3)
+
+            # 与每个障碍物做 AABB 重叠检测
+            for oi in range(len(obstacles)):
+                o_min = obs_mins[oi]  # (ndim,)
+                o_max = obs_maxs[oi]
+
+                # 分离轴测试：对所有 N 个配置向量化
+                ndim = min(link_min.shape[1], len(o_min))
+                separated = np.zeros(N, dtype=bool)
+                for d in range(ndim):
+                    separated |= (link_max[:, d] < o_min[d] - 1e-10)
+                    separated |= (o_max[d] < link_min[:, d] - 1e-10)
+
+                # 未分离 = 碰撞
+                result |= ~separated
+
+        return result
