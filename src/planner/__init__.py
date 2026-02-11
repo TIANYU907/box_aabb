@@ -35,7 +35,7 @@ from .models import (
 )
 from .obstacles import Scene
 from .collision import CollisionChecker
-from .box_expansion import BoxExpander
+from .box_expansion import BoxExpander, ExpansionRecord
 from .box_tree import BoxTreeManager
 from .box_rrt import BoxRRT
 from .connector import TreeConnector
@@ -61,6 +61,7 @@ __all__ = [
     'CollisionChecker',
     # 核心算法
     'BoxExpander',
+    'ExpansionRecord',
     'BoxTreeManager',
     'BoxRRT',
     'TreeConnector',

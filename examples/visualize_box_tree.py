@@ -82,8 +82,11 @@ def grow_box_forest(
     max_rounds: int = 3,
     seed_batch: int = 8,
     rng_seed: int = 0,
+    farthest_k: int = 12,
 ) -> Tuple[BoxTreeManager, int]:
-    """从 C-space 中大量随机采样，尽可能多地拓展 free box
+    """从 C-space 中大量采样，尽可能多地拓展 free box
+
+    v2: 使用最远点采样策略，优先探索远离已有 box 的区域。
 
     Returns:
         (tree_manager, n_collision_checks)
@@ -102,21 +105,33 @@ def grow_box_forest(
 
     t0 = time.time()
     n_sampled = 0
+    n_farthest_fails = 0
 
     for iteration in range(max_iters):
         if manager.total_nodes >= max_boxes:
             break
 
-        # ── 均匀随机采样一个 seed ──
-        q_seed = np.array([rng.uniform(lo, hi) for lo, hi in joint_limits])
-        n_sampled += 1
+        # ── 最远点采样: 批量候选 → 选最远 ──
+        candidates = []
+        for _ in range(farthest_k):
+            q = np.array([rng.uniform(lo, hi) for lo, hi in joint_limits])
+            n_sampled += 1
+            if checker.check_config_collision(q):
+                continue
+            if manager.find_containing_box(q) is not None:
+                continue
+            nearest = manager.find_nearest_box(q)
+            dist = nearest.distance_to_config(q) if nearest else float('inf')
+            candidates.append((q, dist))
 
-        if checker.check_config_collision(q_seed):
+        if not candidates:
+            n_farthest_fails += 1
+            if n_farthest_fails > 50:
+                break
             continue
+        n_farthest_fails = 0
 
-        # 如果 seed 已被某个 box 覆盖，跳过（避免重复）
-        if manager.find_containing_box(q_seed) is not None:
-            continue
+        q_seed, _ = max(candidates, key=lambda x: x[1])
 
         # ── 拓展 box ──
         node_id = manager.allocate_node_id()
