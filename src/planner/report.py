@@ -48,8 +48,6 @@ class PlannerReportGenerator:
         q_goal: np.ndarray,
         result: PlannerResult,
         metrics: Optional[PathMetrics] = None,
-        cache_stats_before: Optional[Dict[str, int]] = None,
-        cache_stats_after: Optional[Dict[str, int]] = None,
         rng_seed: Optional[int] = None,
         saved_files: Optional[List[str]] = None,
         extra_sections: Optional[Dict[str, str]] = None,
@@ -63,7 +61,6 @@ class PlannerReportGenerator:
             q_start / q_goal: 始末关节配置
             result: 规划结果
             metrics: 路径质量指标 (可选)
-            cache_stats_before / after: AABB 缓存在规划前后的统计
             rng_seed: 随机种子
             saved_files: 输出产物文件路径列表
             extra_sections: 额外的自定义区段 {标题: 内容}
@@ -84,7 +81,6 @@ class PlannerReportGenerator:
         self._sec_graph(L, result)
         if metrics is not None and result.success:
             self._sec_metrics(L, metrics)
-        self._sec_cache(L, cache_stats_before, cache_stats_after)
         if result.success and result.path:
             self._sec_path(L, result)
         if saved_files:
@@ -303,28 +299,6 @@ class PlannerReportGenerator:
                 bar = "█" * int(u * 20) + "░" * (20 - int(u * 20))
                 L.append(f"| q{i} | {u * 100:.1f}% | {bar} |")
             L.append("")
-
-    @staticmethod
-    def _sec_cache(
-        L: List[str],
-        before: Optional[Dict[str, int]],
-        after: Optional[Dict[str, int]],
-    ) -> None:
-        if before is None and after is None:
-            return
-        L.append("## 7. AABB 缓存统计")
-        L.append("")
-        L.append("| 存储类型 | 规划前 | 规划后 | 新增 |")
-        L.append("|----------|--------|--------|------|")
-        b = before or {}
-        a = after or {}
-        for key in ("interval", "numerical"):
-            bv = b.get(key, 0)
-            av = a.get(key, 0)
-            delta = av - bv
-            sign = "+" if delta > 0 else ""
-            L.append(f"| {key} | {bv} | {av} | {sign}{delta} |")
-        L.append("")
 
     @staticmethod
     def _sec_path(L: List[str], result: PlannerResult) -> None:

@@ -104,7 +104,7 @@ class TestForwardKinematics:
             np.testing.assert_allclose(pos_i, all_pos[i], atol=1e-12)
 
     def test_end_effector_pose(self, panda_robot):
-        q = [0] * 8
+        q = [0] * 7
         pos, rot = panda_robot.end_effector_pose(q)
         assert pos.shape == (3,)
         assert rot.shape == (3, 3)
@@ -200,7 +200,7 @@ class TestRobotNameAndLimits:
     def test_panda_from_config_has_limits(self):
         robot = load_robot('panda')
         assert robot.joint_limits is not None
-        assert len(robot.joint_limits) == 8
+        assert len(robot.joint_limits) == 7
 
     def test_panda_from_config_limits_match_legacy(self):
         robot = load_robot('panda')

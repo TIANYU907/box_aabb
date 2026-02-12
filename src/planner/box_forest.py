@@ -34,8 +34,6 @@ from box_aabb.robot import Robot
 from .models import PlannerConfig, BoxNode
 from .obstacles import Scene
 from .collision import CollisionChecker
-from .box_expansion import BoxExpander
-from .aabb_cache import AABBCache
 from .deoverlap import (
     deoverlap,
     compute_adjacency,
@@ -220,6 +218,24 @@ class BoxForest:
 
         return added
 
+    def add_box_direct(self, box: BoxNode) -> None:
+        """直接添加 box（跳过 deoverlap）
+
+        调用方须保证 box 与已有 box 无重叠（如通过
+        HierAABBTree 的占用跟踪）。仅执行增量邻接更新。
+        """
+        self.boxes[box.node_id] = box
+        self.adjacency[box.node_id] = set()
+        if box.node_id >= self._next_id:
+            self._next_id = box.node_id + 1
+
+        # 增量邻接更新 O(1·N·D)
+        all_boxes_list = list(self.boxes.values())
+        compute_adjacency_incremental(
+            [box], all_boxes_list, self.adjacency,
+            tol=self.config.adjacency_tolerance,
+        )
+
     def remove_boxes(self, box_ids: Set[int]) -> None:
         """移除指定 box 及其邻接边"""
         for bid in box_ids:
@@ -294,7 +310,7 @@ class BoxForest:
         colliding_ids: Set[int] = set()
         for box in self.boxes.values():
             if collision_checker.check_box_collision(
-                box.joint_intervals, skip_merge=True
+                box.joint_intervals
             ):
                 colliding_ids.add(box.node_id)
 
@@ -304,137 +320,6 @@ class BoxForest:
                 len(colliding_ids), len(self.boxes),
             )
         return colliding_ids
-
-    # ── 构建 ──
-
-    @classmethod
-    def build(
-        cls,
-        robot: Robot,
-        scene: Scene,
-        config: Optional[PlannerConfig] = None,
-        joint_limits: Optional[List[Tuple[float, float]]] = None,
-        seed: Optional[int] = None,
-        aabb_cache: Optional[AABBCache] = None,
-    ) -> 'BoxForest':
-        """构建 Box 森林
-
-        均匀采样 seed，扩展 box，deoverlap，构建邻接图。
-
-        Args:
-            robot: 机器人模型
-            scene: 障碍物场景
-            config: 规划参数
-            joint_limits: 关节限制
-            seed: 随机数种子
-            aabb_cache: AABB 包络缓存
-
-        Returns:
-            构建好的 BoxForest 实例
-        """
-        t0 = time.time()
-        config = config or PlannerConfig()
-        rng = np.random.default_rng(seed)
-
-        if joint_limits is None:
-            if robot.joint_limits is not None:
-                joint_limits = list(robot.joint_limits)
-            else:
-                joint_limits = [(-np.pi, np.pi)] * robot.n_joints
-
-        # AABB 缓存
-        if config.use_aabb_cache:
-            if aabb_cache is not None:
-                _cache = aabb_cache
-            else:
-                _cache = AABBCache.auto_load(robot)
-        else:
-            _cache = None
-        _owns_cache = (aabb_cache is None and _cache is not None)
-
-        checker = CollisionChecker(robot=robot, scene=scene, aabb_cache=_cache)
-
-        # 自动采样模式
-        if config.use_sampling is not None:
-            _use_sampling = config.use_sampling
-        else:
-            _use_sampling = robot.n_joints > 4
-
-        expander = BoxExpander(
-            robot=robot,
-            collision_checker=checker,
-            joint_limits=joint_limits,
-            expansion_resolution=config.expansion_resolution,
-            max_rounds=config.max_expansion_rounds,
-            jacobian_delta=config.jacobian_delta,
-            use_sampling=_use_sampling,
-            sampling_n=config.sampling_n,
-            min_initial_half_width=config.min_initial_half_width,
-            strategy=config.expansion_strategy,
-            balanced_step_fraction=config.balanced_step_fraction,
-            balanced_max_steps=config.balanced_max_steps,
-            overlap_weight=config.overlap_weight,
-            hard_overlap_reject=config.hard_overlap_reject,
-        )
-
-        forest = cls(robot.fingerprint(), joint_limits, config)
-
-        # 采样扩展
-        raw_boxes: List[BoxNode] = []
-        n_seeds = config.build_n_seeds
-        max_box_nodes = config.max_box_nodes * 3
-
-        for i in range(n_seeds):
-            if len(raw_boxes) >= max_box_nodes:
-                break
-
-            q_seed = np.array([
-                rng.uniform(lo, hi) for lo, hi in joint_limits
-            ])
-            if checker.check_config_collision(q_seed):
-                continue
-
-            # 跳过已被覆盖的 seed
-            already_covered = any(b.contains(q_seed) for b in raw_boxes)
-            if already_covered:
-                continue
-
-            nid = forest.allocate_id()
-            box = expander.expand(
-                q_seed, node_id=nid, rng=rng,
-                existing_boxes=raw_boxes,
-            )
-            if box is None or box.volume < config.min_box_volume:
-                continue
-
-            raw_boxes.append(box)
-
-            if config.verbose and (i + 1) % 50 == 0:
-                logger.info(
-                    "Forest build: %d/%d seeds, %d raw boxes",
-                    i + 1, n_seeds, len(raw_boxes),
-                )
-
-        # deoverlap + 邻接
-        forest.add_boxes(raw_boxes)
-
-        forest.build_time = time.time() - t0
-        logger.info(
-            "BoxForest 构建完成: %d 个无重叠 box, 总体积 %.4f, "
-            "%d 条邻接边, 耗时 %.2fs",
-            forest.n_boxes, forest.total_volume,
-            sum(len(v) for v in forest.adjacency.values()) // 2,
-            forest.build_time,
-        )
-
-        # 自动保存缓存
-        if _owns_cache and _cache is not None:
-            try:
-                _cache.auto_save(robot)
-            except Exception as e:
-                logger.warning("AABB 缓存自动保存失败: %s", e)
-
-        return forest
 
     # ── 持久化 ──
 

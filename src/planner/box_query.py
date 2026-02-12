@@ -20,7 +20,7 @@ from box_aabb.robot import Robot
 from .models import PlannerConfig, PlannerResult, BoxNode
 from .obstacles import Scene
 from .collision import CollisionChecker
-from .box_expansion import BoxExpander
+from .hier_aabb_tree import HierAABBTree
 from .box_tree import BoxTreeManager
 from .connector import TreeConnector
 from .path_smoother import PathSmoother, compute_path_length
@@ -56,16 +56,9 @@ class BoxForestQuery:
             robot=forest.robot,
             scene=forest.scene,
         )
-        _use_sampling = forest.robot.n_joints > 4
-        self.box_expander = BoxExpander(
-            robot=forest.robot,
-            collision_checker=self.collision_checker,
-            joint_limits=forest.joint_limits,
-            expansion_resolution=self.config.expansion_resolution,
-            max_rounds=self.config.max_expansion_rounds,
-            jacobian_delta=self.config.jacobian_delta,
-            use_sampling=_use_sampling,
-        )
+        self.hier_tree = HierAABBTree.auto_load(
+            forest.robot, forest.joint_limits)
+        self.obstacles = forest.scene.get_obstacles()
         self.connector = TreeConnector(
             tree_manager=forest.tree_manager,
             collision_checker=self.collision_checker,
@@ -214,10 +207,23 @@ class BoxForestQuery:
             if tree_mgr.find_containing_box(q_seed) is not None:
                 continue
 
-            node_id = tree_mgr.allocate_node_id()
-            box = self.box_expander.expand(q_seed, node_id=node_id, rng=rng)
-            if box is None or box.volume < self.config.min_box_volume:
+            ivs = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True)
+            if ivs is None:
                 continue
+            vol = 1.0
+            for lo, hi in ivs:
+                vol *= max(hi - lo, 0.0)
+            if vol < self.config.min_box_volume:
+                continue
+
+            node_id = tree_mgr.allocate_node_id()
+            box = BoxNode(
+                node_id=node_id,
+                joint_intervals=ivs,
+                seed_config=q_seed.copy(),
+                volume=vol,
+            )
 
             # 加入森林
             containing = tree_mgr.find_containing_box(q_seed)

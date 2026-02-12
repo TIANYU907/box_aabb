@@ -23,6 +23,5 @@
   "build_n_seeds": 200,
   "query_expand_budget": 10,
   "forest_path": null,
-  "interval_width_threshold": 1.0,
-  "use_aabb_cache": true
+  "interval_width_threshold": 1.0
 }

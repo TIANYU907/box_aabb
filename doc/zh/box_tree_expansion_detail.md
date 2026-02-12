@@ -363,7 +363,6 @@ Step  4: dim=1, dir=+, step=0.7854, actual=0.7854, vol_gain=0.002
 | `connection_radius` | 2.0 | 新 box 挂载到已有树的最大距离阈值 |
 | `seed_batch_size` | 5 | 每个新 box 触发的边界重采样数量 |
 | `min_box_volume` | 1e-6 | box 体积下限（太小的 box 丢弃） |
-| `use_aabb_cache` | True | 是否启用 AABB 包络缓存 |
 
 ### 7.3 JSON 配置文件
 
@@ -413,17 +412,7 @@ Jacobian 范数排序的启发式在两种策略中均有使用：
 - **Greedy**：决定扩展顺序，范数小的优先
 - **Balanced**：仍计算维度排序（用于日志记录和初始候选排列），但实际扩展由体积增益驱动
 
-### 8.4 AABB 缓存的全局接入（v4.1）
-
-v4.1 中 `AABBCache` 已全面接入所有路径：
-
-| 入口 | 缓存接入方式 |
-|------|-------------|
-| `BoxRRT.__init__` | 构造函数传入 `aabb_cache` 参数 |
-| `BoxForest.build()` | `aabb_cache` 参数透传给 `CollisionChecker` |
-| `animate_box_tree.py` | 可选传入，通过 CLI 参数控制 |
-
-### 8.5 边界采样 vs 随机采样
+### 8.4 边界采样 vs 随机采样
 
 | 特性 | 随机采样 | 边界采样 |
 |------|---------|----------|

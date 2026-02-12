@@ -1,0 +1,68 @@
+================================================================================
+  HierAABBTree 缓存效果基准测试报告
+================================================================================
+  时间: 2026-02-12 11:39:36
+  参数: runs=5  seed=42  n_obs=5  max_boxes=300  max_depth=40
+        min_edge=0.01  boundary_batch=6  farthest_k=12
+        early_stop_window=30  early_stop_min_vol=0.0001
+
+--------------------------------------------------------------------------------
+  逐次运行结果:
+--------------------------------------------------------------------------------
+  run  cache  boxes      vol   adj    time    find    coll    deov    samp   nodes     fk                  stop
+  ----------------------------------------------------------------------------
+    1   cold    300    5.565   458    0.98    0.84    0.03    0.06    0.05    1609   1609         max_boxes=300
+    2   warm    300    6.672   459    0.63    0.51    0.04    0.05    0.04    2517   2517         max_boxes=300
+    3   warm    300    6.945   466    0.44    0.31    0.03    0.05    0.05    3089   3089         max_boxes=300
+    4   warm    300    6.331   460    0.44    0.31    0.04    0.05    0.04    3651   3651         max_boxes=300
+    5   warm    300    6.929   483    0.46    0.34    0.02    0.05    0.04    4187   4187         max_boxes=300
+
+--------------------------------------------------------------------------------
+  冷启动 vs 热缓存 统计汇总:
+--------------------------------------------------------------------------------
+
+  冷启动 (run 1, 无缓存):
+    总耗时               : 0.98s
+    find_free_box        : 0.84s
+    collision_check      : 0.03s
+    deoverlap            : 0.06s
+    sampling             : 0.05s
+    boxes=300  vol=5.5647  adj=458
+    tree: 1→1609 nodes, 0→1609 FK calls
+    vol: mean=0.0185  median=0.0012  min=0.000151  max=0.3084
+    deg: mean=3.05  max=9  isolated=0
+
+  热缓存 (run 2-5, 共 4 次):
+    总耗时 (s)                   mean=0.49  std=0.08  min=0.44  max=0.63
+    find_free_box (s)         mean=0.37  std=0.08  min=0.31  max=0.51
+    collision_check (s)       mean=0.03  std=0.00  min=0.02  max=0.04
+    deoverlap (s)             mean=0.05  std=0.00  min=0.05  max=0.05
+    sampling (s)              mean=0.04  std=0.00  min=0.04  max=0.05
+    boxes                     mean=300  std=0  min=300  max=300
+    total_volume              mean=6.72  std=0.25  min=6.33  max=6.94
+    adj_edges                 mean=467  std=10  min=459  max=483
+    vol_mean                  mean=0.02  std=0.00  min=0.02  max=0.02
+    vol_min                   mean=0.000151  std=0.000000  min=0.000151  max=0.000151
+    deg_mean                  mean=3.11  std=0.06  min=3.06  max=3.22
+    deg_max                   mean=8  std=0  min=8  max=9
+    tree_nodes                mean=3361  std=623  min=2517  max=4187
+    FK calls (final)          mean=3361  std=623  min=2517  max=4187
+    cache_load (s)            mean=0.06  std=0.03  min=0.02  max=0.08
+
+--------------------------------------------------------------------------------
+  加速比:
+--------------------------------------------------------------------------------
+    总耗时加速      : 1.99x  (0.98s → 0.49s)
+    find_free_box   : 2.28x  (0.84s → 0.37s)
+    新增 FK calls   : cold=1609  warm_mean=644
+
+--------------------------------------------------------------------------------
+  采样统计:
+--------------------------------------------------------------------------------
+  run  1 (cold): boundary=1794  farthest=21  coll_reject=82  inside=229  none=35  tiny=0
+  run  2 (warm): boundary=1794  farthest=29  coll_reject=57  inside=244  none=27  tiny=0
+  run  3 (warm): boundary=1794  farthest=33  coll_reject=69  inside=287  none=27  tiny=0
+  run  4 (warm): boundary=1794  farthest=24  coll_reject=78  inside=269  none=22  tiny=0
+  run  5 (warm): boundary=1794  farthest=27  coll_reject=74  inside=240  none=34  tiny=0
+
+================================================================================

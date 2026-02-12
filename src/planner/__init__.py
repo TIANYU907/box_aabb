@@ -16,7 +16,6 @@ planner - Box-RRT 机械臂避障路径规划
 v4.0 新增：
 - BoxForest: 可复用的 box 森林，始末点变化时无需重建
 - BoxForestQuery: 基于已有森林的快速查询规划
-- AABBCache: AABB 包络缓存系统，避免重复计算
 - FreeSpaceTiler: 自由空间瓦片化器，反选无碰撞区间
 - animate_robot_path: 动态可视化机械臂运动
 
@@ -35,14 +34,12 @@ from .models import (
 )
 from .obstacles import Scene
 from .collision import CollisionChecker
-from .box_expansion import BoxExpander, ExpansionLog
 from .box_tree import BoxTreeManager
 from .box_rrt import BoxRRT
 from .connector import TreeConnector
 from .path_smoother import PathSmoother
 from .metrics import PathMetrics, evaluate_result, compare_results, format_comparison_table
 from .report import PlannerReportGenerator
-from .aabb_cache import AABBCache, IntervalStore, CacheEntry
 from .box_forest import BoxForest
 from .deoverlap import deoverlap, compute_adjacency, compute_adjacency_incremental
 from .box_query import BoxForestQuery
@@ -62,8 +59,6 @@ __all__ = [
     'Scene',
     'CollisionChecker',
     # 核心算法
-    'BoxExpander',
-    'ExpansionLog',
     'BoxTreeManager',
     'BoxRRT',
     'TreeConnector',
@@ -76,9 +71,6 @@ __all__ = [
     # 报告生成
     'PlannerReportGenerator',
     # v4.0 新增
-    'AABBCache',
-    'IntervalStore',
-    'CacheEntry',
     'BoxForest',
     'deoverlap',
     'compute_adjacency',

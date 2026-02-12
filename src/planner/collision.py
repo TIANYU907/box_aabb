@@ -22,9 +22,6 @@ from box_aabb.interval_fk import compute_interval_aabb
 from .models import Obstacle
 from .obstacles import Scene
 
-if TYPE_CHECKING:
-    from .aabb_cache import AABBCache
-
 logger = logging.getLogger(__name__)
 
 
@@ -70,12 +67,10 @@ class CollisionChecker:
         scene: Scene,
         safety_margin: float = 0.0,
         skip_base_link: bool = False,
-        aabb_cache: Optional['AABBCache'] = None,
     ) -> None:
         self.robot = robot
         self.scene = scene
         self.safety_margin = safety_margin
-        self.aabb_cache = aabb_cache
         self._n_collision_checks = 0
 
         # 预计算零长度连杆集合
@@ -138,24 +133,17 @@ class CollisionChecker:
     def check_box_collision(
         self,
         joint_intervals: List[Tuple[float, float]],
-        skip_merge: bool = False,
     ) -> bool:
         """Box (区间) 碰撞检测（保守方法）
 
         使用区间/仿射算术 FK 计算每个 link 的保守 AABB，
         然后与障碍物 AABB 做重叠检测。
 
-        若启用 AABB 缓存，优先查找缓存中的已有计算结果。
-
         保守性：返回 False 保证该 box 内所有配置无碰撞。
                 返回 True 表示可能碰撞（可能是过估计导致的误报）。
 
         Args:
             joint_intervals: 关节区间 [(lo_0, hi_0), ..., (lo_n, hi_n)]
-            skip_merge: 若 True 则跳过 O(M) 的 query_interval_merge
-                查询，仅保留 O(1) 的 exact match。适用于 box 拓展中
-                大量碰撞检测调用（区间很少精确重复，merge 命中率极低，
-                但扫描开销 O(M) 随缓存增长而增大）。
 
         Returns:
             True = 可能碰撞, False = 一定无碰撞
@@ -165,35 +153,13 @@ class CollisionChecker:
         if not obstacles:
             return False
 
-        link_aabbs = None
-
-        # 尝试从缓存读取
-        if self.aabb_cache is not None:
-            cache_entry = self.aabb_cache.query_exact(
-                self.robot, joint_intervals, method='interval')
-            if cache_entry is not None:
-                link_aabbs = cache_entry.link_aabbs
-            elif not skip_merge:
-                # 尝试合并查询 (O(M), 在高频调用时可跳过)
-                merged, covered, gaps = self.aabb_cache.query_interval_merge(
-                    self.robot, joint_intervals, method='interval')
-                if merged is not None and len(gaps) == 0:
-                    link_aabbs = merged
-
-        # 缓存未命中，重新计算
-        if link_aabbs is None:
-            link_aabbs, _ = compute_interval_aabb(
-                robot=self.robot,
-                intervals=joint_intervals,
-                zero_length_links=self._zero_length_links,
-                skip_zero_length=True,
-                n_sub=1,
-            )
-            # 存入缓存
-            if self.aabb_cache is not None:
-                self.aabb_cache.store(
-                    self.robot, joint_intervals, link_aabbs,
-                    n_sub=1, method='interval')
+        link_aabbs, _ = compute_interval_aabb(
+            robot=self.robot,
+            intervals=joint_intervals,
+            zero_length_links=self._zero_length_links,
+            skip_zero_length=True,
+            n_sub=1,
+        )
 
         margin = self.safety_margin
 

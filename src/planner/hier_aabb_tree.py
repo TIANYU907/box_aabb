@@ -67,6 +67,8 @@ class HierAABBNode:
     left: Optional['HierAABBNode'] = field(default=None, repr=False)
     right: Optional['HierAABBNode'] = field(default=None, repr=False)
     parent: Optional['HierAABBNode'] = field(default=None, repr=False)
+    occupied: bool = False
+    subtree_occupied: int = 0
 
     def is_leaf(self) -> bool:
         return self.left is None and self.right is None
@@ -225,6 +227,49 @@ class HierAABBTree:
             node = node.parent
 
     # ──────────────────────────────────────────────
+    #  占用跟踪（HierAABBTree 保证子节点无重叠）
+    # ──────────────────────────────────────────────
+
+    def _mark_occupied(self, node: HierAABBNode) -> None:
+        """标记节点为已占用，向上传播计数
+
+        标记后该节点对应的 C-space 区域被视为已归入 BoxForest，
+        后续 find_free_box 不会返回重叠区域。
+        """
+        node.occupied = True
+        node.subtree_occupied += 1
+        p = node.parent
+        while p is not None:
+            p.subtree_occupied += 1
+            p = p.parent
+
+    def _reset_occupation(self, node: HierAABBNode) -> None:
+        """重置整棵树的占用状态（加载全局缓存后调用）"""
+        node.occupied = False
+        node.subtree_occupied = 0
+        if node.left:
+            self._reset_occupation(node.left)
+        if node.right:
+            self._reset_occupation(node.right)
+
+    def is_occupied(self, config: np.ndarray) -> bool:
+        """检查配置是否在已占用区域内
+
+        沿树下行，O(tree_depth) 复杂度。
+        比 BoxForest.find_containing 的 O(N) 更快。
+        """
+        node = self.root
+        while True:
+            if node.occupied:
+                return True
+            if node.is_leaf() or node.subtree_occupied == 0:
+                return False
+            if config[node.split_dim] < node.split_val:
+                node = node.left
+            else:
+                node = node.right
+
+    # ──────────────────────────────────────────────
     #  碰撞检测辅助
     # ──────────────────────────────────────────────
 
@@ -263,8 +308,9 @@ class HierAABBTree:
         obstacles: list,
         max_depth: int = 40,
         safety_margin: float = 0.0,
-        min_edge_length: float = 0.0,
+        min_edge_length: float = 0.05,
         post_expand_fn=None,
+        mark_occupied: bool = False,
     ) -> Optional[List[Tuple[float, float]]]:
         """从顶向下切分，找到包含 seed 的最大无碰撞 box
 
@@ -283,6 +329,9 @@ class HierAABBTree:
             post_expand_fn: 可选的后处理扩张函数（预留接口 B）
                 签名: (intervals, seed, obstacles) -> intervals
                 若提供，会对切分结果做进一步扩张
+            mark_occupied: 是否将结果标记为已占用。
+                若 True，后续调用不会返回与此 box 重叠的区域，
+                从而免去 BoxForest 的 deoverlap 步骤。
 
         Returns:
             无碰撞 box 的 intervals，或 None
@@ -293,14 +342,20 @@ class HierAABBTree:
 
         # ── 下行：沿 seed 方向切分直到无碰撞 ──
         while True:
+            # 已占用区域 → seed 在已有 box 内
+            if node.occupied:
+                return None
+
             path.append(node)
 
             aabb = node.refined_aabb or node.raw_aabb
-            if not self._link_aabbs_collide(aabb, obstacles, safety_margin):
-                break  # 整个节点无碰撞
+            # 无碰撞 且 无已占用后代 → 整个节点可用
+            if (not self._link_aabbs_collide(aabb, obstacles, safety_margin)
+                    and node.subtree_occupied == 0):
+                break
 
             if node.depth >= max_depth:
-                return None  # 达到最大深度仍碰撞
+                return None  # 达到最大深度仍碰撞或有占用
 
             # 检查最小边长：待分割维度宽度过小则停止
             split_dim = node.depth % self.n_dims
@@ -321,6 +376,9 @@ class HierAABBTree:
         result_node = node
         for i in range(len(path) - 2, -1, -1):
             parent = path[i]
+            # 父节点有其他已占用后代 → 不能合并
+            if parent.subtree_occupied > 0:
+                break
             aabb = parent.refined_aabb or parent.raw_aabb
             if not self._link_aabbs_collide(aabb, obstacles, safety_margin):
                 result_node = parent
@@ -328,6 +386,10 @@ class HierAABBTree:
                 break
 
         result_intervals = list(result_node.intervals)
+
+        # 标记为已占用（保证后续调用不返回重叠区域）
+        if mark_occupied:
+            self._mark_occupied(result_node)
 
         # ── 可选：后处理扩张（接口 B 预留）──
         if post_expand_fn is not None:
@@ -480,6 +542,9 @@ class HierAABBTree:
 
         # 重建 parent 引用
         tree._rebuild_parents(tree.root, None)
+
+        # 重置占用状态（缓存中的占用来自之前的会话）
+        tree._reset_occupation(tree.root)
 
         stats = tree.get_stats()
         logger.info(

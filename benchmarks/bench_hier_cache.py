@@ -128,7 +128,7 @@ def grow_forest_no_render(
     farthest_k: int = 12,
     rng_seed: int = 42,
     max_depth: int = 40,
-    min_edge_length: float = 0.01,
+    min_edge_length: float = 0.05,
     early_stop_window: int = 30,
     early_stop_min_vol: float = 1e-4,
 ) -> dict:
@@ -193,17 +193,19 @@ def grow_forest_no_render(
             n_seed_collision += 1
             return None
 
+        # 用树的占用状态检查（O(depth)，代替 forest.find_containing 的 O(N)）
         tc0 = time.time()
-        containing = forest.find_containing(seed_q)
-        t_collision_check += time.time() - tc0
-        if containing is not None:
+        if hier_tree.is_occupied(seed_q):
+            t_collision_check += time.time() - tc0
             n_seed_inside += 1
             return None
+        t_collision_check += time.time() - tc0
 
         tf0 = time.time()
         ivs = hier_tree.find_free_box(
             seed_q, obstacles, max_depth=max_depth,
             min_edge_length=min_edge_length,
+            mark_occupied=True,
         )
         t_find_free_box += time.time() - tf0
         if ivs is None:
@@ -224,12 +226,11 @@ def grow_forest_no_render(
             volume=vol,
         )
         td0 = time.time()
-        added = forest.add_boxes_incremental([box])
+        forest.add_box_direct(box)
         t_deoverlap += time.time() - td0
 
-        if added:
-            recent_vols.append(vol)
-        return added
+        recent_vols.append(vol)
+        return [box]
 
     # ── main loop ──
     global_stalls = 0
@@ -280,7 +281,7 @@ def grow_forest_no_render(
                 q = np.array([rng.uniform(lo, hi) for lo, hi in joint_limits])
                 if checker.check_config_collision(q):
                     continue
-                if forest.find_containing(q) is not None:
+                if hier_tree.is_occupied(q):
                     continue
                 nearest = forest.find_nearest(q)
                 dist = nearest.distance_to_config(q) if nearest else float("inf")

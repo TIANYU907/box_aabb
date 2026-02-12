@@ -7,7 +7,6 @@ from box_aabb.robot import load_robot
 from planner.models import PlannerConfig, BoxNode, Edge
 from planner.obstacles import Scene
 from planner.collision import CollisionChecker
-from planner.box_expansion import BoxExpander
 from planner.box_tree import BoxTreeManager
 from planner.connector import TreeConnector
 from planner.path_smoother import PathSmoother, compute_path_length
@@ -230,7 +229,7 @@ class TestBoxRRT:
         assert result.success is True
 
     def test_result_has_trees(self, robot_2dof, scene_2dof_simple):
-        """结果中应包含 box tree 信息"""
+        """结果中应包含 box forest 信息"""
         config = PlannerConfig(max_iterations=50, max_box_nodes=30, verbose=False)
         planner = BoxRRT(robot_2dof, scene_2dof_simple, config)
 
@@ -238,8 +237,9 @@ class TestBoxRRT:
         q_goal = np.array([-math.pi / 2, 0.0])    # 安全
         result = planner.plan(q_start, q_goal, seed=42)
 
-        # 至少创建了初始树
-        assert len(result.box_trees) >= 1
+        # v5: BoxRRT 使用 BoxForest（扁平）而非 BoxTree（层级）
+        assert result.forest is not None
+        assert result.forest.n_boxes >= 1
         assert result.n_boxes_created >= 1
 
     def test_deterministic_with_seed(self, robot_2dof):

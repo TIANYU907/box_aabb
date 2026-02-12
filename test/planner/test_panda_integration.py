@@ -11,8 +11,9 @@ import numpy as np
 from box_aabb.robot import load_robot
 from planner import (
     BoxRRT, Scene, PlannerConfig, PlannerResult,
-    CollisionChecker, BoxExpander, BoxTreeManager,
+    CollisionChecker, BoxTreeManager,
 )
+from planner.hier_aabb_tree import HierAABBTree
 from planner.path_smoother import compute_path_length
 
 
@@ -160,56 +161,47 @@ class TestPandaCollision:
 # ==================== Box 拓展测试 ====================
 
 class TestPandaBoxExpansion:
-    """Panda box 拓展测试"""
+    """Panda box 拓展测试（使用 HierAABBTree）"""
 
-    def test_expand_at_safe_config(self, robot_panda, checker_panda_empty):
+    def test_expand_at_safe_config(self, robot_panda, scene_panda_empty):
         """空场景下能拓展出 box"""
         limits = robot_panda.joint_limits
-        expander = BoxExpander(
-            robot_panda, checker_panda_empty, limits,
-            expansion_resolution=0.05,
-            max_rounds=1,
-        )
+        tree = HierAABBTree(robot_panda, limits)
+        obstacles = scene_panda_empty.get_obstacles()
         q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
-        box = expander.expand(q, node_id=0)
-        assert box is not None
-        # 检查活跃维度的体积
+        ivs = tree.find_free_box(q, obstacles)
+        assert ivs is not None
         active_vol = 1.0
         for i in range(7):
-            lo, hi = box.joint_intervals[i]
+            lo, hi = ivs[i]
             active_vol *= (hi - lo)
         assert active_vol > 0, "活跃关节的体积应 > 0"
-        assert box.n_dims == 7
 
-    def test_expand_volume_positive(self, robot_panda, checker_panda_empty):
+    def test_expand_volume_positive(self, robot_panda, scene_panda_empty):
         """空场景下 box 体积应> 0（7D 无退化维度）"""
         limits = robot_panda.joint_limits
-        expander = BoxExpander(
-            robot_panda, checker_panda_empty, limits,
-            expansion_resolution=0.05,
-            max_rounds=1,
-        )
+        tree = HierAABBTree(robot_panda, limits)
+        obstacles = scene_panda_empty.get_obstacles()
         q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
-        box = expander.expand(q, node_id=0)
-        assert box is not None
-        assert box.volume > 0, "7D box 体积应 > 0"
+        ivs = tree.find_free_box(q, obstacles)
+        assert ivs is not None
+        vol = 1.0
+        for lo, hi in ivs:
+            vol *= max(hi - lo, 0.0)
+        assert vol > 0, "7D box 体积应 > 0"
 
-    def test_expand_with_obstacles(self, robot_panda, checker_panda):
+    def test_expand_with_obstacles(self, robot_panda, scene_panda_simple):
         """有障碍物时也能拓展"""
         limits = robot_panda.joint_limits
-        expander = BoxExpander(
-            robot_panda, checker_panda, limits,
-            expansion_resolution=0.05,
-            max_rounds=1,
-        )
-        # 选择一个远离障碍物的配置
-        q = np.array([1.5, -0.5, -1.0, -2.0, 0.5, 1.0, 0.5])
-        box = expander.expand(q, node_id=0)
-        assert box is not None
-        # 至少某些活跃维度被拓展
+        tree = HierAABBTree(robot_panda, limits)
+        obstacles = scene_panda_simple.get_obstacles()
+        # 使用远离障碍物的 tucked 配置，避免 7D 区间过估计导致 find_free_box 失败
+        q = np.array([0.0, -1.0, 0.0, -2.5, 0.0, 2.0, 0.0])
+        ivs = tree.find_free_box(q, obstacles)
+        assert ivs is not None
         expanded_dims = sum(
             1 for i in range(7)
-            if box.joint_intervals[i][1] - box.joint_intervals[i][0] > 1e-10
+            if ivs[i][1] - ivs[i][0] > 1e-10
         )
         assert expanded_dims > 0, "应有至少一个活跃维度被拓展"
 

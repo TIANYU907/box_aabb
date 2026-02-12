@@ -139,10 +139,10 @@ class TestCollisionChecker:
         checker_no_margin = CollisionChecker(robot_2dof, scene_2dof_simple, safety_margin=0.0)
         checker_margin = CollisionChecker(robot_2dof, scene_2dof_simple, safety_margin=1.0)
 
-        # q=[pi/2, 0] 安全配置: link2 AABB=([1,0,0],[1,1,0])，离障碍物 x=1.5 距离 0.5
-        # 无裕度: 安全 (x_max=1.0 < 1.5)
-        # 裕度=1.0: 障碍物扩展为 x=[0.5, 3.0] → x_max=1.0 >= 0.5 → 可能碰
-        q = np.array([math.pi / 2, 0.0])
+        # q=[pi/3, 0]: link2 tip=(0.5,0.866), link3 tip=(1.0,1.732)
+        # link3 AABB x=[0.5,1.0] → x_max=1.0 < obstacle x_min=1.5 → 无碰撞
+        # 裕度=1.0: 障碍物扩展为 x=[0.5,3.0] → link3 x=[0.5,1.0] 与 [0.5,3.0] 重叠 → 碰撞
+        q = np.array([math.pi / 3, 0.0])
         result_no = checker_no_margin.check_config_collision(q)
         result_yes = checker_margin.check_config_collision(q)
         assert result_no is False

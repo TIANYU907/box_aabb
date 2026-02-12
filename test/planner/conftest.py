@@ -6,7 +6,6 @@ import numpy as np
 from box_aabb.robot import Robot, load_robot
 from planner.obstacles import Scene
 from planner.collision import CollisionChecker
-from planner.box_expansion import BoxExpander
 from planner.box_tree import BoxTreeManager
 from planner.models import PlannerConfig
 
@@ -65,11 +64,3 @@ def checker_2dof(robot_2dof, scene_2dof_simple):
 def checker_2dof_empty(robot_2dof, scene_2dof_empty):
     return CollisionChecker(robot_2dof, scene_2dof_empty)
 
-
-@pytest.fixture
-def expander_2dof(robot_2dof, checker_2dof, joint_limits_2dof):
-    return BoxExpander(
-        robot_2dof, checker_2dof, joint_limits_2dof,
-        expansion_resolution=0.02,
-        max_rounds=2,
-    )

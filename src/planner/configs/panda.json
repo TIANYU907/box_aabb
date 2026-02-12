@@ -19,6 +19,5 @@
   "path_shortcut_iters": 200,
   "use_gcs": false,
   "build_n_seeds": 500,
-  "interval_width_threshold": 0.8,
-  "use_aabb_cache": true
+  "interval_width_threshold": 0.8
 }

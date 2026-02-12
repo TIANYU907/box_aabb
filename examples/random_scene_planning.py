@@ -41,9 +41,7 @@ from planner import (
     PlannerConfig,
     PlannerResult,
     Scene,
-    AABBCache,
 )
-from planner.aabb_cache import DEFAULT_CACHE_DIR
 from planner.metrics import evaluate_result, PathMetrics
 from planner.visualizer import (
     plot_cspace_boxes,
@@ -257,7 +255,6 @@ def log_planner_config(config: PlannerConfig) -> str:
         f"  connection_max_attempts : {config.connection_max_attempts}",
         f"  path_shortcut_iters     : {config.path_shortcut_iters}",
         f"  segment_collision_res   : {config.segment_collision_resolution}",
-        f"  use_aabb_cache          : {config.use_aabb_cache}",
         f"  verbose                 : {config.verbose}",
         "-" * 60,
     ]
@@ -763,12 +760,6 @@ def main():
     logger.info("")
     logger.info("▶ Step 4/7: 配置规划器")
 
-    # 自动加载该机器人的 AABB 包络缓存
-    aabb_cache = AABBCache.auto_load(robot)
-    cache_stats_before = aabb_cache.get_stats(robot)
-    logger.info("  AABB 缓存: interval=%d, numerical=%d",
-                cache_stats_before.get('interval', 0),
-                cache_stats_before.get('numerical', 0))
 
     config = PlannerConfig(
         max_iterations=args.max_iter,
@@ -781,12 +772,11 @@ def main():
         connection_max_attempts=80,
         path_shortcut_iters=200,
         segment_collision_resolution=0.03,
-        use_aabb_cache=True,
         hard_overlap_reject=True,
         verbose=True,
     )
     config_text = log_planner_config(config)
-    planner = BoxRRT(robot, scene, config, aabb_cache=aabb_cache)
+    planner = BoxRRT(robot, scene, config)
 
     # 禁用 scipy 平滑（规避 segfault）
     if args.no_scipy:
@@ -805,17 +795,6 @@ def main():
     dt_plan = time.time() - t_plan
     result_text = log_planner_result(result)
     logger.info("  规划耗时: %.3f s", dt_plan)
-
-    # 自动保存更新后的 AABB 缓存
-    cache_stats_after = aabb_cache.get_stats(robot)
-    delta_i = cache_stats_after.get('interval', 0) - cache_stats_before.get('interval', 0)
-    delta_n = cache_stats_after.get('numerical', 0) - cache_stats_before.get('numerical', 0)
-    if delta_i > 0 or delta_n > 0:
-        cache_path = aabb_cache.auto_save(robot)
-        logger.info("  AABB 缓存已更新: +%d interval, +%d numerical → %s",
-                    delta_i, delta_n, cache_path)
-    else:
-        logger.info("  AABB 缓存无新增条目，跳过保存")
 
     # 保存路径 JSON（方便后续交互式可视化回放）
     path_json_path: str | None = None

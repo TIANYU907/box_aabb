@@ -7,7 +7,6 @@ planner/free_space_tiler.py - 自由空间瓦片化器
 - 自适应单维度二分分割（每次只沿一个维度一分为二，避免 2^N 爆炸）
 - 优先分割"最宽"或"最可能通过碰撞检测"的维度
 - 碰撞自由的叶节点即为无碰撞区间瓦片
-- 可与 AABBCache 联合使用，缓存所有碰撞检测结果
 
 使用方式：
     tiler = FreeSpaceTiler(robot, scene, joint_limits)

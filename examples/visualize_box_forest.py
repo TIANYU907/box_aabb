@@ -37,11 +37,9 @@ from typing import List, Tuple, Dict, Set, Optional
 import numpy as np
 
 from box_aabb.robot import Robot, load_robot
-from planner.aabb_cache import AABBCache
 from planner.models import BoxNode, PlannerConfig
 from planner.obstacles import Scene
 from planner.collision import CollisionChecker
-from planner.box_expansion import BoxExpander
 from planner.box_forest import BoxForest
 from planner.deoverlap import shared_face_center, compute_adjacency
 from planner.hier_aabb_tree import HierAABBTree
@@ -204,183 +202,6 @@ def scan_collision_map(
 
 
 # ─────────────────────────────────────────────────────────
-#  核心：逐步拓展 BoxForest + 录制帧
-# ─────────────────────────────────────────────────────────
-
-def grow_forest_animated(
-    robot: Robot,
-    scene: Scene,
-    joint_limits: List[Tuple[float, float]],
-    collision_map: np.ndarray,
-    output_dir: Path,
-    max_boxes: int = 150,
-    max_seeds: int = 1500,
-    expansion_resolution: float = 0.02,
-    max_rounds: int = 3,
-    step_interval: int = 3,
-    farthest_k: int = 12,
-    rng_seed: int = 42,
-    fps: int = 4,
-):
-    """逐步拓展 BoxForest，每隔 step_interval 步保存帧"""
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-
-    rng = np.random.default_rng(rng_seed)
-
-    aabb_cache = AABBCache.auto_load(robot)
-    checker = CollisionChecker(robot, scene, aabb_cache=aabb_cache)
-
-    config = PlannerConfig(
-        expansion_resolution=expansion_resolution,
-        max_expansion_rounds=max_rounds,
-        hard_overlap_reject=True,
-        verbose=False,
-    )
-
-    # 自动采样模式
-    use_sampling = robot.n_joints > 4
-    expander = BoxExpander(
-        robot=robot,
-        collision_checker=checker,
-        joint_limits=joint_limits,
-        expansion_resolution=config.expansion_resolution,
-        max_rounds=config.max_expansion_rounds,
-        hard_overlap_reject=config.hard_overlap_reject,
-    )
-
-    forest = BoxForest(robot.fingerprint(), joint_limits, config)
-
-    frames_dir = output_dir / "frames"
-    frames_dir.mkdir(parents=True, exist_ok=True)
-
-    cmap_boxes = cm.viridis
-    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-
-    frame_paths: List[str] = []
-    step = 0
-    n_farthest_fails = 0
-    t0 = time.time()
-
-    # ── 初始帧（空 forest）──
-    render_frame(ax, forest, joint_limits, collision_map, step,
-                 cmap_boxes=cmap_boxes)
-    p = str(frames_dir / f"step_{step:04d}.png")
-    fig.savefig(p, dpi=100, bbox_inches='tight')
-    frame_paths.append(p)
-
-    for seed_iter in range(max_seeds):
-        if forest.n_boxes >= max_boxes:
-            logger.info("达到 max_boxes=%d，停止", max_boxes)
-            break
-
-        # 最远点采样
-        candidates = []
-        for _ in range(farthest_k):
-            q = np.array([rng.uniform(lo, hi) for lo, hi in joint_limits])
-            if checker.check_config_collision(q):
-                continue
-            if forest.find_containing(q) is not None:
-                continue
-            nearest = forest.find_nearest(q)
-            dist = nearest.distance_to_config(q) if nearest else float('inf')
-            candidates.append((q, dist))
-
-        if not candidates:
-            n_farthest_fails += 1
-            if n_farthest_fails > 80:
-                logger.info("连续 80 次无候选，C-free 已基本覆盖 (iter=%d)", seed_iter)
-                break
-            continue
-        n_farthest_fails = 0
-
-        q_seed, _ = max(candidates, key=lambda x: x[1])
-
-        # 拓展
-        nid = forest.allocate_id()
-        box = expander.expand(
-            q_seed, node_id=nid, rng=rng,
-            existing_boxes=list(forest.boxes.values()),
-        )
-        if box is None or box.volume < 1e-6:
-            continue
-
-        # 增量添加 → deoverlap + 邻接更新
-        added = forest.add_boxes_incremental([box])
-        step += 1
-
-        if step % step_interval == 0 or forest.n_boxes >= max_boxes:
-            new_ids = [b.node_id for b in added]
-            render_frame(ax, forest, joint_limits, collision_map, step,
-                         new_seed=q_seed, new_box_ids=new_ids,
-                         cmap_boxes=cmap_boxes)
-            p = str(frames_dir / f"step_{step:04d}.png")
-            fig.savefig(p, dpi=100, bbox_inches='tight')
-            frame_paths.append(p)
-
-        if step % 20 == 0:
-            n_adj = sum(len(v) for v in forest.adjacency.values()) // 2
-            logger.info(
-                "step %4d | boxes=%3d | adj=%d | vol=%.3f | %.1fs",
-                step, forest.n_boxes, n_adj, forest.total_volume,
-                time.time() - t0,
-            )
-
-    plt.close(fig)
-
-    dt = time.time() - t0
-    n_adj = sum(len(v) for v in forest.adjacency.values()) // 2
-    logger.info(
-        "拓展完成: %d 步, %d boxes, %d adj edges, vol=%.4f, %.2fs",
-        step, forest.n_boxes, n_adj, forest.total_volume, dt,
-    )
-
-    # ── 合成 GIF ──
-    logger.info("合成 GIF (%d 帧, fps=%d) ...", len(frame_paths), fps)
-    try:
-        from PIL import Image
-        images = [Image.open(fp) for fp in frame_paths]
-        # 最后一帧驻留更久 (repeat 4x)
-        for _ in range(3):
-            images.append(images[-1])
-        gif_path = str(output_dir / "forest_growth.gif")
-        images[0].save(
-            gif_path, save_all=True, append_images=images[1:],
-            duration=int(1000 / fps), loop=0,
-        )
-        logger.info("  GIF 已保存: %s", gif_path)
-    except Exception as e:
-        logger.warning("  GIF 生成失败: %s", e)
-        gif_path = None
-
-    # ── 合成 MP4 ──
-    try:
-        import imageio
-        mp4_path = str(output_dir / "forest_growth.mp4")
-        writer = imageio.get_writer(mp4_path, fps=fps)
-        for fp in frame_paths:
-            writer.append_data(imageio.imread(fp))
-        # 尾帧驻留
-        last_frame = imageio.imread(frame_paths[-1])
-        for _ in range(fps * 2):
-            writer.append_data(last_frame)
-        writer.close()
-        logger.info("  MP4 已保存: %s", mp4_path)
-    except Exception as e:
-        logger.warning("  MP4 生成失败: %s", e)
-
-    # 保存 AABB 缓存
-    try:
-        aabb_cache.auto_save(robot)
-    except Exception:
-        pass
-
-    return forest, step, dt, frame_paths
-
-
-# ─────────────────────────────────────────────────────────
 #  核心（HierAABBTree 模式）：层级切分拓展 + 录制帧
 # ─────────────────────────────────────────────────────────
 
@@ -399,7 +220,7 @@ def grow_forest_hier_animated(
     rng_seed: int = 42,
     fps: int = 4,
     max_depth: int = 40,
-    min_edge_length: float = 0.01,
+    min_edge_length: float = 0.05,
     early_stop_window: int = 30,
     early_stop_min_vol: float = 1e-4,
 ):
@@ -488,17 +309,19 @@ def grow_forest_hier_animated(
             n_seed_collision += 1
             return None
 
+        # 用树的占用状态检查（O(depth)，代替 forest.find_containing 的 O(N)）
         tc0 = time.time()
-        containing = forest.find_containing(seed_q)
-        t_collision_check += time.time() - tc0
-        if containing is not None:
+        if hier_tree.is_occupied(seed_q):
+            t_collision_check += time.time() - tc0
             n_seed_inside += 1
             return None
+        t_collision_check += time.time() - tc0
 
         tf0 = time.time()
         ivs = hier_tree.find_free_box(
             seed_q, obstacles, max_depth=max_depth,
-            min_edge_length=min_edge_length)
+            min_edge_length=min_edge_length,
+            mark_occupied=True)
         t_find_free_box += time.time() - tf0
         if ivs is None:
             n_find_none += 1
@@ -518,23 +341,22 @@ def grow_forest_hier_animated(
             volume=vol,
         )
         td0 = time.time()
-        added = forest.add_boxes_incremental([box])
+        forest.add_box_direct(box)
         t_deoverlap += time.time() - td0
 
-        if added:
-            widths = [hi - lo for lo, hi in ivs]
-            expansion_log.append({
-                'step': step + 1,
-                'id': nid,
-                'vol': vol,
-                'widths': widths,
-                'source': source,
-                'depth': hier_tree.get_stats()['max_depth'] if vol < 0.001 else 0,
-                'n_boxes': forest.n_boxes,
-                'elapsed': time.time() - t0,
-            })
-            recent_vols.append(vol)
-        return added
+        widths = [hi - lo for lo, hi in ivs]
+        expansion_log.append({
+            'step': step + 1,
+            'id': nid,
+            'vol': vol,
+            'widths': widths,
+            'source': source,
+            'depth': hier_tree.get_stats()['max_depth'] if vol < 0.001 else 0,
+            'n_boxes': forest.n_boxes,
+            'elapsed': time.time() - t0,
+        })
+        recent_vols.append(vol)
+        return [box]
 
     # ── 主循环 ──
     global_stalls = 0
@@ -601,7 +423,7 @@ def grow_forest_hier_animated(
                 q = np.array([rng.uniform(lo, hi) for lo, hi in joint_limits])
                 if checker.check_config_collision(q):
                     continue
-                if forest.find_containing(q) is not None:
+                if hier_tree.is_occupied(q):
                     continue
                 nearest = forest.find_nearest(q)
                 dist = nearest.distance_to_config(q) if nearest else float('inf')
@@ -1065,10 +887,6 @@ def main():
                         help="最大 box 数 (默认: 150)")
     parser.add_argument("--max-seeds", type=int, default=2000,
                         help="最大采样迭代 (默认: 2000)")
-    parser.add_argument("--expansion-res", type=float, default=0.02,
-                        help="box 拓展二分精度 (rad)")
-    parser.add_argument("--max-rounds", type=int, default=3,
-                        help="box 拓展最大迭代轮数")
     parser.add_argument("--resolution", type=float, default=0.03,
                         help="碰撞地图扫描精度 (rad)")
     parser.add_argument("--step-interval", type=int, default=3,
@@ -1077,15 +895,12 @@ def main():
                         help="动画帧率 (默认: 4)")
     parser.add_argument("--farthest-k", type=int, default=12,
                         help="最远点采样候选数 (默认: 12)")
-    parser.add_argument("--mode", type=str, default="hier",
-                        choices=["hier", "legacy"],
-                        help="拓展模式: hier=层级切分(新), legacy=balanced expansion(旧)")
     parser.add_argument("--max-depth", type=int, default=40,
                         help="HierAABBTree 最大切分深度 (默认: 40)")
     parser.add_argument("--boundary-batch", type=int, default=6,
                         help="DFS 边界采样批量 (默认: 6)")
-    parser.add_argument("--min-edge", type=float, default=0.01,
-                        help="最小分割边长 (rad, 默认: 0.01)")
+    parser.add_argument("--min-edge", type=float, default=0.05,
+                        help="最小分割边长 (rad, 默认: 0.05)")
     parser.add_argument("--early-stop-window", type=int, default=30,
                         help="早停滑动窗口大小 (默认: 30, 0=禁用)")
     parser.add_argument("--early-stop-min-vol", type=float, default=1e-4,
@@ -1098,8 +913,8 @@ def main():
 
     logger.info("=" * 60)
     logger.info("  BoxForest 增量拓展可视化")
-    logger.info("  seed=%d  n_obs=%d  max_boxes=%d  max_seeds=%d  mode=%s",
-                args.seed, args.n_obs, args.max_boxes, args.max_seeds, args.mode)
+    logger.info("  seed=%d  n_obs=%d  max_boxes=%d  max_seeds=%d",
+                args.seed, args.n_obs, args.max_boxes, args.max_seeds)
     logger.info("  step_interval=%d  fps=%d",
                 args.step_interval, args.fps)
     logger.info("  output: %s", output_dir)
@@ -1130,47 +945,26 @@ def main():
 
     # 4. 逐步拓展 + 录制帧
     logger.info("")
-    hier_tree = None
-    timing_report = None
-    expansion_log = None
-    if args.mode == "hier":
-        logger.info("▶ 开始拓展 BoxForest (HierAABBTree 模式) ...")
-        (forest, n_steps, dt, frame_paths, hier_tree,
-         timing_report, expansion_log) = grow_forest_hier_animated(
-            robot=robot,
-            scene=scene,
-            joint_limits=joint_limits,
-            collision_map=collision_map,
-            output_dir=output_dir,
-            max_boxes=args.max_boxes,
-            max_seeds=args.max_seeds,
-            boundary_batch=args.boundary_batch,
-            step_interval=args.step_interval,
-            farthest_k=args.farthest_k,
-            rng_seed=args.seed,
-            fps=args.fps,
-            max_depth=args.max_depth,
-            min_edge_length=args.min_edge,
-            early_stop_window=args.early_stop_window,
-            early_stop_min_vol=args.early_stop_min_vol,
-        )
-    else:
-        logger.info("▶ 开始拓展 BoxForest (legacy balanced expansion 模式) ...")
-        forest, n_steps, dt, frame_paths = grow_forest_animated(
-            robot=robot,
-            scene=scene,
-            joint_limits=joint_limits,
-            collision_map=collision_map,
-            output_dir=output_dir,
-            max_boxes=args.max_boxes,
-            max_seeds=args.max_seeds,
-            expansion_resolution=args.expansion_res,
-            max_rounds=args.max_rounds,
-            step_interval=args.step_interval,
-            farthest_k=args.farthest_k,
-            rng_seed=args.seed,
-            fps=args.fps,
-        )
+    logger.info("▶ 开始拓展 BoxForest (HierAABBTree 模式) ...")
+    (forest, n_steps, dt, frame_paths, hier_tree,
+     timing_report, expansion_log) = grow_forest_hier_animated(
+        robot=robot,
+        scene=scene,
+        joint_limits=joint_limits,
+        collision_map=collision_map,
+        output_dir=output_dir,
+        max_boxes=args.max_boxes,
+        max_seeds=args.max_seeds,
+        boundary_batch=args.boundary_batch,
+        step_interval=args.step_interval,
+        farthest_k=args.farthest_k,
+        rng_seed=args.seed,
+        fps=args.fps,
+        max_depth=args.max_depth,
+        min_edge_length=args.min_edge,
+        early_stop_window=args.early_stop_window,
+        early_stop_min_vol=args.early_stop_min_vol,
+    )
 
     # 5. 最终静态图
     logger.info("")

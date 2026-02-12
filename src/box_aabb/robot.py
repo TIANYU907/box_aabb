@@ -299,7 +299,7 @@ class Robot:
         
         Args:
             joint_values: 关节值列表（长度不足时自动补零）
-            link_idx: 连杆索引 (1-based, 1~n_joints)
+            link_idx: 连杆索引 (1-based, 1~n_joints+1 含 tool_frame)
         
         Returns:
             连杆末端位置 (3,) ndarray
@@ -318,6 +318,16 @@ class Robot:
                 theta = param['theta']
                 d = param['d'] + q[i]
             T = T @ self.dh_transform(param['alpha'], param['a'], d, theta)
+        
+        # 如果 link_idx 超过 DH 参数数量且存在 tool_frame，追加 tool_frame
+        if link_idx > len(self.dh_params) and self.tool_frame is not None:
+            A_tool = self.dh_transform(
+                self.tool_frame['alpha'],
+                self.tool_frame['a'],
+                self.tool_frame['d'],
+                0.0,
+            )
+            T = T @ A_tool
         
         return T[:3, 3]
     

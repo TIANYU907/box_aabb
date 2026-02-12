@@ -190,6 +190,7 @@ class TestOverlapAwareExpansion:
             robot_2dof, checker_2dof, joint_limits_2dof,
             expansion_resolution=0.02, strategy='balanced',
             overlap_weight=0.0,
+            hard_overlap_reject=False,
         )
 
         big_box = BoxNode(

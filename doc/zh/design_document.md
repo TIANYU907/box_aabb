@@ -207,12 +207,12 @@ $$
 │  ┌──────┴───────┐  ┌──────┴───────┐  ┌─────┴─────┐ │
 │  │ CollisionChk │  │  deoverlap   │  │ Connector │ │
 │  │ (碰撞检测)    │  │  (去重叠)     │  │ (图搜索)  │ │
-│  └──────┬───────┘  └──────────────┘  └─────┬─────┘ │
-│         │                                   │        │
-│  ┌──────┴───────┐                    ┌─────┴─────┐ │
-│  │ BoxExpander  │                    │ GCS/scipy │ │
-│  │ (Box扩张)    │                    │ (路径优化) │ │
-│  └──────────────┘                    └───────────┘ │
+│  └──────────────┘  └──────────────┘  └─────┬─────┘ │
+│                                             │        │
+│                                      ┌─────┴─────┐ │
+│                                      │ GCS/scipy │ │
+│                                      │ (路径优化) │ │
+│                                      └───────────┘ │
 ├─────────────────────────────────────────────────────┤
 │                基础层 (box_aabb/)                     │
 │  ┌───────────┐  ┌───────────────┐  ┌─────────────┐ │
@@ -331,22 +331,10 @@ class CollisionChecker:
 
 **保守性**：`check_box_collision` 使用区间 FK，返回 `False` 时**保证**安全。可选的 AABB 缓存避免重复 FK 计算。
 
-### 6.3 Box 扩张 (`box_expansion.py`)
+### 6.3 Box 扩张（已移除）
 
-`BoxExpander` 提供两种策略将种子配置扩展为最大无碰撞 Box：
-
-#### Greedy 策略（旧版）
-1. 计算各维度的 Jacobian 范数，按升序排列（范数小 = 对末端影响小 = 可安全大幅扩展）
-2. 逐维度正/负方向二分搜索碰撞边界
-3. 迭代多轮直到体积增长 < 0.1%
-
-#### Balanced 策略（改进版）
-1. 维护 $2n$ 个候选方向（每维度 ±）
-2. 每步评估所有候选：自适应步长 + 二分搜索安全边界
-3. 选择**最大体积增益**的方向（减去重叠惩罚）
-4. 当增长 < 0.5% 时早停
-
-**`hard_overlap_reject`**：新 Box 被已有 Box 的边界截止（不允许重叠进入已有空间），保证后续 deoverlap 不会碎片化。
+> **注意**：旧的 `BoxExpander`（greedy/balanced 策略）已被 **HierAABBTree** 完全替代。  
+> Box 扩张现在统一通过 `HierAABBTree.find_free_box(seed, obstacles)` 实现，详见第 7 节。
 
 ### 6.4 去重叠 (`deoverlap.py`)
 
@@ -403,7 +391,7 @@ def build_adjacency_graph(boxes, adjacency, q_start, q_goal) → graph
 
 ### 7.1 动机
 
-传统 `BoxExpander` 的问题：
+旧的 Box 扩张方式存在以下问题：
 1. **细长 Box**：Jacobian 引导优先扩展"安全"维度，导致先扩展的维度远大于后扩展的维度
 2. **连接性差**：贪心扩张不考虑全局拓扑
 3. **重复计算**：每次扩张独立调用区间 FK，无法复用
@@ -519,7 +507,7 @@ HierAABBTree.find_free_box(seed)
 
 ### 7.7 min_edge_length 与早停
 
-- **min_edge_length**：当待分割维度宽度 < `2 × min_edge_length` 时停止切分，防止产生过于微小的 Box。默认 0.01 rad（约 0.57°）。
+- **min_edge_length**：当待分割维度宽度 < `2 × min_edge_length` 时停止切分，防止产生过于微小的 Box。默认 0.05 rad（约 2.86°）。
 - **早停滑动窗口**：当最近 N 个 Box 的体积都 < 阈值时，判定空间已饱和，停止拓展。
 
 ---
@@ -607,29 +595,9 @@ def add_boxes_incremental(new_boxes):
 
 ## 10. 缓存系统
 
-### 10.1 两级缓存
+### 10.1 HierAABBTree 全局缓存
 
-| 缓存 | 绑定对象 | 作用域 | 文件格式 |
-|------|---------|--------|---------|
-| **AABBCache** | Robot + 关节区间 → `LinkAABBInfo` | 区间 FK 结果 | pickle |
-| **HierAABBTree** | Robot → KD-tree | C-space 全局切分结构 | pickle |
-
-### 10.2 AABBCache 细节
-
-```
-.cache/aabb/{robot_name}_{fingerprint[:16]}.pkl
-```
-
-内部使用两个 `IntervalStore`（区间方法 + 数值方法），每个 Store 维护：
-- **精确哈希索引**：完全相同的区间 → $O(1)$ 查找
-- **NumPy 向量化层**：`(M, N, 2)` 数组，支持子集/包含关系的批量查询
-- **合并查询**：找到覆盖查询区间的多个已缓存子区间，逐连杆合并它们的 3D AABB
-
-**替换逻辑**：
-- 区间方法：更小体积 = 更精确 → 保留较小的
-- 数值方法：更大体积 = 更完整 → 保留较大的
-
-### 10.3 HierAABBTree 全局缓存
+系统使用 HierAABBTree 作为唯一的缓存机制，将 C-space 的层级切分结构持久化到磁盘。
 
 ```
 .cache/hier_aabb/{robot_name}_{fingerprint[:16]}.pkl
@@ -739,7 +707,7 @@ np.any(node.occupancy & obstacle_grid)  # 向量化
 
 ### 12.3 与主规划管线的集成
 
-HierAABBTree 目前仅在 `visualize_box_forest.py` 中使用。下一步应替换 `BoxRRT` 中的 `BoxExpander`，使主规划流水线也能受益于层级缓存。
+HierAABBTree 已完全替代旧的 BoxExpander，成为 `BoxRRT`、`BoxForestQuery` 等模块的唯一 box 扩张后端。所有规划流水线现在通过 `hier_tree.find_free_box(seed, obstacles)` + `forest.add_box_direct(box)` 完成 box 扩张和森林构建。
 
 ### 12.4 渲染性能
 
@@ -764,23 +732,16 @@ matplotlib 占 94% 运行时间。对于纯算法评估应使用无渲染模式�
 | `planner/models.py` | `BoxNode`, `Obstacle`, `PlannerConfig`, `PlannerResult` |
 | `planner/obstacles.py` | `Scene` |
 | `planner/collision.py` | `CollisionChecker`, `aabb_overlap` |
-| `planner/box_expansion.py` | `BoxExpander` |
-| `planner/deoverlap.py` | `deoverlap`, `subtract_box`, `compute_adjacency` |
-| `planner/box_forest.py` | `BoxForest` |
 | `planner/hier_aabb_tree.py` | `HierAABBTree`, `HierAABBNode` |
 | `planner/connector.py` | `TreeConnector` |
 | `planner/gcs_optimizer.py` | `GCSOptimizer` |
 | `planner/path_smoother.py` | `PathSmoother` |
-| `planner/aabb_cache.py` | `AABBCache`, `IntervalStore` |
 | `planner/box_rrt.py` | `BoxRRT` |
 
 ### 缓存文件路径
 
 ```
 .cache/
-├── aabb/
-│   ├── 2DOF-Planar_6abf5a8e1a704654.pkl
-│   └── Panda_a1b2c3d4e5f6g7h8.pkl
 └── hier_aabb/
     ├── 2DOF-Planar_6abf5a8e1a704654.pkl
     └── Panda_a1b2c3d4e5f6g7h8.pkl

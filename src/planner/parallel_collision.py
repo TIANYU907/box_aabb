@@ -3,7 +3,7 @@ planner/parallel_collision.py - 并行碰撞检测优化
 
 通过 concurrent.futures 线程/进程池加速批量碰撞检测。
 主要优化场景：
-- box_expansion: 二分搜索中的批量碰撞检测
+- hier_aabb_tree: 层级 AABB 树中的批量碰撞检测
 - connector: 多对 box 之间的线段碰撞检测
 - sampling: 批量 seed 点碰撞检测
 

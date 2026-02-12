@@ -299,7 +299,6 @@ class PlannerConfig:
         query_expand_budget: 查询阶段始末点附近拓展的最大 box 数
         forest_path: 预构建 BoxForest 文件路径（可选）
         interval_width_threshold: 区间/数值方法切换阈值 (rad)
-        use_aabb_cache: 是否启用 AABB 包络缓存
     """
     max_iterations: int = 500
     max_box_nodes: int = 200
@@ -326,9 +325,8 @@ class PlannerConfig:
     build_n_seeds: int = 200
     query_expand_budget: int = 10
     forest_path: Optional[str] = None
-    # v4.0 新增：自适应阈值与缓存
+    # v4.0 新增：自适应阈值
     interval_width_threshold: float = 1.0
-    use_aabb_cache: bool = True
     # v4.2 新增：重叠惩罚
     overlap_weight: float = 1.0
     # v5.0 新增：无重叠 BoxForest

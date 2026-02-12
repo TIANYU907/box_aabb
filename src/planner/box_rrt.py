@@ -34,13 +34,12 @@ from box_aabb.robot import Robot
 from .models import PlannerConfig, PlannerResult, BoxNode
 from .obstacles import Scene
 from .collision import CollisionChecker
-from .box_expansion import BoxExpander
+from .hier_aabb_tree import HierAABBTree
 from .box_tree import BoxTreeManager
 from .box_forest import BoxForest
 from .connector import TreeConnector
 from .path_smoother import PathSmoother, compute_path_length
 from .gcs_optimizer import GCSOptimizer
-from .aabb_cache import AABBCache
 from .deoverlap import deoverlap, compute_adjacency
 
 logger = logging.getLogger(__name__)
@@ -74,7 +73,6 @@ class BoxRRT:
         scene: Scene,
         config: Optional[PlannerConfig] = None,
         joint_limits: Optional[List[Tuple[float, float]]] = None,
-        aabb_cache: Optional[AABBCache] = None,
     ) -> None:
         self.robot = robot
         self.scene = scene
@@ -91,45 +89,14 @@ class BoxRRT:
 
         self._n_dims = len(self.joint_limits)
 
-        # AABB 缓存：若启用但未传入，自动从磁盘加载
-        if self.config.use_aabb_cache:
-            if aabb_cache is not None:
-                _cache = aabb_cache
-            else:
-                _cache = AABBCache.auto_load(robot)
-                logger.info("BoxRRT: 自动创建 AABB 缓存")
-        else:
-            _cache = None
-        self._aabb_cache = _cache
-        self._owns_cache = (aabb_cache is None and _cache is not None)
-
         # 初始化子模块
         self.collision_checker = CollisionChecker(
             robot=robot,
             scene=scene,
-            aabb_cache=_cache,
         )
-        # 自动决定是否启用采样辅助 box 拓展
-        if self.config.use_sampling is not None:
-            _use_sampling = self.config.use_sampling
-        else:
-            _use_sampling = robot.n_joints > 4
-        self.box_expander = BoxExpander(
-            robot=robot,
-            collision_checker=self.collision_checker,
-            joint_limits=self.joint_limits,
-            expansion_resolution=self.config.expansion_resolution,
-            max_rounds=self.config.max_expansion_rounds,
-            jacobian_delta=self.config.jacobian_delta,
-            use_sampling=_use_sampling,
-            sampling_n=self.config.sampling_n,
-            min_initial_half_width=self.config.min_initial_half_width,
-            strategy=self.config.expansion_strategy,
-            balanced_step_fraction=self.config.balanced_step_fraction,
-            balanced_max_steps=self.config.balanced_max_steps,
-            overlap_weight=self.config.overlap_weight,
-            hard_overlap_reject=self.config.hard_overlap_reject,
-        )
+        # 使用 HierAABBTree 做 box 拓展（自顶向下切分 + 缓存精化）
+        self.hier_tree = HierAABBTree.auto_load(robot, self.joint_limits)
+        self.obstacles = scene.get_obstacles()
         self.tree_manager = BoxTreeManager()
         self.connector = TreeConnector(
             tree_manager=self.tree_manager,
@@ -174,7 +141,7 @@ class BoxRRT:
         try:
             return self._plan_impl(q_start, q_goal, rng, t0, result)
         finally:
-            self._auto_save_cache()
+            pass
 
     def _plan_impl(
         self,
@@ -225,17 +192,28 @@ class BoxRRT:
         existing_list = list(valid_boxes.values())
         raw_new_boxes: List[BoxNode] = []
 
-        # 从始末点扩展
+        # 从始末点扩展（使用 HierAABBTree）
         for q_seed in [q_start, q_goal]:
-            if any(b.contains(q_seed) for b in existing_list):
+            if self.hier_tree.is_occupied(q_seed):
+                continue
+            ivs = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True)
+            if ivs is None:
+                continue
+            vol = 1.0
+            for lo, hi in ivs:
+                vol *= max(hi - lo, 0.0)
+            if vol < self.config.min_box_volume:
                 continue
             nid = forest.allocate_id()
-            box = self.box_expander.expand(
-                q_seed, node_id=nid, rng=rng,
-                existing_boxes=existing_list + raw_new_boxes,
+            box = BoxNode(
+                node_id=nid,
+                joint_intervals=ivs,
+                seed_config=q_seed.copy(),
+                volume=vol,
             )
-            if box is not None and box.volume >= self.config.min_box_volume:
-                raw_new_boxes.append(box)
+            forest.add_box_direct(box)
+            raw_new_boxes.append(box)
 
         # 主采样循环
         n_boxes = len(existing_list) + len(raw_new_boxes)
@@ -247,22 +225,28 @@ class BoxRRT:
             if q_seed is None:
                 continue
 
-            # 跳过已覆盖的 seed
-            already_covered = (
-                any(b.contains(q_seed) for b in existing_list)
-                or any(b.contains(q_seed) for b in raw_new_boxes)
-            )
-            if already_covered:
+            # 用树的占用状态检查（O(depth)）
+            if self.hier_tree.is_occupied(q_seed):
+                continue
+
+            ivs = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True)
+            if ivs is None:
+                continue
+            vol = 1.0
+            for lo, hi in ivs:
+                vol *= max(hi - lo, 0.0)
+            if vol < self.config.min_box_volume:
                 continue
 
             nid = forest.allocate_id()
-            box = self.box_expander.expand(
-                q_seed, node_id=nid, rng=rng,
-                existing_boxes=existing_list + raw_new_boxes,
+            box = BoxNode(
+                node_id=nid,
+                joint_intervals=ivs,
+                seed_config=q_seed.copy(),
+                volume=vol,
             )
-            if box is None or box.volume < self.config.min_box_volume:
-                continue
-
+            forest.add_box_direct(box)
             raw_new_boxes.append(box)
             n_boxes = len(existing_list) + len(raw_new_boxes)
 
@@ -272,15 +256,7 @@ class BoxRRT:
                     iteration + 1, len(existing_list), len(raw_new_boxes),
                 )
 
-        # ---- Step 4: deoverlap + 邻接图 ----
-        if raw_new_boxes:
-            forest.add_boxes_incremental(raw_new_boxes)
-
-        # 再次排除碰撞 box（新 box 也需要验证）
-        new_colliding = set()
-        for box in raw_new_boxes:
-            # 新 box 的碎片可能有新 ID
-            pass
+        # ---- Step 4: 验证 ----
         # 简化：对所有 box 做惰性验证（新增的通常很少）
         all_colliding = forest.validate_boxes(self.collision_checker)
 
@@ -449,14 +425,6 @@ class BoxRRT:
             result.append(best if best is not None else box_sequence[0])
         return result
 
-    def _auto_save_cache(self) -> None:
-        """若本实例自动创建了缓存，plan 结束后自动保存到磁盘"""
-        if self._owns_cache and self._aabb_cache is not None:
-            try:
-                self._aabb_cache.auto_save(self.robot)
-            except Exception as e:
-                logger.warning("AABB 缓存自动保存失败: %s", e)
-
     # ==================== 辅助方法 ====================
 
     def _graph_search(
@@ -594,22 +562,26 @@ class BoxRRT:
         q_goal: np.ndarray,
         rng: np.random.Generator,
     ) -> None:
-        """从始末点创建初始 box tree"""
-        # 起始点 box
-        start_id = self.tree_manager.allocate_node_id()
-        start_box = self.box_expander.expand(q_start, node_id=start_id, rng=rng,
-                                              existing_boxes=self.tree_manager.get_all_boxes())
-        if start_box is not None and start_box.volume >= self.config.min_box_volume:
-            self.tree_manager.create_tree(start_box)
-            logger.info("起始 box: 体积 %.6f", start_box.volume)
-
-        # 目标点 box
-        goal_id = self.tree_manager.allocate_node_id()
-        goal_box = self.box_expander.expand(q_goal, node_id=goal_id, rng=rng,
-                                             existing_boxes=self.tree_manager.get_all_boxes())
-        if goal_box is not None and goal_box.volume >= self.config.min_box_volume:
-            self.tree_manager.create_tree(goal_box)
-            logger.info("目标 box: 体积 %.6f", goal_box.volume)
+        """从始末点创建初始 box tree（使用 HierAABBTree）"""
+        for q_seed, label in [(q_start, "起始"), (q_goal, "目标")]:
+            ivs = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True)
+            if ivs is None:
+                continue
+            vol = 1.0
+            for lo, hi in ivs:
+                vol *= max(hi - lo, 0.0)
+            if vol < self.config.min_box_volume:
+                continue
+            nid = self.tree_manager.allocate_node_id()
+            box = BoxNode(
+                node_id=nid,
+                joint_intervals=ivs,
+                seed_config=q_seed.copy(),
+                volume=vol,
+            )
+            self.tree_manager.create_tree(box)
+            logger.info("%s box: 体积 %.6f", label, vol)
 
     def _sample_seed(
         self,
@@ -688,11 +660,7 @@ class BoxRRT:
         tree_id: int,
         rng: np.random.Generator,
     ) -> None:
-        """在树的叶子 box 边界上再采样并拓展
-
-        这是 Box-RRT 的关键步骤：从已有 box 的边界出发，
-        采样新 seed 并拓展，使树逐渐生长覆盖更多空间。
-        """
+        """在树的叶子 box 边界上再采样并拓展（使用 HierAABBTree）"""
         samples = self.tree_manager.get_boundary_samples(
             tree_id, n_samples=self.config.seed_batch_size, rng=rng,
         )
@@ -704,11 +672,23 @@ class BoxRRT:
             if self.collision_checker.check_config_collision(q_seed):
                 continue
 
-            node_id = self.tree_manager.allocate_node_id()
-            new_box = self.box_expander.expand(q_seed, node_id=node_id, rng=rng,
-                                               existing_boxes=self.tree_manager.get_all_boxes())
-            if new_box is None or new_box.volume < self.config.min_box_volume:
+            ivs = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True)
+            if ivs is None:
                 continue
+            vol = 1.0
+            for lo, hi in ivs:
+                vol *= max(hi - lo, 0.0)
+            if vol < self.config.min_box_volume:
+                continue
+
+            node_id = self.tree_manager.allocate_node_id()
+            new_box = BoxNode(
+                node_id=node_id,
+                joint_intervals=ivs,
+                seed_config=q_seed.copy(),
+                volume=vol,
+            )
 
             # 找到距 seed 最近的同树 box 作为父节点
             nearest = self.tree_manager.find_nearest_box_in_tree(tree_id, q_seed)
@@ -718,11 +698,7 @@ class BoxRRT:
                 )
 
     def _bridge_sampling(self, rng: np.random.Generator) -> None:
-        """桥接采样：在不同树之间的间隙区域定向采样
-
-        找到两棵树最近的边界区域，在该区域附近集中采样 seed，
-        尝试在窄通道中建立连接。
-        """
+        """桥接采样：在不同树之间的间隙区域定向采样（使用 HierAABBTree）"""
         trees = self.tree_manager.get_all_trees()
         if len(trees) < 2:
             return
@@ -771,10 +747,21 @@ class BoxRRT:
                     if self.collision_checker.check_config_collision(q_seed):
                         continue
 
-                    node_id = self.tree_manager.allocate_node_id()
-                    new_box = self.box_expander.expand(q_seed, node_id=node_id, rng=rng,
-                                                       existing_boxes=self.tree_manager.get_all_boxes())
-                    if new_box is None or new_box.volume < self.config.min_box_volume:
+                    ivs = self.hier_tree.find_free_box(
+                        q_seed, self.obstacles, mark_occupied=True)
+                    if ivs is None:
+                        continue
+                    vol = 1.0
+                    for lo, hi in ivs:
+                        vol *= max(hi - lo, 0.0)
+                    if vol < self.config.min_box_volume:
                         continue
 
+                    node_id = self.tree_manager.allocate_node_id()
+                    new_box = BoxNode(
+                        node_id=node_id,
+                        joint_intervals=ivs,
+                        seed_config=q_seed.copy(),
+                        volume=vol,
+                    )
                     self._add_box_to_tree(new_box, rng)

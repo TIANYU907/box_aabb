@@ -12,7 +12,7 @@
 4. [模块详解](#4-模块详解)
    - 4.1 [数据模型 (models.py)](#41-数据模型-modelspy)
    - 4.2 [碰撞检测 (collision.py)](#42-碰撞检测-collisionpy)
-   - 4.3 [Box 拓展 (box_expansion.py)](#43-box-拓展-box_expansionpy)
+   - 4.3 [Box 拓展 (hier_aabb_tree.py)](#43-box-拓展-hier_aabb_treepy)
    - 4.4 [Box 树管理 (box_tree.py)](#44-box-树管理-box_treepy)
    - 4.5 [主规划器 (box_rrt.py)](#45-主规划器-box_rrtpy)
    - 4.6 [树间连接 (connector.py)](#46-树间连接-connectorpy)
@@ -23,12 +23,11 @@
    - 4.11 [可视化 (visualizer.py)](#411-可视化-visualizerpy)
    - 4.12 [并行碰撞检测 (parallel_collision.py)](#412-并行碰撞检测-parallel_collisionpy)
 5. [v4.0 新增功能](#5-v40-新增功能)
-   - 5.1 [AABB 包络缓存 (aabb_cache.py)](#51-aabb-包络缓存-aabb_cachepy)
-   - 5.2 [可复用 Box 森林 (box_forest.py)](#52-可复用-box-森林-box_forestpy)
-   - 5.3 [森林查询规划 (box_query.py)](#53-森林查询规划-box_querypy)
-   - 5.4 [动态可视化 (dynamic_visualizer.py)](#54-动态可视化-dynamic_visualizerpy)
-   - 5.5 [自由空间瓦片化 (free_space_tiler.py)](#55-自由空间瓦片化-free_space_tilerpy)
-   - 5.6 [阈值实验 (threshold_experiment.py)](#56-阈值实验-threshold_experimentpy)
+   - 5.1 [可复用 Box 森林 (box_forest.py)](#51-可复用-box-森林-box_forestpy)
+   - 5.2 [森林查询规划 (box_query.py)](#52-森林查询规划-box_querypy)
+   - 5.3 [动态可视化 (dynamic_visualizer.py)](#53-动态可视化-dynamic_visualizerpy)
+   - 5.4 [自由空间瓦片化 (free_space_tiler.py)](#54-自由空间瓦片化-free_space_tilerpy)
+   - 5.5 [阈值实验 (threshold_experiment.py)](#55-阈值实验-threshold_experimentpy)
 6. [底层数学支撑](#6-底层数学支撑)
    - 6.1 [仿射算术 (interval_math.py)](#61-仿射算术-interval_mathpy)
    - 6.2 [区间正运动学 (interval_fk.py)](#62-区间正运动学-interval_fkpy)
@@ -91,7 +90,7 @@ src/
     ├── models.py            # 数据模型 (BoxNode, BoxTree, Edge, ...)
     ├── obstacles.py         # 障碍物场景管理 (Scene)
     ├── collision.py         # 碰撞检测 (调用 box_aabb.interval_fk)
-    ├── box_expansion.py     # Box 拓展（balanced/greedy 策略）
+    ├── hier_aabb_tree.py    # ★ 层级 AABB 缓存树（Box 拓展）
     ├── box_tree.py          # Box 树管理
     ├── box_rrt.py           # ★ 主规划器入口 (BoxRRT)
     ├── connector.py         # 树间/始末点连接
@@ -100,7 +99,6 @@ src/
     ├── metrics.py           # 路径评价指标
     ├── visualizer.py        # C-space / workspace 可视化
     ├── parallel_collision.py # 并行碰撞检测 + 空间索引
-    ├── aabb_cache.py        # ★ AABB 缓存系统 (v4.0, v4.1 全局接入)
     ├── box_forest.py        # ★ 可复用 BoxForest (v4.0)
     ├── box_query.py         # Forest 查询规划 (v4.0)
     ├── dynamic_visualizer.py # 动态可视化动画 (v4.0)
@@ -114,7 +112,7 @@ src/
   ─────────                              ──────────
                      BoxRRT (box_rrt.py)
                     /    |    |    \     \
-         BoxExpander  TreeMgr Connector  Smoother  GCSOptimizer
+        HierAABBTree  TreeMgr Connector  Smoother  GCSOptimizer
               |         |        |          |           |
        CollisionChecker  BoxTree  CollisionChecker  Dijkstra/Drake
               |
@@ -165,34 +163,24 @@ plan(q_start, q_goal)
 
 ### 3.2 Box 拓展算法
 
-单个 box 的拓展过程 `BoxExpander.expand(seed)`:
+单个 box 的拓展过程（通过 `HierAABBTree.find_free_box(seed, obstacles)`）:
 
 ```
-1. 在 seed 处计算数值 Jacobian
-2. 按 ||∂p/∂qi|| 从小到大排列维度
-3. if strategy == 'balanced':
-     _expand_balanced():
-       候选池 = {(dim, +1), (dim, -1)} for all dims
-       for step in max_steps:
-         评估所有候选的体积增益
-         执行最优候选（自适应步长 + 二分精炼）
-         淘汰已耗尽候选
-   else:  # greedy
-     _expand_greedy():
-       for round in max_rounds:
-         for dim in dimension_order:
-           向正/负方向各做二分搜索到碰撞边界
-4. 返回 BoxNode(intervals)
+1. 从根节点出发，递归搜索包含 seed 的叶节点
+2. 对叶节点执行碰撞检测（区间 FK + AABB 重叠检测）
+3. 若叶节点无碰撞:
+     找到包含 seed、彼此排列组合的最大合并 box
+     标记已用叶节点为 occupied，避免重复分配
+     返回 joint_intervals
+4. 若叶节点有碰撞:
+     返回 None（seed 不在自由空间中）
 ```
 
-**Hybrid 碰撞检测** (`_check_collision`):
+**碰撞检测**（`CollisionChecker.check_box_collision`）:
 ```
 interval_result = check_box_collision(intervals)   // 区间 FK
 if interval_result == False  →  一定安全
-if interval_result == True && use_sampling == False  →  认定碰撞
-if interval_result == True && use_sampling == True:
-    sampling_result = check_box_collision_sampling()  // 采样 80 个点
-    return sampling_result   // 用采样结果覆盖（概率性安全）
+if interval_result == True   →  可能碰撞（区间过估导致误报）
 ```
 
 ---
@@ -245,7 +233,6 @@ if interval_result == True && use_sampling == True:
 | `path_shortcut_iters` | 100 | Shortcut 优化迭代次数 |
 | `use_gcs` | False | 是否使用 Drake GCS |
 | `gcs_bezier_degree` | 3 | Bézier 曲线阶数 |
-| `use_aabb_cache` | True | 是否启用 AABB 缓存 |
 | `verbose` | False | 详细日志 |
 
 **JSON 配置化** (v4.1):
@@ -284,52 +271,13 @@ config = PlannerConfig.from_json("src/planner/configs/panda.json")
 
 ---
 
-### 4.3 Box 拓展 (box_expansion.py)
+### 4.3 Box 拓展 (hier_aabb_tree.py)
 
-**文件**: `src/planner/box_expansion.py` — ~750 行
+**文件**: `src/planner/hier_aabb_tree.py`
 
-`BoxExpander` 类实现从 seed 配置启发式拓展无碰撞 box 的核心逻辑。
+旧的 `BoxExpander`（greedy/balanced 策略）已被 **HierAABBTree** 完全替代。详见设计文档（design_document.md）第 7 节。
 
-**两种拓展策略** (v4.1):
-
-#### Balanced 策略（默认）
-
-维护 $2n$ 个候选方向（每维度 ±），每步选体积增益最大的方向推进一个自适应小步（`remaining × step_fraction`）。解决了 greedy 策略导致 box 形状极度细长的问题。
-
-```
-for step in max_steps:
-    评估所有候选方向的体积增益
-    执行增益最大的候选
-    移除已耗尽的候选
-```
-
-- 宽度比中位数：greedy 48.5 → **balanced 4.1**（改善 12 倍）
-
-#### Greedy 策略（旧版）
-
-1. **Jacobian 启发式维度排序**: 在 seed 处数值计算 $\|{\partial p}/{\partial q_i}\|$，范数越小优先拓展
-2. **逐维度二分搜索**: 对每个维度分别向正/负方向一次性搜索到碰撞边界
-3. **多轮迭代**: 重复直到体积不再增长
-4. **缺陷**: 先扩展维度占据过宽区间，导致后续维度区间 FK 严重过估计
-
-**Hybrid 模式** (高 DOF 自动启用):
-
-当 `use_sampling=True` 时，`_check_collision()` 方法实现两级检测：
-
-```python
-def _check_collision(self, test_intervals):
-    interval_result = self.collision_checker.check_box_collision(test_intervals)
-    if not interval_result:
-        return False      # 区间 FK 保证安全
-    if not self.use_sampling:
-        return True        # 纯区间模式
-    # Hybrid: 用采样复核区间 FK 的 False Positive
-    return self.collision_checker.check_box_collision_sampling(
-        test_intervals, n_samples=80, rng=self._rng
-    )
-```
-
-这解决了高 DOF（如 Panda 7DOF）中区间 FK 过估计导致 box 无法拓展的问题。
+核心接口：`HierAABBTree.find_free_box(seed, obstacles, mark_occupied=True)` — 在层级 AABB 缓存树中查找包含 seed 的最大无碰撞 box，并标记为已占用。
 
 ---
 
@@ -364,7 +312,7 @@ def _check_collision(self, test_intervals):
 
 **构造函数** 自动配置：
 - `CollisionChecker` — 碰撞检测器
-- `BoxExpander` — Box 拓展器（支持 balanced/greedy 策略，高 DOF 自动启用采样）
+- `HierAABBTree` — 层级 AABB 缓存树（唯一 Box 拓展后端）
 - `BoxTreeManager` — 树管理器
 - `TreeConnector` — 树间连接器
 - `PathSmoother` — 路径平滑器
@@ -544,52 +492,7 @@ for _ in max_iters:
 
 ## 5. v4.0 新增功能
 
-### 5.1 AABB 包络缓存 (aabb_cache.py)
-
-**文件**: `src/planner/aabb_cache.py`
-
-缓存机器人在特定关节区间上的 AABB 包络计算结果，避免重复的区间 FK 计算。
-
-**核心类**:
-
-| 类名 | 说明 |
-|------|------|
-| `CacheEntry` | 缓存条目：intervals + link_aabbs + n_sub + volume + timestamp |
-| `IntervalStore` | 自适应区间索引存储：逐维 SortedList + NumPy 向量化查询 |
-| `AABBCache` | 顶层管理器：按机器人指纹隔离，interval/numerical 双库 |
-
-**设计要点**:
-
-1. **双库分离存储**:
-   - Interval 库：存放区间 FK 的保守结果，体积越小越精确（安全侧）
-   - Numerical 库：存放数值采样的紧致结果，体积越大越精确（非安全侧）
-   - 同一区间的精度替换：interval 库保留小体积，numerical 库保留大体积
-
-2. **三种查询模式**:
-   - `query_exact(intervals)` — 精确匹配
-   - `query_subsets(intervals)` — 找缓存中被目标区间包含的所有子集
-   - `query_interval_merge(intervals)` — 子集合并 + 3D AABB 并集 + 间隙检测
-
-3. **合并数学**:
-
-   对关节区间 $D = D_1 \cup D_2$，各连杆 AABB 满足：
-   $$\text{AABB}_\ell(D) = \text{BoundingBox}(\text{AABB}_\ell(D_1) \cup \text{AABB}_\ell(D_2))$$
-   即逐连杆在 3D 空间取 $\min(\text{min\_point})$, $\max(\text{max\_point})$。
-
-4. **自适应索引**:
-   - NumPy 向量化层：shape `(M, N, 2)` 数组支持批量子集/包含判断
-   - 精度对齐：intervals 端点四舍五入到 6 位小数避免浮点问题
-   - LRU 淘汰：达到 `max_entries` 时删除最旧条目
-
-5. **碰撞检测集成** (`collision.py`):
-   ```python
-   CollisionChecker(robot, scene, aabb_cache=cache)
-   ```
-   `check_box_collision()` 中自动查缓存 → 命中则跳过 FK → 未命中计算后存入
-
----
-
-### 5.2 可复用 Box 森林 (box_forest.py)
+### 5.1 可复用 Box 森林 (box_forest.py)
 
 **文件**: `src/planner/box_forest.py`
 
@@ -614,7 +517,7 @@ for _ in max_iters:
 
 ---
 
-### 5.3 森林查询规划 (box_query.py)
+### 5.2 森林查询规划 (box_query.py)
 
 **文件**: `src/planner/box_query.py`
 
@@ -637,7 +540,7 @@ result = query.plan(q_start, q_goal, seed=42)
 
 ---
 
-### 5.4 动态可视化 (dynamic_visualizer.py)
+### 5.3 动态可视化 (dynamic_visualizer.py)
 
 **文件**: `src/planner/dynamic_visualizer.py`
 
@@ -667,7 +570,7 @@ anim.save("robot.gif", writer='pillow', fps=20)
 
 ---
 
-### 5.5 自由空间瓦片化 (free_space_tiler.py)
+### 5.4 自由空间瓦片化 (free_space_tiler.py)
 
 **文件**: `src/planner/free_space_tiler.py`
 
@@ -698,7 +601,7 @@ recursive_tile(intervals, depth):
 
 ---
 
-### 5.6 阈值实验 (threshold_experiment.py)
+### 5.5 阈值实验 (threshold_experiment.py)
 
 **文件**: `benchmarks/threshold_experiment.py`
 
@@ -774,7 +677,7 @@ $$|\delta| \leq \frac{r^2}{2}, \quad r = \sum |x_i|$$
 ```python
 _use_sampling = robot.n_joints > 4
 ```
-高 DOF 时启用 `BoxExpander.use_sampling=True`，在区间 FK 判碰撞后用 80 个随机采样点复核。这种策略：
+高 DOF 时 `HierAABBTree` 配合 `CollisionChecker` 的区间 FK 碰撞检测，通过层级缓存树的细分来降低过估计影响。这种策略：
 - 区间 FK 说安全 → **确定性安全**（不采样）
 - 区间 FK 说碰撞 + 采样全通过 → **概率性安全**（覆盖误报）
 - 区间 FK 说碰撞 + 采样命中 → **确认碰撞**
@@ -783,7 +686,7 @@ _use_sampling = robot.n_joints > 4
 
 **问题**: Panda 第 8 个关节（手指）限制为 $[0, 0]$（固定关节），宽度=0 使得所有 box volume=0，被 `min_box_volume` 过滤掉。
 
-**解决方案**: `BoxNode._compute_volume()` 和 `BoxExpander._volume()` 跳过零宽度维度，只计算活动关节的体积积。
+**解决方案**: `BoxNode._compute_volume()` 跳过零宽度维度，只计算活动关节的体积积。
 
 ### 7.3 AffineForm 乘法保相关性
 
@@ -876,22 +779,7 @@ result1 = query.plan(q_start_1, q_goal_1)
 result2 = query.plan(q_start_2, q_goal_2)  # 复用同一森林
 ```
 
-### 8.5 AABB 缓存 (v4.0)
-
-```python
-from planner import AABBCache, BoxRRT, PlannerConfig
-
-cache = AABBCache()
-config = PlannerConfig(use_aabb_cache=True)
-planner = BoxRRT(robot, scene, config, aabb_cache=cache)
-result = planner.plan(q_start, q_goal)
-
-# 缓存统计
-print(cache.get_stats(robot))
-# {'interval': 150, 'numerical': 0}
-```
-
-### 8.6 动态可视化 (v4.0)
+### 8.5 动态可视化 (v4.0)
 
 ```python
 from planner.dynamic_visualizer import animate_robot_path, resample_path
@@ -903,7 +791,7 @@ anim = animate_robot_path(
 anim.save("robot_motion.gif", writer='pillow', fps=20)
 ```
 
-### 8.7 自由空间瓦片化 (v4.0)
+### 8.6 自由空间瓦片化 (v4.0)
 
 ```python
 from planner import FreeSpaceTiler
@@ -922,14 +810,12 @@ nodes = tiler.tiles_to_box_nodes(tiles)  # 转为 BoxNode
 
 | 测试文件 | 测试数量 | 覆盖范围 |
 |----------|---------|----------|
-| `test_box_expansion.py` | 9 | box 拓展算法 |
 | `test_box_rrt.py` | 18 | 主规划器端到端 |
 | `test_box_tree.py` | 19 | box 树管理 + 数据模型 |
 | `test_collision.py` | 18 | 所有碰撞检测方法 |
 | `test_gcs_optimizer.py` | 13 | GCS/Dijkstra/scipy |
 | `test_obstacles.py` | 20 | 场景管理 |
 | `test_panda_integration.py` | 22 | Panda 7DOF 集成测试 |
-| `test_aabb_cache.py` | 20 | AABB 缓存系统 (v4.0) |
 | `test_box_forest.py` | 8 | BoxForest + BoxForestQuery (v4.0) |
 | `test_dynamic_visualizer.py` | 6 | 动态可视化 (v4.0) |
 | `test_free_space_tiler.py` | 13 | 自由空间瓦片化 (v4.0) |
@@ -1040,7 +926,7 @@ nodes = tiler.tiles_to_box_nodes(tiles)  # 转为 BoxNode
 |------|------|------|
 | `models.py` | 297 | 数据模型 |
 | `box_rrt.py` | ~600 | 主规划器 |
-| `box_expansion.py` | ~310 | Box 拓展 |
+| `hier_aabb_tree.py` | ~620 | 层级 AABB 缓存树（Box 拓展） |
 | `collision.py` | ~300 | 碰撞检测 |
 | `box_tree.py` | ~260 | 树管理 |
 | `connector.py` | ~400 | 树间连接 |
@@ -1050,7 +936,6 @@ nodes = tiler.tiles_to_box_nodes(tiles)  # 转为 BoxNode
 | `metrics.py` | ~340 | 评价指标 |
 | `visualizer.py` | ~370 | 可视化 |
 | `parallel_collision.py` | ~260 | 并行碰撞 |
-| `aabb_cache.py` | ~400 | AABB 缓存 (v4.0) |
 | `box_forest.py` | ~230 | 可复用 BoxForest (v4.0) |
 | `box_query.py` | ~200 | Forest 查询规划 (v4.0) |
 | `dynamic_visualizer.py` | ~310 | 动态可视化 (v4.0) |

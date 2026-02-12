@@ -14,6 +14,5 @@
   "sampling_n": 80,
   "connection_radius": 2.0,
   "path_shortcut_iters": 80,
-  "use_gcs": false,
-  "use_aabb_cache": true
+  "use_gcs": false
 }
