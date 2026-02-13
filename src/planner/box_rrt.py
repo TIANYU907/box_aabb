@@ -31,7 +31,7 @@ from typing import List, Tuple, Optional, Set, Dict
 import numpy as np
 
 from box_aabb.robot import Robot
-from .models import PlannerConfig, PlannerResult, BoxNode
+from .models import PlannerConfig, PlannerResult, BoxNode, gmean_edge_length
 from .obstacles import Scene
 from .collision import CollisionChecker
 from .hier_aabb_tree import HierAABBTree
@@ -179,6 +179,7 @@ class BoxRRT:
 
         # ---- Step 1: 加载/初始化 BoxForest ----
         forest = self._load_or_create_forest()
+        forest.hier_tree = self.hier_tree
 
         # ---- Step 2: 验证已有 box 在当前场景的碰撞状态 ----
         colliding_ids = forest.validate_boxes(self.collision_checker)
@@ -196,16 +197,20 @@ class BoxRRT:
         for q_seed in [q_start, q_goal]:
             if self.hier_tree.is_occupied(q_seed):
                 continue
-            ivs = self.hier_tree.find_free_box(
-                q_seed, self.obstacles, mark_occupied=True)
-            if ivs is None:
+            nid = forest.allocate_id()
+            ffb_result = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True,
+                forest_box_id=nid)
+            if ffb_result is None:
                 continue
+            ivs = ffb_result.intervals
             vol = 1.0
             for lo, hi in ivs:
                 vol *= max(hi - lo, 0.0)
-            if vol < self.config.min_box_volume:
+            if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
                 continue
-            nid = forest.allocate_id()
+            if ffb_result.absorbed_box_ids:
+                forest.remove_boxes(ffb_result.absorbed_box_ids)
             box = BoxNode(
                 node_id=nid,
                 joint_intervals=ivs,
@@ -229,17 +234,21 @@ class BoxRRT:
             if self.hier_tree.is_occupied(q_seed):
                 continue
 
-            ivs = self.hier_tree.find_free_box(
-                q_seed, self.obstacles, mark_occupied=True)
-            if ivs is None:
+            nid = forest.allocate_id()
+            ffb_result = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True,
+                forest_box_id=nid)
+            if ffb_result is None:
                 continue
+            ivs = ffb_result.intervals
             vol = 1.0
             for lo, hi in ivs:
                 vol *= max(hi - lo, 0.0)
-            if vol < self.config.min_box_volume:
+            if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
                 continue
+            if ffb_result.absorbed_box_ids:
+                forest.remove_boxes(ffb_result.absorbed_box_ids)
 
-            nid = forest.allocate_id()
             box = BoxNode(
                 node_id=nid,
                 joint_intervals=ivs,
@@ -564,16 +573,18 @@ class BoxRRT:
     ) -> None:
         """从始末点创建初始 box tree（使用 HierAABBTree）"""
         for q_seed, label in [(q_start, "起始"), (q_goal, "目标")]:
-            ivs = self.hier_tree.find_free_box(
-                q_seed, self.obstacles, mark_occupied=True)
-            if ivs is None:
+            nid = self.tree_manager.allocate_node_id()
+            ffb_result = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True,
+                forest_box_id=nid)
+            if ffb_result is None:
                 continue
+            ivs = ffb_result.intervals
             vol = 1.0
             for lo, hi in ivs:
                 vol *= max(hi - lo, 0.0)
-            if vol < self.config.min_box_volume:
+            if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
                 continue
-            nid = self.tree_manager.allocate_node_id()
             box = BoxNode(
                 node_id=nid,
                 joint_intervals=ivs,
@@ -581,7 +592,7 @@ class BoxRRT:
                 volume=vol,
             )
             self.tree_manager.create_tree(box)
-            logger.info("%s box: 体积 %.6f", label, vol)
+            logger.info("%s box: 几何平均边长 %.6f", label, gmean_edge_length(vol, self._n_dims))
 
     def _sample_seed(
         self,
@@ -672,17 +683,19 @@ class BoxRRT:
             if self.collision_checker.check_config_collision(q_seed):
                 continue
 
-            ivs = self.hier_tree.find_free_box(
-                q_seed, self.obstacles, mark_occupied=True)
-            if ivs is None:
+            node_id = self.tree_manager.allocate_node_id()
+            ffb_result = self.hier_tree.find_free_box(
+                q_seed, self.obstacles, mark_occupied=True,
+                forest_box_id=node_id)
+            if ffb_result is None:
                 continue
+            ivs = ffb_result.intervals
             vol = 1.0
             for lo, hi in ivs:
                 vol *= max(hi - lo, 0.0)
-            if vol < self.config.min_box_volume:
+            if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
                 continue
 
-            node_id = self.tree_manager.allocate_node_id()
             new_box = BoxNode(
                 node_id=node_id,
                 joint_intervals=ivs,
@@ -747,17 +760,19 @@ class BoxRRT:
                     if self.collision_checker.check_config_collision(q_seed):
                         continue
 
-                    ivs = self.hier_tree.find_free_box(
-                        q_seed, self.obstacles, mark_occupied=True)
-                    if ivs is None:
+                    node_id = self.tree_manager.allocate_node_id()
+                    ffb_result = self.hier_tree.find_free_box(
+                        q_seed, self.obstacles, mark_occupied=True,
+                        forest_box_id=node_id)
+                    if ffb_result is None:
                         continue
+                    ivs = ffb_result.intervals
                     vol = 1.0
                     for lo, hi in ivs:
                         vol *= max(hi - lo, 0.0)
-                    if vol < self.config.min_box_volume:
+                    if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
                         continue
 
-                    node_id = self.tree_manager.allocate_node_id()
                     new_box = BoxNode(
                         node_id=node_id,
                         joint_intervals=ivs,

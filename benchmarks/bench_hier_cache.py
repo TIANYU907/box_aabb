@@ -19,7 +19,6 @@ from __future__ import annotations
 import argparse
 import logging
 import math
-import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -37,6 +36,13 @@ from planner.hier_aabb_tree import HierAABBTree
 LOG_FMT = "[%(asctime)s] %(levelname)-7s %(name)s: %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FMT, datefmt="%H:%M:%S")
 logger = logging.getLogger("bench_cache")
+
+
+def _normalized_size(vol: float, ndim: int) -> float:
+    """几何平均边长 vol^(1/d)"""
+    if vol <= 0 or ndim <= 0:
+        return 0.0
+    return vol ** (1.0 / ndim)
 
 
 # ─────────────────────────────────────────────────────────
@@ -130,7 +136,8 @@ def grow_forest_no_render(
     max_depth: int = 40,
     min_edge_length: float = 0.05,
     early_stop_window: int = 30,
-    early_stop_min_vol: float = 1e-4,
+    early_stop_min_size: float = 0.01,
+    use_cache: bool = True,
 ) -> dict:
     """HierAABBTree box 拓展，无任何渲染，返回统计字典"""
 
@@ -139,7 +146,10 @@ def grow_forest_no_render(
     obstacles = scene.get_obstacles()
 
     t_load_start = time.time()
-    hier_tree = HierAABBTree.auto_load(robot, joint_limits)
+    if use_cache:
+        hier_tree = HierAABBTree.auto_load(robot, joint_limits)
+    else:
+        hier_tree = HierAABBTree(robot, joint_limits)
     t_load = time.time() - t_load_start
 
     ht_stats_init = hier_tree.get_stats()
@@ -148,6 +158,7 @@ def grow_forest_no_render(
 
     config = PlannerConfig(hard_overlap_reject=True, verbose=False)
     forest = BoxForest(robot.fingerprint(), joint_limits, config)
+    forest.hier_tree = hier_tree
 
     t0 = time.time()
 
@@ -202,23 +213,29 @@ def grow_forest_no_render(
         t_collision_check += time.time() - tc0
 
         tf0 = time.time()
-        ivs = hier_tree.find_free_box(
+        nid = forest.allocate_id()
+        ffb_result = hier_tree.find_free_box(
             seed_q, obstacles, max_depth=max_depth,
             min_edge_length=min_edge_length,
-            mark_occupied=True,
+            mark_occupied=True, forest_box_id=nid,
         )
         t_find_free_box += time.time() - tf0
-        if ivs is None:
+        if ffb_result is None:
             n_find_none += 1
             return None
+        ivs = ffb_result.intervals
         vol = 1.0
         for lo, hi in ivs:
             vol *= max(hi - lo, 0.0)
-        if vol < 1e-6:
+        ndim = len(ivs)
+        nsize = _normalized_size(vol, ndim)
+        if nsize < 1e-4:
             n_find_tiny += 1
             return None
 
-        nid = forest.allocate_id()
+        if ffb_result.absorbed_box_ids:
+            forest.remove_boxes(ffb_result.absorbed_box_ids)
+
         box = BoxNode(
             node_id=nid,
             joint_intervals=ivs,
@@ -229,7 +246,7 @@ def grow_forest_no_render(
         forest.add_box_direct(box)
         t_deoverlap += time.time() - td0
 
-        recent_vols.append(vol)
+        recent_vols.append(nsize)
         return [box]
 
     # ── main loop ──
@@ -248,9 +265,9 @@ def grow_forest_no_render(
         if (
             early_stop_window > 0
             and len(recent_vols) >= early_stop_window
-            and all(v < early_stop_min_vol for v in recent_vols[-early_stop_window:])
+            and all(v < early_stop_min_size for v in recent_vols[-early_stop_window:])
         ):
-            stop_reason = f"early_stop(last {early_stop_window} vols < {early_stop_min_vol:.1e})"
+            stop_reason = f"early_stop(last {early_stop_window} nsize < {early_stop_min_size:.1e})"
             break
 
         added = None
@@ -364,7 +381,8 @@ def main():
     parser.add_argument("--boundary-batch", type=int, default=6, help="DFS 边界采样批量")
     parser.add_argument("--farthest-k", type=int, default=12, help="最远点采样候选数")
     parser.add_argument("--early-stop-window", type=int, default=30, help="早停窗口")
-    parser.add_argument("--early-stop-min-vol", type=float, default=1e-4, help="早停阈值")
+    parser.add_argument("--early-stop-min-size", type=float, default=0.01,
+                        help="早停阈值 (几何平均边长, rad)")
     args = parser.parse_args()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -395,13 +413,8 @@ def main():
             obs.max_point[0], obs.max_point[1],
         )
 
-    # 3. 第一次运行前清除全局缓存
-    cache_dir = HierAABBTree._global_cache_dir()
-    if cache_dir.exists():
-        shutil.rmtree(cache_dir)
-        logger.info("已清除全局缓存: %s", cache_dir)
-    else:
-        logger.info("无全局缓存可清除")
+    # 3. 第一次不使用缓存，后续使用缓存
+    logger.info("第1次不使用缓存（冷启动），后续使用缓存")
 
     # 4. 运行 N 次
     all_results: List[dict] = []
@@ -427,7 +440,8 @@ def main():
             max_depth=args.max_depth,
             min_edge_length=args.min_edge,
             early_stop_window=args.early_stop_window,
-            early_stop_min_vol=args.early_stop_min_vol,
+            early_stop_min_size=args.early_stop_min_size,
+            use_cache=(run_idx > 0),  # 第1次不用缓存，后续用
         )
 
         result["run"] = run_idx + 1
@@ -467,7 +481,7 @@ def generate_report(results: List[dict], args) -> str:
     lines.append(f"        min_edge={args.min_edge}  boundary_batch={args.boundary_batch}  "
                  f"farthest_k={args.farthest_k}")
     lines.append(f"        early_stop_window={args.early_stop_window}  "
-                 f"early_stop_min_vol={args.early_stop_min_vol}")
+                 f"early_stop_min_size={args.early_stop_min_size}")
     lines.append("")
 
     # ── 逐次结果表 ──

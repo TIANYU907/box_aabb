@@ -2,7 +2,7 @@
   "_comment": "Panda 7DOF 机械臂专用配置",
   "max_iterations": 800,
   "max_box_nodes": 400,
-  "min_box_volume": 1e-8,
+  "min_box_size": 0.001,
   "goal_bias": 0.1,
   "expansion_resolution": 0.005,
   "max_expansion_rounds": 3,

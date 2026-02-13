@@ -2,7 +2,7 @@
   "_comment": "2DOF 平面机械臂专用配置",
   "max_iterations": 300,
   "max_box_nodes": 150,
-  "min_box_volume": 1e-6,
+  "min_box_size": 0.001,
   "goal_bias": 0.15,
   "expansion_resolution": 0.02,
   "max_expansion_rounds": 4,

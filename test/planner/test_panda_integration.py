@@ -169,8 +169,9 @@ class TestPandaBoxExpansion:
         tree = HierAABBTree(robot_panda, limits)
         obstacles = scene_panda_empty.get_obstacles()
         q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
-        ivs = tree.find_free_box(q, obstacles)
-        assert ivs is not None
+        result = tree.find_free_box(q, obstacles)
+        assert result is not None
+        ivs = result.intervals
         active_vol = 1.0
         for i in range(7):
             lo, hi = ivs[i]
@@ -183,8 +184,9 @@ class TestPandaBoxExpansion:
         tree = HierAABBTree(robot_panda, limits)
         obstacles = scene_panda_empty.get_obstacles()
         q = np.array([0.0, -0.5, 0.0, -2.0, 0.0, 1.5, 0.0])
-        ivs = tree.find_free_box(q, obstacles)
-        assert ivs is not None
+        result = tree.find_free_box(q, obstacles)
+        assert result is not None
+        ivs = result.intervals
         vol = 1.0
         for lo, hi in ivs:
             vol *= max(hi - lo, 0.0)
@@ -197,8 +199,9 @@ class TestPandaBoxExpansion:
         obstacles = scene_panda_simple.get_obstacles()
         # 使用远离障碍物的 tucked 配置，避免 7D 区间过估计导致 find_free_box 失败
         q = np.array([0.0, -1.0, 0.0, -2.5, 0.0, 2.0, 0.0])
-        ivs = tree.find_free_box(q, obstacles)
-        assert ivs is not None
+        result = tree.find_free_box(q, obstacles)
+        assert result is not None
+        ivs = result.intervals
         expanded_dims = sum(
             1 for i in range(7)
             if ivs[i][1] - ivs[i][0] > 1e-10

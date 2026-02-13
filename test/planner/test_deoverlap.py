@@ -126,13 +126,15 @@ class TestDeoverlap:
         # b1=9, b2=9, overlap=[2,3]²=1 → total=9+8=17
         assert total == pytest.approx(17.0)
 
-    def test_min_fragment_volume(self):
-        """小于 min_fragment_volume 的碎片被丢弃"""
+    def test_tiny_fragment_kept(self):
+        """HierAABBTree 保证不重叠，deoverlap 仅安全网；微小碎片也保留"""
         b1 = _make_box([(0, 10), (0, 10)], 0)
         b2 = _make_box([(9.99, 10.001), (9.99, 10.001)], 1)
-        result = deoverlap([b1, b2], min_fragment_volume=0.001)
-        # b2 的碎片极小，应被丢弃
-        assert len(result) == 1
+        result = deoverlap([b1, b2])
+        # b1 保留，b2 被 b1 切分后的碎片也保留（volume > 0）
+        assert len(result) >= 1
+        # 第一个一定是 b1
+        assert result[0].volume == pytest.approx(100.0)
 
     def test_zero_overlap_preserved(self):
         """零重叠 → 都保留且互不重叠"""
@@ -252,7 +254,7 @@ class TestDeoverlapProperties:
                 ]
                 boxes.append(_make_box(intervals, i))
 
-            result = deoverlap(boxes, min_fragment_volume=1e-8)
+            result = deoverlap(boxes)
 
             for i in range(len(result)):
                 for j in range(i + 1, len(result)):

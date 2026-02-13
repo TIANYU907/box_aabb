@@ -31,6 +31,7 @@ from .models import (
     PlannerConfig,
     PlannerResult,
     Edge,
+    gmean_edge_length,
 )
 from .obstacles import Scene
 from .collision import CollisionChecker

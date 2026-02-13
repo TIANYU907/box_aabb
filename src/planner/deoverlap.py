@@ -11,8 +11,7 @@ planner/deoverlap.py - Box 去重叠与邻接检测
 - compute_adjacency_incremental: O(K·N·D) 增量邻接更新
 
 设计决策：
-- 微小重叠（overlap_volume < min_fragment_volume）视为邻接，不做切分
-- 去重叠后体积 < min_fragment_volume 的碎片丢弃
+- 当前 HierAABBTree 保证输出 box 不重叠，deoverlap 仅作为安全网保留
 - 邻接条件：恰好一个维度面相接，其余维度投影有正面积重叠
 """
 
@@ -104,18 +103,18 @@ def _interval_volume(intervals: Intervals) -> float:
 
 def deoverlap(
     boxes: List[BoxNode],
-    min_fragment_volume: float = 1e-6,
     id_start: int = 0,
 ) -> List[BoxNode]:
     """将一组 box 去重叠，先来先得
 
     按 boxes 列表顺序处理：先加入的 box 保持完整，后来的 box 被
-    已有 box 切分。微小重叠（overlap_volume < min_fragment_volume）
-    容忍，不做切分。
+    已有 box 切分。
+
+    注意：当前 HierAABBTree 已保证输出 box 不重叠，此函数仅作为
+    安全网保留。
 
     Args:
         boxes: 输入 box 列表（按优先级排序，靠前优先）
-        min_fragment_volume: 碎片最小体积阈值，低于此值的碎片丢弃
         id_start: 新碎片 node_id 起始值
 
     Returns:
@@ -135,10 +134,9 @@ def deoverlap(
         for committed_box in committed:
             new_fragments: List[Intervals] = []
             for frag in fragments:
-                # 检查微小重叠容忍
                 ovlp_vol = _overlap_volume_intervals(frag, list(committed_box.joint_intervals))
-                if ovlp_vol < min_fragment_volume:
-                    # 重叠太小，跳过切分
+                if ovlp_vol <= 0:
+                    # 无重叠，直接保留
                     new_fragments.append(frag)
                 else:
                     # 需要切分
@@ -149,7 +147,7 @@ def deoverlap(
         # 将存活碎片转为 BoxNode
         for frag in fragments:
             vol = _interval_volume(frag)
-            if vol < min_fragment_volume:
+            if vol <= 0:
                 continue
             new_box = BoxNode(
                 node_id=next_id,
@@ -262,15 +260,6 @@ def compute_adjacency(
         # 邻接条件：无分离 && 恰好 1 个维度 touching && 其余 D-1 维度 overlapping
         is_adjacent = (~any_separated) & (n_touching >= 1) & (n_overlapping >= n_dims - 1)
 
-        # 处理微小重叠也视为邻接的情况：
-        # 所有维度都 overlapping（真正重叠，但如果重叠量很小，也算邻接）
-        all_overlapping = np.all(overlapping, axis=1)  # (R,)
-        # 检查重叠体积是否微小
-        if np.any(all_overlapping):
-            overlap_vol = np.prod(np.maximum(overlap_width, 0), axis=1)  # (R,)
-            micro_overlap = all_overlapping & (overlap_vol < tol * 100)
-            is_adjacent = is_adjacent | micro_overlap
-
         # 记录邻接
         idx_adj = np.where(is_adjacent)[0]
         for offset in idx_adj:
@@ -355,13 +344,6 @@ def compute_adjacency_incremental(
         n_overlapping = np.sum(overlapping, axis=1)
 
         is_adjacent = (~any_separated) & (n_touching >= 1) & (n_overlapping >= n_dims - 1)
-
-        # 微小重叠容忍
-        all_overlapping = np.all(overlapping, axis=1)
-        if np.any(all_overlapping):
-            overlap_vol = np.prod(np.maximum(overlap_width, 0), axis=1)
-            micro_overlap = all_overlapping & (overlap_vol < tol * 100)
-            is_adjacent = is_adjacent | micro_overlap
 
         for j_idx in np.where(is_adjacent)[0]:
             j_id = id_map[j_idx]

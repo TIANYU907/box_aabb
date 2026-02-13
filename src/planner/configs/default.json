@@ -2,7 +2,7 @@
   "max_iterations": 500,
   "max_box_nodes": 200,
   "seed_batch_size": 5,
-  "min_box_volume": 1e-6,
+  "min_box_size": 0.001,
   "goal_bias": 0.1,
   "expansion_resolution": 0.01,
   "max_expansion_rounds": 3,

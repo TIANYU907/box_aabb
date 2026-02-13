@@ -5,8 +5,7 @@ planner/box_forest.py - 扁平无重叠 Box 森林
 hyperrectangle（BoxNode），以及它们之间的邻接关系。
 
 核心特性：
-- **零重叠不变量**：所有存储的 box 之间无实质性重叠
-  （微小角落重叠 < min_fragment_volume 视为邻接）
+- **零重叠不变量**：HierAABBTree 保证所有 box 之间无重叠
 - **扁平邻接图**：无树层级，只有 box 和邻接边
 - **跨场景复用**：森林绑定机器人型号而非场景，不同场景加载后
   惰性验证碰撞（AABB 缓存避免重复 FK）
@@ -71,6 +70,7 @@ class BoxForest:
         self.adjacency: Dict[int, Set[int]] = {}
         self._next_id: int = 0
         self.build_time: float = 0.0
+        self.hier_tree = None   # Optional[HierAABBTree] 用于 O(depth) 空间查询
 
     @property
     def n_boxes(self) -> int:
@@ -89,7 +89,6 @@ class BoxForest:
     def add_boxes(
         self,
         new_boxes: List[BoxNode],
-        min_frag_vol: Optional[float] = None,
     ) -> List[BoxNode]:
         """将新 box 集合并入森林
 
@@ -98,7 +97,6 @@ class BoxForest:
 
         Args:
             new_boxes: 新扩展的 BoxNode 列表
-            min_frag_vol: 碎片最小体积阈值
 
         Returns:
             实际添加的 box 列表（去重叠后的碎片）
@@ -106,17 +104,13 @@ class BoxForest:
         if not new_boxes:
             return []
 
-        if min_frag_vol is None:
-            min_frag_vol = self.config.min_fragment_volume
-
         # 合并列表：已有 box 在前（优先），新 box 在后
         existing_list = list(self.boxes.values())
         all_input = existing_list + new_boxes
 
-        # 执行全量 deoverlap
+        # 执行全量 deoverlap（当前 HierAABBTree 保证不重叠，仅安全网）
         all_deoverlapped = deoverlap(
             all_input,
-            min_fragment_volume=min_frag_vol,
             id_start=self._next_id,
         )
 
@@ -150,25 +144,22 @@ class BoxForest:
     def add_boxes_incremental(
         self,
         new_boxes: List[BoxNode],
-        min_frag_vol: Optional[float] = None,
     ) -> List[BoxNode]:
         """增量添加新 box（仅对新 box 做 deoverlap）
 
         更快的版本：只让新 box 被已有 box 切分（已有 box 不变），
         然后增量更新邻接。适用于每次添加少量 box 的场景。
 
+        注意：当前 HierAABBTree 保证不重叠，此方法仅作为安全网。
+
         Args:
             new_boxes: 新扩展的 BoxNode 列表
-            min_frag_vol: 碎片最小体积阈值
 
         Returns:
             实际添加的 box 列表
         """
         if not new_boxes:
             return []
-
-        if min_frag_vol is None:
-            min_frag_vol = self.config.min_fragment_volume
 
         existing_list = list(self.boxes.values())
 
@@ -182,7 +173,7 @@ class BoxForest:
                 for frag in fragments:
                     ovlp = _overlap_volume_intervals(
                         frag, list(committed_box.joint_intervals))
-                    if ovlp < min_frag_vol:
+                    if ovlp <= 0:
                         new_frags.append(frag)
                     else:
                         pieces = subtract_box(
@@ -193,7 +184,7 @@ class BoxForest:
             for frag in fragments:
                 from .deoverlap import _interval_volume
                 vol = _interval_volume(frag)
-                if vol < min_frag_vol:
+                if vol <= 0:
                     continue
                 nid = self.allocate_id()
                 new_node = BoxNode(
@@ -248,7 +239,16 @@ class BoxForest:
                         self.adjacency[nb].discard(bid)
 
     def find_containing(self, config: np.ndarray) -> Optional[BoxNode]:
-        """找到包含 config 的 box"""
+        """找到包含 config 的 box
+
+        若已设置 hier_tree，利用 HierAABBTree 的 O(depth) 查询加速；
+        否则回退到 O(N) 线性扫描。
+        """
+        if self.hier_tree is not None:
+            box_id = self.hier_tree.find_containing_box_id(config)
+            if box_id is not None and box_id in self.boxes:
+                return self.boxes[box_id]
+            return None
         for box in self.boxes.values():
             if box.contains(config):
                 return box

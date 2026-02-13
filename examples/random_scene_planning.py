@@ -247,7 +247,7 @@ def log_planner_config(config: PlannerConfig) -> str:
         f"  max_iterations          : {config.max_iterations}",
         f"  max_box_nodes           : {config.max_box_nodes}",
         f"  seed_batch_size         : {config.seed_batch_size}",
-        f"  min_box_volume          : {config.min_box_volume}",
+        f"  min_box_size            : {config.min_box_size}",
         f"  goal_bias               : {config.goal_bias}",
         f"  expansion_resolution    : {config.expansion_resolution}",
         f"  max_expansion_rounds    : {config.max_expansion_rounds}",

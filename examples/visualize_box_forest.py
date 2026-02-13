@@ -244,6 +244,7 @@ def grow_forest_hier_animated(
     hier_tree = HierAABBTree.auto_load(robot, joint_limits)
     config = PlannerConfig(hard_overlap_reject=True, verbose=False)
     forest = BoxForest(robot.fingerprint(), joint_limits, config)
+    forest.hier_tree = hier_tree
 
     frames_dir = output_dir / "frames"
     frames_dir.mkdir(parents=True, exist_ok=True)
@@ -318,14 +319,16 @@ def grow_forest_hier_animated(
         t_collision_check += time.time() - tc0
 
         tf0 = time.time()
-        ivs = hier_tree.find_free_box(
+        nid = forest.allocate_id()
+        ffb_result = hier_tree.find_free_box(
             seed_q, obstacles, max_depth=max_depth,
             min_edge_length=min_edge_length,
-            mark_occupied=True)
+            mark_occupied=True, forest_box_id=nid)
         t_find_free_box += time.time() - tf0
-        if ivs is None:
+        if ffb_result is None:
             n_find_none += 1
             return None
+        ivs = ffb_result.intervals
         vol = 1.0
         for lo, hi in ivs:
             vol *= max(hi - lo, 0.0)
@@ -333,7 +336,9 @@ def grow_forest_hier_animated(
             n_find_tiny += 1
             return None
 
-        nid = forest.allocate_id()
+        if ffb_result.absorbed_box_ids:
+            forest.remove_boxes(ffb_result.absorbed_box_ids)
+
         box = BoxNode(
             node_id=nid,
             joint_intervals=ivs,
@@ -802,12 +807,10 @@ def write_stats(
         )
     lines.append("")
     lines.append(f"  参数: seed={args.seed} n_obs={args.n_obs} "
-                 f"max_boxes={args.max_boxes} max_seeds={args.max_seeds} "
-                 f"mode={getattr(args, 'mode', 'legacy')}")
-    if getattr(args, 'mode', 'legacy') == 'hier':
-        lines.append(f"  max_depth={args.max_depth} boundary_batch={args.boundary_batch}")
-    else:
-        lines.append(f"  expansion_res={args.expansion_res} max_rounds={args.max_rounds}")
+                 f"max_boxes={args.max_boxes} max_seeds={args.max_seeds}")
+    lines.append(f"  max_depth={args.max_depth} boundary_batch={args.boundary_batch}")
+    lines.append(f"  min_edge={args.min_edge} early_stop_window={args.early_stop_window}"
+                 f" early_stop_min_vol={args.early_stop_min_vol}")
 
     # HierAABBTree 统计
     if hier_tree is not None:
@@ -880,7 +883,7 @@ def write_stats(
 def main():
     parser = argparse.ArgumentParser(
         description="BoxForest 增量拓展可视化（无路径规划）")
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--n-obs", type=int, default=5,
                         help="障碍物数量 (默认: 5)")
     parser.add_argument("--max-boxes", type=int, default=150,

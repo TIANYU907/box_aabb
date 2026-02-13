@@ -106,3 +106,4 @@ venv.bak/
 dmypy.json
 
 examples/output/*
+benchmarks/output/*

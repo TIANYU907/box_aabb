@@ -1,7 +1,7 @@
 # Box-AABB 系统设计文档
 
-> **版本**: 3.2.0 (v5 BoxForest + HierAABBTree)  
-> **日期**: 2026-02-11  
+> **版本**: 3.4.0 (v6 Cython NodeStore + SAT 碰撞 + 增量保存)  
+> **日期**: 2026-02-13  
 > **作者**: TIAN
 
 ---
@@ -428,6 +428,14 @@ class HierAABBNode:
     left: HierAABBNode                    # 左子节点
     right: HierAABBNode                   # 右子节点
     parent: HierAABBNode                  # 父节点
+    occupied: bool                        # 是否已被 BoxForest 占用
+    subtree_occupied: bool                # 子树中是否有已占用节点
+    forest_box_id: Optional[int]          # 对应的 BoxForest node_id
+
+@dataclass
+class FindFreeBoxResult:
+    intervals: List[Tuple[float, float]]  # 找到的无碰撞 Box
+    absorbed_box_ids: List[int]           # 被提升吸收的子节点 forest_box_id
 ```
 
 ### 7.4 find_free_box 算法
@@ -435,7 +443,11 @@ class HierAABBNode:
 给定种子配置 `seed` 和障碍物列表，找到包含 seed 的最大无碰撞 Box：
 
 ```
-算法: find_free_box(seed, obstacles, max_depth)
+算法: find_free_box(seed, obstacles, max_depth, forest_box_id)
+
+预处理:
+    obs_packed ← _prepack_obstacles(obstacles, safety_margin)
+                 # 将 M 个障碍物打包为 (obs_mins, obs_maxs) 各 (M,D) numpy 数组
 
 Phase 1 — 下行（切分直到无碰撞）:
     node ← root
@@ -444,7 +456,7 @@ Phase 1 — 下行（切分直到无碰撞）:
         path.append(node)
         aabb ← node.refined_aabb or node.raw_aabb
         
-        if not collides(aabb, obstacles):
+        if not collides(aabb, obs_packed):   # 向量化 SAT
             break                    # 整个节点无碰撞
         
         if node.depth ≥ max_depth:
@@ -453,21 +465,31 @@ Phase 1 — 下行（切分直到无碰撞）:
         if edge_width < min_edge_length × 2:
             return None              # 再分就低于最小边长
         
-        split(node)                  # 惰性二分裂
+        split(node)                  # 惰性二分裂（不触发 propagate_up）
         node ← child containing seed
 
-Phase 2 — 上行（尝试合并更大 Box）:
+Phase 2 — 上行（尝试合并更大 Box + 提升）:
+    propagate_up(node.parent)        # 延迟到此处一次性传播精化
+    mark_occupied(node, forest_box_id)
     result ← current node
+    absorbed ← []
+    
     for parent in path (reverse):
-        if not collides(parent.refined_aabb, obstacles):
-            result ← parent          # 父节点也无碰撞
+        if not collides(parent.refined_aabb, obs_packed):
+            result ← parent          # 父节点也无碰撞 → 提升
+            # 收集被吸收子节点的 forest_box_id
+            absorbed += collect_forest_ids(parent) - {forest_box_id}
+            clear_subtree_occupation(parent)
+            mark_occupied(parent, forest_box_id)
         else:
             break
     
-    return result.intervals
+    return FindFreeBoxResult(result.intervals, absorbed)
 ```
 
-**时间复杂度**：$O(D \cdot L)$ 次碰撞检测 + $O(L)$ 次 FK，其中 $D$ 为关节维数，$L$ 为沿路径的深度。
+**提升（Promotion）**：当上行阶段发现父节点无碰撞时，父节点的整个 intervals 即为一个更大的无碰撞 Box。此时将该父节点提升为新的占用节点，其子树中之前占用的节点所对应的 BoxForest Box 将被 `forest.remove_boxes(absorbed)` 删除并替换为更大的父节点 Box。
+
+**时间复杂度**：$O(D \cdot L)$ 次碰撞检测 + $O(L)$ 次 FK，其中 $D$ 为关节维数，$L$ 为沿路径的深度。碰撞检测借助向量化 SAT，单次检测对 $M$ 个障碍物为 $O(M \cdot D_{links})$（纯 numpy 运算，无 Python 循环）。
 
 ### 7.5 切分与精化
 
@@ -486,24 +508,35 @@ def _split(node):
     # 精化：union(children) ≤ raw_aabb
     node.refined_aabb = union(node.left.aabb, node.right.aabb)
     
-    # 向上传播精化
-    propagate_up(node.parent)
+    # 注意：不在此处调用 propagate_up，延迟到 find_free_box 上行阶段
 ```
 
 **精化的单调性**：每次新的切分只会使 `refined_aabb` 变紧或不变，永远不会变松。这保证了缓存的正确性——旧的"通过"判定在新精化后仍然有效。
+
+**延迟传播**：`_split` 不再触发 `propagate_up`。精化信息沿父链的上传延迟到 `find_free_box` 的上行阶段（Phase 2），此时一次性传播即可。这避免了在下行阶段每次切分都触发 $O(\text{depth})$ 的上传链，将 propagate_up 从 $O(L^2)$ 次调用降为 1 次。
+
+**propagate_up 早停**：传播时比较当前节点的 `refined_aabb` 与 `union(children)` 的差异，若完全相同则立即停止向上传播（`_aabb_equal` 逐连杆逐坐标比较）。
 
 ### 7.6 与 BoxForest 的协同
 
 HierAABBTree 负责"找 Box"，BoxForest 负责"存 Box"：
 
 ```
-HierAABBTree.find_free_box(seed)
-    → intervals
-    → BoxNode(intervals, seed)
-    → BoxForest.add_boxes_incremental([node])
-        → deoverlap（去掉与已有 Box 重叠的部分）
-        → compute_adjacency_incremental（更新邻接关系）
+nid ← forest.allocate_node_id()
+ffb_result ← HierAABBTree.find_free_box(seed, obstacles, forest_box_id=nid)
+    → FindFreeBoxResult(intervals, absorbed_box_ids)
+
+# 提升吸收：删除被合并的旧 Box
+if ffb_result.absorbed_box_ids:
+    forest.remove_boxes(ffb_result.absorbed_box_ids)
+
+# 添加新 Box
+box ← BoxNode(ffb_result.intervals, seed, node_id=nid)
+forest.add_box_direct(box)
+    → update_adjacency_for_new_box(box)
 ```
+
+**提升流程**：当 `find_free_box` 的上行阶段发现父节点无碰撞时，该父节点区域完全取代了子树中已有的若干小 Box。`absorbed_box_ids` 列出了这些被吸收的旧 Box 的 `forest_box_id`，调用方负责在添加新 Box 前将它们从 BoxForest 中删除。
 
 ### 7.7 min_edge_length 与早停
 
@@ -707,7 +740,25 @@ np.any(node.occupancy & obstacle_grid)  # 向量化
 
 ### 12.3 与主规划管线的集成
 
-HierAABBTree 已完全替代旧的 BoxExpander，成为 `BoxRRT`、`BoxForestQuery` 等模块的唯一 box 扩张后端。所有规划流水线现在通过 `hier_tree.find_free_box(seed, obstacles)` + `forest.add_box_direct(box)` 完成 box 扩张和森林构建。
+HierAABBTree 已完全替代旧的 BoxExpander，成为 `BoxRRT`、`BoxForestQuery` 等模块的唯一 box 扩张后端。所有规划流水线现在通过 `hier_tree.find_free_box(seed, obstacles, forest_box_id)` + `forest.add_box_direct(box)` 完成 box 扩张和森林构建。
+
+**v3.3.0 优化**（已实现）：
+
+| 优化 | 机制 | 收益 |
+|------|------|------|
+| 向量化碰撞检测 | `_prepack_obstacles` 将 M 个障碍物打包为 `(M,D)` numpy 数组；`_link_aabbs_collide` 用向量化 SAT（`np.any` + broadcasting）一次对比所有障碍物 | 消除 Python 层 for 循环，碰撞检测加速 |
+| propagate_up 延迟 + 早停 | `_split` 不再调用 `propagate_up`，延迟到 `find_free_box` Phase 2 一次性传播；`_aabb_equal` 检测到 AABB 不变时立即截断 | 将 propagate_up 从 O(L²) 次调用降为 1 次 |
+| 提升（Promotion） | 上行阶段发现父节点无碰撞时，用父节点替代子树中若干已占用叶子；`FindFreeBoxResult.absorbed_box_ids` 通知调用方删除被吸收的旧 Box | 生成更大 Box，减少碎片，改善连通性 |
+
+**v3.4.0 (v6) 优化**（已实现）：
+
+| 优化 | 机制 | 收益 |
+|------|------|------|
+| Cython NodeStore | `_hier_core.pyx` 编译为 C 扩展：`alloc_node`、`get/set_*`、`propagate_up`、`mark_occupied` 等 20+ 方法全部在 C 层操作 `uint8` 线性缓冲区 | 消除 Python dict/object 开销，节点访问接近 C 速度 |
+| Cython SAT 碰撞 | `_prepack_obstacles_c` 生成 `(link_idx, lo0, hi0, lo1, hi1, lo2, hi2)` 交叉积元组列表；`store.link_aabbs_collide(idx, packed)` 直接从缓冲区读取 `float*` AABB 做 SAT 判定 | 避免 `store.get_aabb()` → numpy → `.tolist()` 转换，碰撞完全在 C 层 |
+| HCACHE02 格式 | `_hier_layout.py` 定义 4096B header + 固定 stride 节点区；`save_binary` / `load_binary` 直接读写线性缓冲区 | 加载 10 万节点 < 5ms，`attach_buffer` 零拷贝 |
+| 增量保存 | `save_incremental` 打开 r+b，仅追加新节点 + 逐个写回 dirty 旧节点；`auto_save` 自动选择增量路径 | 保存 I/O 减少 2-100×，取决于增量比例 |
+| dirty 位追踪 | 每节点 1B dirty 标志，`alloc_node` / `set_*` / `propagate_up` 自动置脏；`iter_dirty` + `clear_all_dirty` 供增量保存使用 | 精确追踪变动节点，避免全量扫描 |
 
 ### 12.4 渲染性能
 
@@ -732,7 +783,9 @@ matplotlib 占 94% 运行时间。对于纯算法评估应使用无渲染模式�
 | `planner/models.py` | `BoxNode`, `Obstacle`, `PlannerConfig`, `PlannerResult` |
 | `planner/obstacles.py` | `Scene` |
 | `planner/collision.py` | `CollisionChecker`, `aabb_overlap` |
-| `planner/hier_aabb_tree.py` | `HierAABBTree`, `HierAABBNode` |
+| `planner/hier_aabb_tree.py` | `HierAABBTree`, `HierAABBNode`, `FindFreeBoxResult` |
+| `planner/_hier_core.pyx` | `NodeStore` (Cython, 编译为 `.pyd`/`.so`) |
+| `planner/_hier_layout.py` | 节点布局常量、HCACHE02 header 读写 |
 | `planner/connector.py` | `TreeConnector` |
 | `planner/gcs_optimizer.py` | `GCSOptimizer` |
 | `planner/path_smoother.py` | `PathSmoother` |
@@ -743,9 +796,14 @@ matplotlib 占 94% 运行时间。对于纯算法评估应使用无渲染模式�
 ```
 .cache/
 └── hier_aabb/
-    ├── 2DOF-Planar_6abf5a8e1a704654.pkl
-    └── Panda_a1b2c3d4e5f6g7h8.pkl
+    ├── 2DOF-Planar_6abf5a8e1a704654.hcache   (HCACHE02 二进制)
+    └── Panda_a1b2c3d4e5f6g7h8.hcache
 ```
+
+**HCACHE02 格式**：
+- 4096B header：魔数 `HCACHE02`、n_nodes、n_alloc、n_dims、n_links、stride、n_fk_calls、joint_limits、robot fingerprint SHA-256
+- 节点区：n_alloc × stride 字节，每节点包含 28B topo + (n_links × 24B) AABB + 填充
+- 支持 `load_binary` 零拷贝 `attach_buffer`，`save_incremental` r+b 增量写回
 
 ### 典型调用链
 
@@ -763,14 +821,17 @@ main()
            ├── _try_add_box(seed)
            │    ├── checker.check_config_collision(seed)
            │    ├── forest.find_containing(seed)
-           │    ├── hier_tree.find_free_box(seed, obstacles)
+           │    ├── nid = forest.allocate_node_id()
+           │    ├── hier_tree.find_free_box(seed, obstacles, forest_box_id=nid)
+           │    │    ├── _prepack_obstacles_c(obstacles, safety_margin)  ← 交叉积元组
            │    │    ├── _ensure_aabb(node)
            │    │    │    └── compute_interval_aabb(robot, intervals, ...)
-           │    │    ├── _link_aabbs_collide(aabb, obstacles)
-           │    │    ├── _split(node)       ← 碰撞则切分
-           │    │    └── 上行合并
-           │    └── forest.add_boxes_incremental([box])
-           │         ├── subtract_box(new, existing)
-           │         └── compute_adjacency_incremental(added, all)
+           │    │    ├── store.link_aabbs_collide(idx, packed)  ← Cython SAT
+           │    │    ├── _split(node)       ← 碰撞则切分（不 propagate_up）
+           │    │    ├── _propagate_up()    ← 延迟到上行阶段
+           │    │    └── 上行合并 + 提升（收集 absorbed_box_ids）
+           │    ├── forest.remove_boxes(ffb_result.absorbed_box_ids)
+           │    └── forest.add_box_direct(box)
+           │         └── update_adjacency_for_new_box(box)
            └── render_frame(...)
 ```

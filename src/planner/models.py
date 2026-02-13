@@ -13,6 +13,24 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 
+def gmean_edge_length(volume: float, ndim: int) -> float:
+    """几何平均边长 vol^(1/d) — 维度无关的 box 大小度量
+
+    将 box 体积（各维宽度之积）转化为等效边长，使阈值在不同
+    关节空间维度下含义一致（单位：rad）。
+
+    Args:
+        volume: box 体积（关节空间中各维宽度之积）
+        ndim: 关节空间维度
+
+    Returns:
+        几何平均边长（rad），volume <= 0 时返回 0
+    """
+    if volume <= 0 or ndim <= 0:
+        return 0.0
+    return volume ** (1.0 / ndim)
+
+
 @dataclass
 class Obstacle:
     """AABB 障碍物
@@ -277,7 +295,7 @@ class PlannerConfig:
         max_iterations: 最大采样迭代次数
         max_box_nodes: 生成 box 节点的最大数量
         seed_batch_size: 每次边界重采样的 seed 数量
-        min_box_volume: box 体积下限（太小的 box 丢弃）
+        min_box_size: box 几何平均边长下限（太小的 box 丢弃，rad）
         goal_bias: 朝目标方向采样的概率 [0, 1]
         expansion_resolution: box 拓展时二分搜索精度
         max_expansion_rounds: box 拓展最大迭代轮数
@@ -303,7 +321,7 @@ class PlannerConfig:
     max_iterations: int = 500
     max_box_nodes: int = 200
     seed_batch_size: int = 5
-    min_box_volume: float = 1e-6
+    min_box_size: float = 0.001
     goal_bias: float = 0.1
     expansion_resolution: float = 0.01
     max_expansion_rounds: int = 3
@@ -330,7 +348,6 @@ class PlannerConfig:
     # v4.2 新增：重叠惩罚
     overlap_weight: float = 1.0
     # v5.0 新增：无重叠 BoxForest
-    min_fragment_volume: float = 1e-6
     adjacency_tolerance: float = 1e-8
     hard_overlap_reject: bool = True
 
@@ -358,10 +375,22 @@ class PlannerConfig:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'PlannerConfig':
-        """从字典创建（忽略未知字段，缺失字段用默认值）"""
+        """从字典创建（忽略未知字段，缺失字段用默认值）
+
+        支持向后兼容：旧版 min_box_volume 自动映射到 min_box_size。
+        """
         from dataclasses import fields as dc_fields
+        # 向后兼容：旧字段名 → 新字段名
+        compat = dict(data)
+        if 'min_box_volume' in compat and 'min_box_size' not in compat:
+            compat['min_box_size'] = compat.pop('min_box_volume')
+        else:
+            compat.pop('min_box_volume', None)
+        # 已废弃字段，直接丢弃
+        compat.pop('min_fragment_volume', None)
+        compat.pop('min_fragment_size', None)
         valid_fields = {f.name for f in dc_fields(cls)}
-        filtered = {k: v for k, v in data.items() if k in valid_fields}
+        filtered = {k: v for k, v in compat.items() if k in valid_fields}
         return cls(**filtered)
 
     @classmethod

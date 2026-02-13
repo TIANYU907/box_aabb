@@ -17,7 +17,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 
 from box_aabb.robot import Robot
-from .models import PlannerConfig, PlannerResult, BoxNode
+from .models import PlannerConfig, PlannerResult, BoxNode, gmean_edge_length
 from .obstacles import Scene
 from .collision import CollisionChecker
 from .hier_aabb_tree import HierAABBTree
@@ -212,15 +212,16 @@ class BoxForestQuery:
             if ivs is None:
                 continue
             vol = 1.0
-            for lo, hi in ivs:
+            for lo, hi in ivs.intervals:
                 vol *= max(hi - lo, 0.0)
-            if vol < self.config.min_box_volume:
+            ndim = len(ivs.intervals)
+            if gmean_edge_length(vol, ndim) < self.config.min_box_size:
                 continue
 
             node_id = tree_mgr.allocate_node_id()
             box = BoxNode(
                 node_id=node_id,
-                joint_intervals=ivs,
+                joint_intervals=ivs.intervals,
                 seed_config=q_seed.copy(),
                 volume=vol,
             )
