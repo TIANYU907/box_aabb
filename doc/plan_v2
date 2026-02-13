@@ -249,3 +249,90 @@ PC2 — connector 距离计算向量化 [30min, 容易]
 6. 向后兼容
    - Robot.fingerprint() 哈希不能因重构而改变
    - 旧 .pkl 缓存文件应能被新代码读取 (或提供一次性迁移)
+
+
+七、执行完成状态（2026-02-13）
+============================================================================
+
+本节记录截至当前的实际落地结果（非规划项）。
+
+【总体结论】
+- v2 重构已完成三层拆分并迁移到 src 布局：
+  - v2/src/aabb
+  - v2/src/forest
+  - v2/src/planner
+  - v2/src/common
+- 旧代码未改动，所有重构工作均在 v2 下完成。
+
+【关键性能修复与重构落地】
+1) 已修复慢路径 Bug（P0）
+  - 问题：check_box_collision 使用慢版 interval_fk
+  - 处理：统一切换到快速区间 FK 实现（flat numpy 路径）
+  - 影响：find_free_box 热路径不再走 AffineForm 慢实现
+
+2) 已完成 P10（KD-tree 最近邻）
+  - 位置：v2/src/forest/box_forest.py
+  - 处理：find_nearest 增加 cKDTree 加速，保留线性兜底
+
+3) 已完成模型拆分
+  - aabb 模型：AABBEnvelopeResult / LinkAABBInfo / BoundaryConfig
+  - forest 模型：Obstacle / BoxNode / PlannerConfig(forest 子集)
+  - planner 模型：PlannerConfig / PlannerResult / Edge / BoxTree
+
+4) 已删除或不迁移项（按重构约束）
+  - 未迁移：hier_aabb_tree_old.py, strategies/hybrid.py, free_space_tiler.py
+  - AABBResult 已从 v2 的 aabb 模型中移除
+
+【配套完整性】
+1) tests
+  - v2/tests/aabb
+  - v2/tests/forest
+  - v2/tests/planner
+
+2) benchmarks
+  - v2/benchmarks/aabb/bench_interval_fk.py
+  - v2/benchmarks/forest/bench_nearest_kdtree.py
+  - v2/benchmarks/planner/bench_gcs_fallback.py
+
+3) examples
+  - v2/examples/aabb_demo.py
+  - v2/examples/forest_demo.py
+  - v2/examples/planning_demo.py
+
+4) docs
+  - v2/doc/aabb.md
+  - v2/doc/forest.md
+  - v2/doc/planner.md
+
+5) 输出规范
+  - 统一工具：v2/src/common/output.py
+  - 输出目录：v2/output/{reports|benchmarks|visualizations|plans}/...
+
+【验证结果】
+1) 自动化测试
+  - 命令：python -m pytest v2/tests -q --tb=short
+  - 结果：10 passed
+
+2) 示例 smoke
+  - v2.examples.aabb_demo：成功，报告写入 v2/output/reports
+  - v2.examples.forest_demo：成功，forest.pkl 写入 v2/output/reports
+  - v2.examples.planning_demo：可执行，当前示例场景返回“图搜索未找到路径”（算法结果，不是运行错误）
+
+3) 基准 smoke
+  - v2.benchmarks.aabb.bench_interval_fk：成功，产出 result.txt
+  - v2.benchmarks.forest.bench_nearest_kdtree：成功，产出 result.txt
+  - v2.benchmarks.planner.bench_gcs_fallback：成功，产出 result.txt
+
+【已知剩余优化（未做，不影响当前可用性）】
+- P1 批量 FK 接口
+- P4 全向量化邻接图（N×N×D + 分块）
+- P5 批量 seed 采样
+- P7 向量化路径平滑
+- PF1 持久化区间数组
+- PF2 SpatialIndex 集成主碰撞路径
+- P8 Cython 化 aabb 标量 FK
+
+【下一步建议】
+1. 先做 P4（邻接图全向量化）+ 回归测试
+2. 再做 P5（批量 seed）+ planner 端到端 benchmark
+3. 最后做 P1（批量 FK）作为阶段性性能冲刺

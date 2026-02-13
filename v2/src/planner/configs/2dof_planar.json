@@ -1,0 +1,18 @@
+{
+  "_comment": "2DOF 平面机械臂专用配置",
+  "max_iterations": 300,
+  "max_box_nodes": 150,
+  "min_box_size": 0.001,
+  "goal_bias": 0.15,
+  "expansion_resolution": 0.02,
+  "max_expansion_rounds": 4,
+  "min_initial_half_width": 0.001,
+  "expansion_strategy": "balanced",
+  "balanced_step_fraction": 0.5,
+  "balanced_max_steps": 100,
+  "use_sampling": false,
+  "sampling_n": 80,
+  "connection_radius": 2.0,
+  "path_shortcut_iters": 80,
+  "use_gcs": false
+}

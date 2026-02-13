@@ -1,0 +1,23 @@
+{
+  "_comment": "Panda 7DOF 机械臂专用配置",
+  "max_iterations": 800,
+  "max_box_nodes": 400,
+  "min_box_size": 0.001,
+  "goal_bias": 0.1,
+  "expansion_resolution": 0.005,
+  "max_expansion_rounds": 3,
+  "jacobian_delta": 0.005,
+  "min_initial_half_width": 0.001,
+  "expansion_strategy": "balanced",
+  "balanced_step_fraction": 0.4,
+  "balanced_max_steps": 500,
+  "use_sampling": true,
+  "sampling_n": 120,
+  "segment_collision_resolution": 0.03,
+  "connection_max_attempts": 100,
+  "connection_radius": 1.5,
+  "path_shortcut_iters": 200,
+  "use_gcs": false,
+  "build_n_seeds": 500,
+  "interval_width_threshold": 0.8
+}
