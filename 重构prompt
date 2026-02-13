@@ -146,6 +146,8 @@ planner → forest → aabb
 3. **planner 子包** — 依赖前两者，最顶层
 4. **examples + benchmarks** — 验证整体工作
 
+每个子包迁移时同步完成对应的并行优化（详见 doc/plan_v2 的"阶段映射"）。
+
 ## 六、需要特别注意的技术点
 
 1. **Robot.fingerprint()** 用于磁盘缓存 key，确保重构后哈希一致
@@ -154,3 +156,35 @@ planner → forest → aabb
 4. **GCSOptimizer 的 Drake 依赖** 是可选的，import 需 try/except 包裹
 5. **`interval_fk_fast.py` 中的增量计算** (`compute_fk_incremental`) 是性能关键路径
 6. **跨包 import 路径** 重构后需全部更新 (如 `from box_aabb.robot import Robot` → `from aabb.robot import Robot`)
+
+## 七、并行优化要求（重构时同步完成）
+
+详细计划见 `doc/plan_v2`，以下为核心要求摘要：
+
+### 7.1 必须修复的性能 Bug
+- **collision.py 使用了慢版本 interval_fk**（AffineForm 版而非 flat numpy 版）
+  合并 interval_fk 时统一为快速版，预计 box 碰撞检测加速 3-7×
+
+### 7.2 阶段 A — 重构时顺手完成（低成本高收益）
+| 优化项 | 位置 | 方案 | 预期加速 |
+|--------|------|------|----------|
+| interval_fk 统一快速版 | aabb/interval_fk.py | 合并时只保留 fast 实现 | 3-7× |
+| 预计算 DH 常量 | aabb/robot.py | `__init__` 中缓存 cos/sin(alpha) 数组 | 10-15% |
+| 向量化 config collision | forest/collision.py | 障碍物打包 (M,3,2)，广播 SAT | 3-5× |
+| 向量化 segment collision | forest/collision.py | 插值数组 + batch check | 5-10× |
+| 批量 seed 采样 | planner/box_rrt.py | 20 candidates batch check | 3-5× |
+| connector cdist | planner/connector.py | scipy.spatial.distance.cdist | 10-50× |
+
+### 7.3 阶段 B — 核心性能模块（单独实现）
+| 优化项 | 位置 | 方案 | 预期加速 |
+|--------|------|------|----------|
+| 批量 FK 接口 | aabb/interval_fk.py | compute_fk_batch + np.einsum | 10-50× |
+| 全向量化邻接图 | forest/deoverlap.py | N×N×D 张量 + 布尔掩码 | 5-20× |
+| KD-tree find_nearest | forest/box_forest.py | scipy.spatial.KDTree | 10× |
+| 向量化路径平滑 | planner/path_smoother.py | numpy 卷积 + batch collision | 5-10× |
+
+### 7.4 每个向量化函数的验证规则
+- 必须保留标量参考实现作为 cross-check
+- 测试中对比 vectorized vs scalar 结果一致性（tolerance 1e-10）
+- 碰撞检测向量化后保守方向不变（false positive 可接受，false negative 不可）
+- N×N 张量运算设内存阈值 N_THRESHOLD=1000，超过时自动分块

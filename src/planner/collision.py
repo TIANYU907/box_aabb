@@ -18,7 +18,7 @@ from typing import List, Tuple, Set, Optional, TYPE_CHECKING
 import numpy as np
 
 from box_aabb.robot import Robot
-from box_aabb.interval_fk import compute_interval_aabb
+from box_aabb.interval_fk_fast import compute_interval_aabb_fast as compute_interval_aabb
 from .models import Obstacle
 from .obstacles import Scene
 
