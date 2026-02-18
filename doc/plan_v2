@@ -324,15 +324,76 @@ PC2 — connector 距离计算向量化 [30min, 容易]
   - v2.benchmarks.planner.bench_gcs_fallback：成功，产出 result.txt
 
 【已知剩余优化（未做，不影响当前可用性）】
-- P1 批量 FK 接口
-- P4 全向量化邻接图（N×N×D + 分块）
-- P5 批量 seed 采样
-- P7 向量化路径平滑
-- PF1 持久化区间数组
-- PF2 SpatialIndex 集成主碰撞路径
 - P8 Cython 化 aabb 标量 FK
 
+【近期新增落地（2026-02-14）】
+1) P4 全向量化邻接图（含分块阈值）已落地
+  - 位置：v2/src/forest/deoverlap.py
+  - 结果：保留 reference 对照实现，默认参数调优后在 n=600 基准约 1.42×
+
+2) P5 批量 seed 采样已落地
+  - 位置：v2/src/planner/box_rrt.py::_sample_seed
+  - 处理：一次生成候选并调用 check_config_collision_batch，返回首个无碰撞 seed
+  - 兼容：无 batch 接口时自动回退单点检查
+  - 测试：新增 v2/tests/planner/test_seed_sampling_batch.py
+
+3) P1 批量 FK 接口已落地
+  - 位置：v2/src/aabb/robot.py::get_link_positions_batch
+         v2/src/aabb/strategies/base.py::_evaluate_samples
+  - 处理：采样求值阶段用批量 FK 计算 link_idx 与 link_idx-1 位置，替换逐点 FK 调用
+  - 验证：新增 v2/tests/aabb/test_robot_fk_batch.py，标量/批量结果等价
+  - 基准：v2/benchmarks/aabb/bench_fk_batch.py，当前样本 n=2000 约 8.57×
+
+4) P7 向量化路径平滑已落地
+  - 位置：v2/src/planner/path_smoother.py::smooth_moving_average
+  - 处理：每轮平滑先批量生成均值候选，再一次性调用 check_config_collision_batch
+  - 兼容：无 batch 接口时自动回退到逐点 check_config_collision
+  - 测试：扩展 v2/tests/planner/test_path_smoother_basic.py（batch 路径 + fallback 路径）
+
+5) PF2 SpatialIndex 集成主碰撞路径已落地
+  - 位置：v2/src/forest/collision.py
+  - 处理：在 CollisionChecker 中按阈值自动构建/刷新 SpatialIndex，并用于
+          check_config_collision / check_box_collision / check_config_collision_batch
+          的候选障碍物筛选
+  - 策略：障碍物数量 <= threshold 时自动退化为原始全量扫描
+  - 测试：扩展 v2/tests/forest/test_collision_basic.py（自动启用 + 场景变化刷新）
+
+6) PF1 持久化区间数组已落地
+  - 位置：v2/src/forest/box_forest.py
+  - 处理：新增 intervals 持久化缓存（_intervals_arr/_interval_ids），
+    add_box_direct/remove_boxes/add_boxes/load 路径增量维护缓存
+    并基于缓存向量化计算新 box 邻接，避免频繁 list(self.boxes.values()) 重建
+  - 测试：扩展 v2/tests/forest/test_box_forest_basic.py（缓存维护 + 邻接）
+  - 基准：新增 v2/benchmarks/forest/bench_box_forest_incremental_add.py
+    当前样本 n=1200, dims=6，adj_edges=1199，缓存形状 [1200,6,2]
+
+7) v1 vs v2 端到端回归（当前状态）已执行
+  - 脚本：benchmarks/compare_v1_v2_current.py（子进程隔离导入，避免同名包污染）
+  - 场景：2dof_planar + 固定2障碍物 + PlannerConfig(max_iterations=200,max_box_nodes=120)
+  - 结果：v1 mean=0.0673s, v2 mean=0.0800s, speedup(v2/v1)=0.8416x
+  - 报告：comparison_reports/v1_v2_regression_20260214_011407.{txt,json}
+
+8) P8 Cython 化标量 FK（POC）已完成并验证收益
+  - 位置：v2/src/aabb/_fk_scalar_core.pyx
+         v2/src/aabb/robot.py（可选导入 + Python fallback）
+         v2/setup_cython.py（v2 扩展构建脚本）
+  - 构建：python v2/setup_cython.py build_ext --inplace
+  - 基准：v2/benchmarks/aabb/bench_fk_scalar_cython.py
+    * 未编译扩展：dispatch≈0.1018s，python≈0.0958s（无收益）
+    * 编译后：dispatch≈0.00722s，python≈0.0987s，约 13.67×
+  - 产物：v2/output/benchmarks/aabb_fk_scalar_cython_20260214_012208/result.json
+
+9) Panda 不同障碍物场景碰撞对比已执行
+  - 脚本：python -m benchmarks.bench_panda_multi --seed 20260214 --obs-list 5 10 15 20 --max-boxes 120 --max-seeds 1800
+  - 报告：benchmarks/output/panda_multi_20260214_012547/multi_scenario_report.txt
+  - 关键碰撞指标（cold）:
+    * n_obs=5: t_coll=0.02s, coll_rej=0
+    * n_obs=10: t_coll=0.02s, coll_rej=0
+    * n_obs=15: t_coll=0.02s, coll_rej=0
+    * n_obs=20: t_coll=0.03s, coll_rej=0
+  - 结论：该参数下碰撞拒绝率接近 0，障碍物增多主要抬升 ffb/总耗时，热缓存加速比约 1.62×~2.55×
+
 【下一步建议】
-1. 先做 P4（邻接图全向量化）+ 回归测试
-2. 再做 P5（批量 seed）+ planner 端到端 benchmark
-3. 最后做 P1（批量 FK）作为阶段性性能冲刺
+1. 将 P8 从 POC 推进到生产策略（发布/CI 可选编译 + 无扩展自动回退）
+2. 编译开启后再做一轮端到端性能回归（v1 vs v2）
+3. 根据结果决定是否继续深挖 planner 侧微优化

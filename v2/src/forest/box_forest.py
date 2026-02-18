@@ -40,7 +40,6 @@ from .collision import CollisionChecker
 from .deoverlap import (
     deoverlap,
     compute_adjacency,
-    compute_adjacency_incremental,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,6 +77,9 @@ class BoxForest:
         self._kdtree = None
         self._kdtree_ids: List[int] = []
         self._kdtree_dirty: bool = True
+        self._intervals_arr = np.empty((0, 0, 2), dtype=np.float64)
+        self._interval_ids: List[int] = []
+        self._interval_id_to_index: Dict[int, int] = {}
 
     @property
     def n_boxes(self) -> int:
@@ -135,6 +137,7 @@ class BoxForest:
         # 全量邻接重算（向量化，快速）
         self.adjacency = compute_adjacency(
             all_deoverlapped, tol=self.config.adjacency_tolerance)
+        self._rebuild_interval_cache()
         self._kdtree_dirty = True
 
         # 返回新增的 box（不在 existing_list id 中的）
@@ -203,18 +206,8 @@ class BoxForest:
                     volume=vol,
                     tree_id=box.tree_id,
                 )
-                self.boxes[nid] = new_node
-                self.adjacency[nid] = set()
+                self.add_box_direct(new_node)
                 added.append(new_node)
-
-        # 增量邻接更新：O(K·N·D)
-        if added:
-            all_boxes_list = list(self.boxes.values())
-            compute_adjacency_incremental(
-                added, all_boxes_list, self.adjacency,
-                tol=self.config.adjacency_tolerance,
-            )
-            self._kdtree_dirty = True
 
         return added
 
@@ -224,17 +217,20 @@ class BoxForest:
         调用方须保证 box 与已有 box 无重叠（如通过
         HierAABBTree 的占用跟踪）。仅执行增量邻接更新。
         """
-        self.boxes[box.node_id] = box
-        self.adjacency[box.node_id] = set()
-        if box.node_id >= self._next_id:
-            self._next_id = box.node_id + 1
-
-        # 增量邻接更新 O(1·N·D)
-        all_boxes_list = list(self.boxes.values())
-        compute_adjacency_incremental(
-            [box], all_boxes_list, self.adjacency,
+        neighbor_ids = self._adjacent_existing_ids_from_cache(
+            box,
             tol=self.config.adjacency_tolerance,
         )
+
+        self.boxes[box.node_id] = box
+        self.adjacency[box.node_id] = set(neighbor_ids)
+        for nb in neighbor_ids:
+            self.adjacency.setdefault(nb, set()).add(box.node_id)
+
+        self._append_interval_cache(box)
+
+        if box.node_id >= self._next_id:
+            self._next_id = box.node_id + 1
         self._kdtree_dirty = True
 
     def remove_boxes(self, box_ids: Set[int]) -> None:
@@ -242,12 +238,91 @@ class BoxForest:
         for bid in box_ids:
             if bid in self.boxes:
                 del self.boxes[bid]
+                self._remove_interval_cache(bid)
             if bid in self.adjacency:
                 neighbors = self.adjacency.pop(bid)
                 for nb in neighbors:
                     if nb in self.adjacency:
                         self.adjacency[nb].discard(bid)
         self._kdtree_dirty = True
+
+    @staticmethod
+    def _box_intervals_array(box: BoxNode) -> np.ndarray:
+        ivs = np.asarray(box.joint_intervals, dtype=np.float64)
+        if ivs.ndim != 2 or ivs.shape[1] != 2:
+            raise ValueError("box.joint_intervals 必须是 (D,2)")
+        return ivs
+
+    def _rebuild_interval_cache(self) -> None:
+        self._interval_ids = list(self.boxes.keys())
+        if not self._interval_ids:
+            self._intervals_arr = np.empty((0, 0, 2), dtype=np.float64)
+            self._interval_id_to_index = {}
+            return
+
+        self._intervals_arr = np.stack(
+            [self._box_intervals_array(self.boxes[bid]) for bid in self._interval_ids],
+            axis=0,
+        )
+        self._interval_id_to_index = {
+            bid: i for i, bid in enumerate(self._interval_ids)
+        }
+
+    def _append_interval_cache(self, box: BoxNode) -> None:
+        ivs = self._box_intervals_array(box)
+        if self._intervals_arr.size == 0:
+            self._intervals_arr = ivs[None, :, :]
+            self._interval_ids = [box.node_id]
+            self._interval_id_to_index = {box.node_id: 0}
+            return
+
+        self._intervals_arr = np.concatenate([self._intervals_arr, ivs[None, :, :]], axis=0)
+        self._interval_ids.append(box.node_id)
+        self._interval_id_to_index[box.node_id] = len(self._interval_ids) - 1
+
+    def _remove_interval_cache(self, box_id: int) -> None:
+        idx = self._interval_id_to_index.get(box_id)
+        if idx is None:
+            return
+
+        self._intervals_arr = np.delete(self._intervals_arr, idx, axis=0)
+        self._interval_ids.pop(idx)
+        self._interval_id_to_index = {
+            bid: i for i, bid in enumerate(self._interval_ids)
+        }
+
+    def _adjacent_existing_ids_from_cache(
+        self,
+        box: BoxNode,
+        tol: float,
+    ) -> List[int]:
+        if not self._interval_ids:
+            return []
+
+        ivs = self._box_intervals_array(box)  # (D,2)
+        lo_all = self._intervals_arr[:, :, 0]  # (N,D)
+        hi_all = self._intervals_arr[:, :, 1]  # (N,D)
+        lo_new = ivs[:, 0][None, :]            # (1,D)
+        hi_new = ivs[:, 1][None, :]            # (1,D)
+
+        overlap_width = np.minimum(hi_all, hi_new) - np.maximum(lo_all, lo_new)
+
+        separated = overlap_width < -tol
+        touching = (overlap_width >= -tol) & (overlap_width <= tol)
+        overlapping = overlap_width > tol
+
+        any_separated = np.any(separated, axis=1)
+        n_touching = np.sum(touching, axis=1)
+        n_overlapping = np.sum(overlapping, axis=1)
+        n_dims = ivs.shape[0]
+
+        is_adjacent = (~any_separated) & (n_touching >= 1) & (n_overlapping >= n_dims - 1)
+
+        return [
+            self._interval_ids[i]
+            for i in np.flatnonzero(is_adjacent)
+            if self._interval_ids[i] != box.node_id
+        ]
 
     def _rebuild_kdtree(self) -> None:
         if cKDTree is None or not self.boxes:
@@ -407,6 +482,7 @@ class BoxForest:
         forest.adjacency = data['adjacency']
         forest.build_time = data.get('build_time', 0.0)
         forest._next_id = data.get('_next_id', 0)
+        forest._rebuild_interval_cache()
 
         # 确保 _next_id 不与已有 box 冲突
         if forest.boxes:

@@ -606,27 +606,43 @@ class BoxRRT:
         策略：
         - 以 goal_bias 概率朝目标采样
         - 否则在关节限制内均匀随机采样
-        - 重试若干次以找到无碰撞点
+        - 一次批量检测候选点，返回首个无碰撞配置
         """
         max_attempts = 20
 
-        for _ in range(max_attempts):
-            if rng.uniform() < self.config.goal_bias:
-                # 目标偏向：在 goal 附近采样
-                noise = rng.normal(0, 0.3, size=self._n_dims)
-                q = q_goal + noise
-                # 裁剪到关节限制
-                for i in range(self._n_dims):
-                    q[i] = np.clip(q[i], self.joint_limits[i][0],
-                                   self.joint_limits[i][1])
-            else:
-                # 均匀随机采样
-                q = np.array([
-                    rng.uniform(lo, hi) for lo, hi in self.joint_limits
-                ])
+        lows = np.array([lo for lo, _ in self.joint_limits], dtype=np.float64)
+        highs = np.array([hi for _, hi in self.joint_limits], dtype=np.float64)
 
+        # 先批量生成候选
+        candidates = np.empty((max_attempts, self._n_dims), dtype=np.float64)
+        use_goal = rng.uniform(size=max_attempts) < self.config.goal_bias
+
+        n_goal = int(np.sum(use_goal))
+        if n_goal > 0:
+            noise = rng.normal(0.0, 0.3, size=(n_goal, self._n_dims))
+            goal_samples = q_goal[None, :] + noise
+            candidates[use_goal] = np.clip(goal_samples, lows, highs)
+
+        n_uniform = max_attempts - n_goal
+        if n_uniform > 0:
+            candidates[~use_goal] = rng.uniform(
+                lows,
+                highs,
+                size=(n_uniform, self._n_dims),
+            )
+
+        # 优先走批量碰撞检测接口（P5）
+        if hasattr(self.collision_checker, "check_config_collision_batch"):
+            collisions = self.collision_checker.check_config_collision_batch(candidates)
+            free_idx = np.flatnonzero(~collisions)
+            if free_idx.size > 0:
+                return candidates[int(free_idx[0])].copy()
+            return None
+
+        # 兼容兜底：逐个检测
+        for q in candidates:
             if not self.collision_checker.check_config_collision(q):
-                return q
+                return q.copy()
 
         return None
 

@@ -207,7 +207,30 @@ class SamplingStrategy(ABC):
 
         FK 只调用两次（始端+末端），n 个段的端点位置通过线性插值 O(1) 获得。
         """
+        if not samples:
+            return
+
         t_vals = self._seg_t_values(n_sub)
+
+        if hasattr(self.robot, "get_link_positions_batch"):
+            sample_arr = np.asarray(samples, dtype=np.float64)
+            pos_end_all = self.robot.get_link_positions_batch(sample_arr, link_idx)
+            if link_idx > 1:
+                pos_start_all = self.robot.get_link_positions_batch(sample_arr, link_idx - 1)
+            else:
+                pos_start_all = np.zeros_like(pos_end_all)
+
+            for i in range(sample_arr.shape[0]):
+                fp = sample_arr[i]
+                pos_end = pos_end_all[i]
+                pos_start = pos_start_all[i]
+                for k, (t0, t1) in enumerate(t_vals):
+                    p0 = (1.0 - t0) * pos_start + t0 * pos_end
+                    p1 = (1.0 - t1) * pos_start + t1 * pos_end
+                    _update_extremes(seg_extremes[k], p0, fp)
+                    _update_extremes(seg_extremes[k], p1, fp)
+            return
+
         for fp in samples:
             pos_end = self.robot.get_link_position(fp, link_idx)
             pos_start = (self.robot.get_link_position(fp, link_idx - 1)

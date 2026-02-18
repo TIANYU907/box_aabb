@@ -16,6 +16,11 @@ from functools import cached_property
 
 logger = logging.getLogger(__name__)
 
+try:
+    from ._fk_scalar_core import link_position_core as _link_position_core_cy
+except Exception:  # pragma: no cover - optional Cython extension
+    _link_position_core_cy = None
+
 
 class Robot:
     """基于DH参数的串联机械臂
@@ -84,6 +89,19 @@ class Robot:
                 'a': float(tool_frame.get('a', 0.0)),
                 'd': float(tool_frame.get('d', 0.0)),
             }
+
+        # 预打包 DH 参数（供批量/可选 Cython 路径使用）
+        self._dh_alpha = np.array([p['alpha'] for p in self.dh_params], dtype=np.float64)
+        self._dh_a = np.array([p['a'] for p in self.dh_params], dtype=np.float64)
+        self._dh_d = np.array([p['d'] for p in self.dh_params], dtype=np.float64)
+        self._dh_theta = np.array([p['theta'] for p in self.dh_params], dtype=np.float64)
+        self._dh_joint_type = np.array(
+            [0 if p['type'] == 'revolute' else 1 for p in self.dh_params],
+            dtype=np.int32,
+        )
+        self._tool_alpha = float(self.tool_frame['alpha']) if self.tool_frame is not None else 0.0
+        self._tool_a = float(self.tool_frame['a']) if self.tool_frame is not None else 0.0
+        self._tool_d = float(self.tool_frame['d']) if self.tool_frame is not None else 0.0
     
     @staticmethod
     def _normalize_param(p: Dict) -> Dict:
@@ -278,6 +296,78 @@ class Robot:
         """
         transforms = self.forward_kinematics(joint_values, return_all=True)
         return [T[:3, 3] for T in transforms]
+
+    def get_link_positions_batch(
+        self,
+        joint_values_batch: np.ndarray,
+        link_idx: int,
+    ) -> np.ndarray:
+        """批量计算指定连杆末端位置
+
+        Args:
+            joint_values_batch: 关节配置矩阵 (B, n_joints) 或 (B, <=n_joints)
+            link_idx: 连杆索引 (1-based)
+
+        Returns:
+            位置矩阵 (B, 3)
+        """
+        q_batch = np.asarray(joint_values_batch, dtype=np.float64)
+        if q_batch.ndim == 1:
+            q_batch = q_batch[None, :]
+        if q_batch.ndim != 2:
+            raise ValueError("joint_values_batch 必须是 2D 数组")
+
+        B, n_cols = q_batch.shape
+        if n_cols < self.n_joints:
+            pad = np.zeros((B, self.n_joints - n_cols), dtype=np.float64)
+            q_batch = np.hstack([q_batch, pad])
+        elif n_cols > self.n_joints:
+            q_batch = q_batch[:, :self.n_joints]
+
+        T = np.tile(np.eye(4, dtype=np.float64), (B, 1, 1))
+        max_link = min(int(link_idx), len(self.dh_params))
+
+        for i in range(max_link):
+            param = self.dh_params[i]
+            alpha = param['alpha']
+            a = param['a']
+
+            if param['type'] == 'revolute':
+                d = np.full(B, param['d'], dtype=np.float64)
+                theta = q_batch[:, i] + param['theta']
+            else:
+                d = param['d'] + q_batch[:, i]
+                theta = np.full(B, param['theta'], dtype=np.float64)
+
+            ca, sa = np.cos(alpha), np.sin(alpha)
+            ct, st = np.cos(theta), np.sin(theta)
+
+            A = np.zeros((B, 4, 4), dtype=np.float64)
+            A[:, 0, 0] = ct
+            A[:, 0, 1] = -st
+            A[:, 0, 3] = a
+            A[:, 1, 0] = st * ca
+            A[:, 1, 1] = ct * ca
+            A[:, 1, 2] = -sa
+            A[:, 1, 3] = -d * sa
+            A[:, 2, 0] = st * sa
+            A[:, 2, 1] = ct * sa
+            A[:, 2, 2] = ca
+            A[:, 2, 3] = d * ca
+            A[:, 3, 3] = 1.0
+
+            T = np.einsum('nij,njk->nik', T, A)
+
+        if link_idx > len(self.dh_params) and self.tool_frame is not None:
+            A_tool = self.dh_transform(
+                self.tool_frame['alpha'],
+                self.tool_frame['a'],
+                self.tool_frame['d'],
+                0.0,
+            )
+            T = np.einsum('nij,jk->nik', T, A_tool)
+
+        return T[:, :3, 3].copy()
     
     def end_effector_pose(self, joint_values: List[float]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -290,6 +380,35 @@ class Robot:
         return T[:3, 3].copy(), T[:3, :3].copy()
     
     # ==================== 连杆位置计算 ====================
+
+    def _get_link_position_python(self, joint_values: List[float], link_idx: int) -> np.ndarray:
+        """Python 标量 FK 实现（作为回退与基准对照）。"""
+        q = list(joint_values)
+        while len(q) < self.n_joints:
+            q.append(0.0)
+
+        T = np.eye(4)
+        for i in range(min(link_idx, len(self.dh_params))):
+            param = self.dh_params[i]
+            if param['type'] == 'revolute':
+                theta = q[i] + param['theta']
+                d = param['d']
+            else:
+                theta = param['theta']
+                d = param['d'] + q[i]
+            T = T @ self.dh_transform(param['alpha'], param['a'], d, theta)
+
+        # 如果 link_idx 超过 DH 参数数量且存在 tool_frame，追加 tool_frame
+        if link_idx > len(self.dh_params) and self.tool_frame is not None:
+            A_tool = self.dh_transform(
+                self.tool_frame['alpha'],
+                self.tool_frame['a'],
+                self.tool_frame['d'],
+                0.0,
+            )
+            T = T @ A_tool
+
+        return T[:3, 3]
     
     def get_link_position(self, joint_values: List[float], link_idx: int) -> np.ndarray:
         """计算指定连杆末端的世界坐标位置
@@ -304,32 +423,30 @@ class Robot:
         Returns:
             连杆末端位置 (3,) ndarray
         """
-        q = list(joint_values)
-        while len(q) < self.n_joints:
-            q.append(0.0)
-        
-        T = np.eye(4)
-        for i in range(min(link_idx, len(self.dh_params))):
-            param = self.dh_params[i]
-            if param['type'] == 'revolute':
-                theta = q[i] + param['theta']
-                d = param['d']
-            else:
-                theta = param['theta']
-                d = param['d'] + q[i]
-            T = T @ self.dh_transform(param['alpha'], param['a'], d, theta)
-        
-        # 如果 link_idx 超过 DH 参数数量且存在 tool_frame，追加 tool_frame
-        if link_idx > len(self.dh_params) and self.tool_frame is not None:
-            A_tool = self.dh_transform(
-                self.tool_frame['alpha'],
-                self.tool_frame['a'],
-                self.tool_frame['d'],
-                0.0,
+        q_arr = np.asarray(joint_values, dtype=np.float64)
+        if q_arr.ndim != 1:
+            q_arr = q_arr.reshape(-1)
+        if q_arr.shape[0] < self.n_joints:
+            q_arr = np.pad(q_arr, (0, self.n_joints - q_arr.shape[0]), mode='constant')
+        elif q_arr.shape[0] > self.n_joints:
+            q_arr = q_arr[:self.n_joints]
+
+        if _link_position_core_cy is not None:
+            return _link_position_core_cy(
+                q_arr,
+                int(link_idx),
+                self._dh_alpha,
+                self._dh_a,
+                self._dh_d,
+                self._dh_theta,
+                self._dh_joint_type,
+                self.tool_frame is not None,
+                self._tool_alpha,
+                self._tool_a,
+                self._tool_d,
             )
-            T = T @ A_tool
-        
-        return T[:3, 3]
+
+        return self._get_link_position_python(q_arr.tolist(), link_idx)
     
     # ==================== 相关关节检测 ====================
     

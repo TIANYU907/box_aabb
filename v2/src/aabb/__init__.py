@@ -22,4 +22,10 @@ __all__ = [
     "compute_interval_aabb",
     "compute_fk_full",
     "compute_fk_incremental",
+    "get_link_positions_batch",
 ]
+
+
+def get_link_positions_batch(robot: Robot, joint_values_batch, link_idx: int):
+    """便捷导出：调用 Robot.get_link_positions_batch。"""
+    return robot.get_link_positions_batch(joint_values_batch, link_idx)

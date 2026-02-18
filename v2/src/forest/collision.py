@@ -67,17 +67,62 @@ class CollisionChecker:
         scene: Scene,
         safety_margin: float = 0.0,
         skip_base_link: bool = False,
+        spatial_index_threshold: int = 20,
+        spatial_cell_size: float = 0.5,
     ) -> None:
         self.robot = robot
         self.scene = scene
         self.safety_margin = safety_margin
         self._n_collision_checks = 0
+        self._spatial_index_threshold = int(spatial_index_threshold)
+        self._spatial_cell_size = float(spatial_cell_size)
+        self._spatial_index = None
+        self._spatial_index_sig = None
 
         # 预计算零长度连杆集合
         self._zero_length_links: Set[int] = robot.zero_length_links.copy()
         if skip_base_link:
             # 跳过第一个连杆（通常是基座，不参与碰撞检测）
             self._zero_length_links.add(1)
+
+    def _obstacle_signature(self, obstacles: List[Obstacle]) -> tuple:
+        """用于判断空间索引是否需要刷新。"""
+        return tuple(
+            (id(obs), tuple(obs.min_point.tolist()), tuple(obs.max_point.tolist()))
+            for obs in obstacles
+        )
+
+    def _ensure_spatial_index(self, obstacles: List[Obstacle]) -> None:
+        """按需创建/刷新空间索引。"""
+        if len(obstacles) <= self._spatial_index_threshold:
+            self._spatial_index = None
+            self._spatial_index_sig = None
+            return
+
+        sig = self._obstacle_signature(obstacles)
+        if self._spatial_index is not None and self._spatial_index_sig == sig:
+            return
+
+        from .parallel_collision import SpatialIndex
+
+        index = SpatialIndex(cell_size=self._spatial_cell_size)
+        index.build(obstacles)
+        self._spatial_index = index
+        self._spatial_index_sig = sig
+
+    def _candidate_obstacles(
+        self,
+        link_min: np.ndarray,
+        link_max: np.ndarray,
+        obstacles: List[Obstacle],
+    ) -> List[Obstacle]:
+        """返回与 link AABB 可能重叠的候选障碍物。"""
+        self._ensure_spatial_index(obstacles)
+        if self._spatial_index is None:
+            return obstacles
+
+        idxs = self._spatial_index.query(link_min, link_max)
+        return [obstacles[i] for i in idxs]
 
     @property
     def n_collision_checks(self) -> int:
@@ -122,7 +167,8 @@ class CollisionChecker:
             link_min = np.minimum(p_start, p_end)
             link_max = np.maximum(p_start, p_end)
 
-            for obs in obstacles:
+            candidates = self._candidate_obstacles(link_min, link_max, obstacles)
+            for obs in candidates:
                 obs_min = obs.min_point - margin
                 obs_max = obs.max_point + margin
                 if aabb_overlap(link_min, link_max, obs_min, obs_max):
@@ -169,7 +215,8 @@ class CollisionChecker:
             la_min = np.array(la.min_point)
             la_max = np.array(la.max_point)
 
-            for obs in obstacles:
+            candidates = self._candidate_obstacles(la_min, la_max, obstacles)
+            for obs in candidates:
                 obs_min = obs.min_point - margin
                 obs_max = obs.max_point + margin
                 if aabb_overlap(la_min, la_max, obs_min, obs_max):
@@ -319,6 +366,7 @@ class CollisionChecker:
 
         result = np.zeros(N, dtype=bool)
         margin = self.safety_margin
+        self._ensure_spatial_index(obstacles)
 
         # 预提取障碍物 AABB 为数组 (M, ndim) 方便向量化
         obs_mins = np.array([obs.min_point - margin for obs in obstacles])
@@ -393,9 +441,16 @@ class CollisionChecker:
             link_min = np.minimum(p_start, p_end)  # (N, 3)
             link_max = np.maximum(p_start, p_end)   # (N, 3)
 
-            # 与每个障碍物做 AABB 重叠检测
-            for oi in range(len(obstacles)):
-                o_min = obs_mins[oi]  # (ndim,)
+            # 与每个障碍物做 AABB 重叠检测（可选空间索引筛选）
+            if self._spatial_index is None:
+                candidate_indices = range(len(obstacles))
+            else:
+                band_min = np.min(link_min, axis=0)
+                band_max = np.max(link_max, axis=0)
+                candidate_indices = self._spatial_index.query(band_min, band_max)
+
+            for oi in candidate_indices:
+                o_min = obs_mins[oi]
                 o_max = obs_maxs[oi]
 
                 # 分离轴测试：对所有 N 个配置向量化

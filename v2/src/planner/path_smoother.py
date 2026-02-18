@@ -154,13 +154,28 @@ class PathSmoother:
             new_path = [path[0].copy()]
             changed = False
 
-            for i in range(1, len(path) - 1):
+            idxs = list(range(1, len(path) - 1))
+            if not idxs:
+                break
+
+            avg_candidates = []
+            for i in idxs:
                 lo = max(0, i - half_w)
                 hi = min(len(path), i + half_w + 1)
-                avg = np.mean(path[lo:hi], axis=0)
+                avg_candidates.append(np.mean(path[lo:hi], axis=0))
 
-                # 验证平滑后的点是否无碰撞
-                if not self.collision_checker.check_config_collision(avg):
+            avg_arr = np.asarray(avg_candidates, dtype=np.float64)
+
+            if hasattr(self.collision_checker, "check_config_collision_batch"):
+                collisions = self.collision_checker.check_config_collision_batch(avg_arr)
+            else:
+                collisions = np.array([
+                    self.collision_checker.check_config_collision(avg)
+                    for avg in avg_candidates
+                ], dtype=bool)
+
+            for i, avg, is_collide in zip(idxs, avg_candidates, collisions):
+                if not is_collide:
                     new_path.append(avg)
                     if not np.allclose(avg, path[i]):
                         changed = True

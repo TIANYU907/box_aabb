@@ -182,8 +182,10 @@ def _overlap_volume_intervals(a: Intervals, b: Intervals) -> float:
 def compute_adjacency(
     boxes: List[BoxNode],
     tol: float = 1e-8,
+    chunk_threshold: int = 300,
+    chunk_size: int = 64,
 ) -> Dict[int, Set[int]]:
-    """计算所有 box 的邻接关系（向量化 O(N²·D)）
+    """计算所有 box 的邻接关系（全向量化 + 上三角分块）
 
     邻接条件：
     - 恰好一个维度 d 满足面相接：|A.hi[d] - B.lo[d]| < tol
@@ -196,6 +198,8 @@ def compute_adjacency(
     Args:
         boxes: BoxNode 列表
         tol: 距离容差
+        chunk_threshold: N 不超过阈值时走全矩阵向量化
+        chunk_size: 分块大小（仅在分块模式生效）
 
     Returns:
         双向邻接表 {box_id: set of adjacent box_ids}
@@ -217,50 +221,115 @@ def compute_adjacency(
             intervals_arr[i, d, 0] = lo
             intervals_arr[i, d, 1] = hi
 
-    # 向量化邻接检测：所有 (i,j) 对
-    # lo: (N, D), hi: (N, D)
+    lo = intervals_arr[:, :, 0]  # (N, D)
+    hi = intervals_arr[:, :, 1]  # (N, D)
+    ids_arr = np.array([b.node_id for b in boxes], dtype=np.int64)
+    adj_mat = np.zeros((n, n), dtype=bool)
+
+    if n <= chunk_threshold:
+        # 小规模：一次性全矩阵 (N, N, D)
+        overlap_width = np.minimum(hi[:, None, :], hi[None, :, :]) - \
+            np.maximum(lo[:, None, :], lo[None, :, :])
+
+        separated = overlap_width < -tol
+        touching = (overlap_width >= -tol) & (overlap_width <= tol)
+        overlapping = overlap_width > tol
+
+        any_separated = np.any(separated, axis=2)
+        n_touching = np.sum(touching, axis=2)
+        n_overlapping = np.sum(overlapping, axis=2)
+
+        is_adjacent = (~any_separated) & (n_touching >= 1) & (n_overlapping >= n_dims - 1)
+        tri = np.triu(np.ones((n, n), dtype=bool), k=1)
+        adj_mat |= (is_adjacent & tri)
+    else:
+        # 大规模：仅计算上三角块，减少重复比较
+        step = max(1, int(chunk_size))
+        for i0 in range(0, n, step):
+            i1 = min(n, i0 + step)
+            lo_i = lo[i0:i1]  # (Bi, D)
+            hi_i = hi[i0:i1]  # (Bi, D)
+
+            for j0 in range(i0, n, step):
+                j1 = min(n, j0 + step)
+                lo_j = lo[j0:j1]  # (Bj, D)
+                hi_j = hi[j0:j1]  # (Bj, D)
+
+                overlap_width = np.minimum(hi_i[:, None, :], hi_j[None, :, :]) - \
+                    np.maximum(lo_i[:, None, :], lo_j[None, :, :])
+
+                separated = overlap_width < -tol
+                touching = (overlap_width >= -tol) & (overlap_width <= tol)
+                overlapping = overlap_width > tol
+
+                any_separated = np.any(separated, axis=2)
+                n_touching = np.sum(touching, axis=2)
+                n_overlapping = np.sum(overlapping, axis=2)
+
+                block_adj = (~any_separated) & (n_touching >= 1) & (n_overlapping >= n_dims - 1)
+                if i0 == j0:
+                    block_adj = np.triu(block_adj, k=1)
+
+                if np.any(block_adj):
+                    adj_mat[i0:i1, j0:j1] |= block_adj
+
+    adj_mat |= adj_mat.T
+    for i in range(n):
+        neighbors = np.flatnonzero(adj_mat[i])
+        if neighbors.size:
+            adj[int(ids_arr[i])] = set(ids_arr[neighbors].tolist())
+
+    n_edges = int(np.sum(adj_mat) // 2)
+    logger.info("compute_adjacency: %d boxes, %d 条邻接边", n, n_edges)
+    return adj
+
+
+def compute_adjacency_reference(
+    boxes: List[BoxNode],
+    tol: float = 1e-8,
+) -> Dict[int, Set[int]]:
+    """参考实现：逐行向量化 O(N²·D)，用于正确性/性能对照。"""
+    n = len(boxes)
+    if n == 0:
+        return {}
+
+    n_dims = boxes[0].n_dims
+    adj: Dict[int, Set[int]] = {b.node_id: set() for b in boxes}
+
+    if n < 2:
+        return adj
+
+    intervals_arr = np.empty((n, n_dims, 2), dtype=np.float64)
+    for i, box in enumerate(boxes):
+        for d, (lo, hi) in enumerate(box.joint_intervals):
+            intervals_arr[i, d, 0] = lo
+            intervals_arr[i, d, 1] = hi
+
     lo = intervals_arr[:, :, 0]  # (N, D)
     hi = intervals_arr[:, :, 1]  # (N, D)
 
     for i in range(n):
-        # 广播 i 与 [i+1:] 的比较
         remaining = n - i - 1
         if remaining <= 0:
             break
 
-        # i 的区间广播
-        i_lo = lo[i]  # (D,)
-        i_hi = hi[i]  # (D,)
-        j_lo = lo[i + 1:]  # (R, D)
-        j_hi = hi[i + 1:]  # (R, D)
+        i_lo = lo[i]
+        i_hi = hi[i]
+        j_lo = lo[i + 1:]
+        j_hi = hi[i + 1:]
 
-        # 每维投影重叠宽度：min(hi_i, hi_j) - max(lo_i, lo_j)
-        overlap_width = np.minimum(i_hi, j_hi) - np.maximum(i_lo, j_lo)  # (R, D)
+        overlap_width = np.minimum(i_hi, j_hi) - np.maximum(i_lo, j_lo)
 
-        # 每维的"面相接"判断：|A.hi[d] - B.lo[d]| < tol 或 |A.lo[d] - B.hi[d]| < tol
-        # 关键：面相接时 overlap_width≈0，而其余维度 overlap_width > 0
-        # 但微小重叠时 overlap_width 可能是个小正数
+        separated = overlap_width < -tol
+        touching = (overlap_width >= -tol) & (overlap_width <= tol)
+        overlapping = overlap_width > tol
 
-        # 方法：对每维判断是否"相接或微小重叠"
-        # touching: -tol < overlap_width <= tol (面相接)
-        # overlapping: overlap_width > tol (投影重叠)
-        # separated: overlap_width < -tol (分离)
+        any_separated = np.any(separated, axis=1)
+        n_touching = np.sum(touching, axis=1)
+        n_overlapping = np.sum(overlapping, axis=1)
 
-        separated = overlap_width < -tol  # (R, D)
-        touching = (overlap_width >= -tol) & (overlap_width <= tol)  # (R, D)
-        overlapping = overlap_width > tol  # (R, D)
-
-        # 任何维度分离 → 不邻接
-        any_separated = np.any(separated, axis=1)  # (R,)
-
-        # 恰好一个维度 touching，其余都 overlapping（或 touching）
-        n_touching = np.sum(touching, axis=1)  # (R,)
-        n_overlapping = np.sum(overlapping, axis=1)  # (R,)
-
-        # 邻接条件：无分离 && 恰好 1 个维度 touching && 其余 D-1 维度 overlapping
         is_adjacent = (~any_separated) & (n_touching >= 1) & (n_overlapping >= n_dims - 1)
 
-        # 记录邻接
         idx_adj = np.where(is_adjacent)[0]
         for offset in idx_adj:
             j = i + 1 + offset
