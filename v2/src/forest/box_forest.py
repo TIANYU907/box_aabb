@@ -426,6 +426,127 @@ class BoxForest:
             )
         return colliding_ids
 
+    def merge_partition_forests(
+        self,
+        local_forests: List[Dict],
+        dedup_rule: str = "partition_id",
+    ) -> Dict[int, Set[int]]:
+        """将分区 worker 的局部结果合并到当前 forest。
+
+        Args:
+            local_forests: [{'partition_id': int, 'boxes': [{'joint_intervals', 'seed_config', 'volume'}, ...]}, ...]
+            dedup_rule: 边界去重规则，当前支持 'partition_id'
+
+        Returns:
+            分区到全局 box id 的映射 {partition_id: {box_ids...}}
+        """
+        partition_box_ids: Dict[int, Set[int]] = {}
+
+        for item in sorted(local_forests, key=lambda x: int(x.get('partition_id', 0))):
+            pid = int(item.get('partition_id', -1))
+            boxes = item.get('boxes', [])
+            partition_box_ids.setdefault(pid, set())
+            for box_data in boxes:
+                ivs = box_data.get('joint_intervals')
+                seed = box_data.get('seed_config')
+                vol = float(box_data.get('volume', 0.0))
+                if ivs is None or seed is None:
+                    continue
+                nid = self.allocate_id()
+                node = BoxNode(
+                    node_id=nid,
+                    joint_intervals=ivs,
+                    seed_config=np.asarray(seed, dtype=np.float64),
+                    volume=vol,
+                    tree_id=pid,
+                )
+                self.add_box_direct(node)
+                partition_box_ids[pid].add(nid)
+
+        if dedup_rule == "partition_id":
+            self.dedup_boundary_boxes(partition_box_ids)
+
+        return partition_box_ids
+
+    def dedup_boundary_boxes(
+        self,
+        partition_box_ids: Dict[int, Set[int]],
+        tol: float = 1e-10,
+    ) -> int:
+        """按分区优先级去重边界重复 box（低 partition_id 优先）。"""
+        if not partition_box_ids:
+            return 0
+
+        all_ids = sorted({bid for ids in partition_box_ids.values() for bid in ids})
+        to_remove: Set[int] = set()
+
+        for i in range(len(all_ids)):
+            a_id = all_ids[i]
+            if a_id in to_remove or a_id not in self.boxes:
+                continue
+            a = self.boxes[a_id]
+            a_pid = int(a.tree_id)
+            a_arr = np.asarray(a.joint_intervals, dtype=np.float64)
+            for j in range(i + 1, len(all_ids)):
+                b_id = all_ids[j]
+                if b_id in to_remove or b_id not in self.boxes:
+                    continue
+                b = self.boxes[b_id]
+                b_pid = int(b.tree_id)
+                if a_pid == b_pid:
+                    continue
+                b_arr = np.asarray(b.joint_intervals, dtype=np.float64)
+                if a_arr.shape != b_arr.shape:
+                    continue
+                if np.all(np.abs(a_arr - b_arr) <= tol):
+                    # 小分区号优先保留
+                    if a_pid <= b_pid:
+                        to_remove.add(b_id)
+                    else:
+                        to_remove.add(a_id)
+                        break
+
+        if to_remove:
+            self.remove_boxes(to_remove)
+            for ids in partition_box_ids.values():
+                ids.difference_update(to_remove)
+        return len(to_remove)
+
+    def validate_invariants(
+        self,
+        tol: float = 1e-8,
+        strict: bool = True,
+    ) -> None:
+        """校验 forest 关键不变量：邻接对称、引用有效、无正体积重叠。"""
+        def _handle(msg: str) -> None:
+            if strict:
+                raise ValueError(msg)
+            logger.warning(msg)
+
+        # 1) 邻接引用有效 + 对称
+        for bid, neighbors in list(self.adjacency.items()):
+            if bid not in self.boxes:
+                _handle(f"adjacency 包含不存在 box: {bid}")
+                continue
+            for nb in list(neighbors):
+                if nb not in self.boxes:
+                    _handle(f"邻接引用不存在 box: {bid}->{nb}")
+                    continue
+                if bid not in self.adjacency.get(nb, set()):
+                    _handle(f"邻接非对称: {bid}<->{nb}")
+
+        # 2) 无正体积重叠
+        box_ids = list(self.boxes.keys())
+        for i in range(len(box_ids)):
+            a = self.boxes[box_ids[i]]
+            a_ivs = np.asarray(a.joint_intervals, dtype=np.float64)
+            for j in range(i + 1, len(box_ids)):
+                b = self.boxes[box_ids[j]]
+                b_ivs = np.asarray(b.joint_intervals, dtype=np.float64)
+                overlap_width = np.minimum(a_ivs[:, 1], b_ivs[:, 1]) - np.maximum(a_ivs[:, 0], b_ivs[:, 0])
+                if np.all(overlap_width > tol):
+                    _handle(f"检测到正体积重叠 box: {a.node_id} 与 {b.node_id}")
+
     # ── 持久化 ──
 
     def save(self, filepath: str) -> None:

@@ -64,6 +64,44 @@ from ._hier_layout import (
 logger = logging.getLogger(__name__)
 
 
+def build_kd_partitions(
+    root_intervals: List[Tuple[float, float]],
+    depth: int,
+    dims: Optional[List[int]] = None,
+) -> List[List[Tuple[float, float]]]:
+    """按给定维度顺序对区间做 KD 二分，返回互不重叠子空间。"""
+    intervals = [tuple(iv) for iv in root_intervals]
+    if depth <= 0:
+        return [intervals]
+
+    n_dims = len(intervals)
+    if n_dims == 0:
+        return [intervals]
+
+    if dims:
+        dims_valid = [int(d) for d in dims if 0 <= int(d) < n_dims]
+    else:
+        dims_valid = list(range(n_dims))
+    if not dims_valid:
+        dims_valid = list(range(n_dims))
+
+    parts: List[List[Tuple[float, float]]] = [intervals]
+    for lv in range(depth):
+        split_dim = dims_valid[lv % len(dims_valid)]
+        next_parts: List[List[Tuple[float, float]]] = []
+        for part in parts:
+            lo, hi = part[split_dim]
+            mid = (lo + hi) * 0.5
+            left = list(part)
+            right = list(part)
+            left[split_dim] = (lo, mid)
+            right[split_dim] = (mid, hi)
+            next_parts.append(left)
+            next_parts.append(right)
+        parts = next_parts
+    return parts
+
+
 # ─────────────────────────────────────────────────────
 #  _NodeView — 索引兼容层
 # ─────────────────────────────────────────────────────
@@ -97,7 +135,7 @@ class _NodeView:
     def split_dim(self) -> Optional[int]:
         if self._tree._store.get_left(self._idx) < 0:
             return None
-        return self._tree._store.get_depth(self._idx) % self._tree.n_dims
+        return self._tree._split_dim_for_depth(self._tree._store.get_depth(self._idx))
 
     @property
     def split_val(self) -> Optional[float]:
@@ -270,6 +308,7 @@ class HierAABBTree:
         self,
         robot: Robot,
         joint_limits: Optional[List[Tuple[float, float]]] = None,
+        active_split_dims: Optional[List[int]] = None,
     ) -> None:
         self.robot = robot
         self.robot_fingerprint = robot.fingerprint()
@@ -283,6 +322,7 @@ class HierAABBTree:
             self.joint_limits = [(-np.pi, np.pi)] * robot.n_joints
 
         self.n_dims = len(self.joint_limits)
+        self.active_split_dims = self._resolve_active_split_dims(active_split_dims)
         self._init_link_metadata()
 
         cap = self._INIT_CAP
@@ -301,6 +341,24 @@ class HierAABBTree:
         self._last_ffb_none_reason: Optional[str] = None
         self._source_filepath: Optional[str] = None
         self._source_n_alloc: int = 0  # 加载时的节点数，用于增量保存
+
+    def _resolve_active_split_dims(
+        self,
+        dims: Optional[List[int]],
+    ) -> List[int]:
+        if dims:
+            valid = [int(d) for d in dims if 0 <= int(d) < self.n_dims]
+        else:
+            valid = []
+        if not valid:
+            valid = list(range(self.n_dims))
+        return valid
+
+    def _split_dim_for_depth(self, depth: int) -> int:
+        dims = self.active_split_dims
+        if not dims:
+            return depth % self.n_dims
+        return dims[depth % len(dims)]
 
     # ──────────────────────────────────────────────
     #  内部：link 元数据
@@ -347,17 +405,70 @@ class HierAABBTree:
         path.reverse()
 
         ivs = list(self.joint_limits)
-        nd = self.n_dims
         for k in range(len(path) - 1):
             p = path[k]
             child = path[k + 1]
-            dim = store.get_depth(p) % nd
+            dim = self._split_dim_for_depth(store.get_depth(p))
             sv = store.get_split_val(p)
             if child == store.get_left(p):
                 ivs[dim] = (ivs[dim][0], sv)
             else:
                 ivs[dim] = (sv, ivs[dim][1])
         return ivs
+
+    def _get_intervals_from_base(
+        self,
+        idx: int,
+        base_intervals: List[Tuple[float, float]],
+    ) -> List[Tuple[float, float]]:
+        store = self._store
+        path: list = []
+        i = idx
+        while i >= 0:
+            path.append(i)
+            i = store.get_parent(i)
+        path.reverse()
+
+        ivs = list(base_intervals)
+        for k in range(len(path) - 1):
+            p = path[k]
+            child = path[k + 1]
+            dim = self._split_dim_for_depth(store.get_depth(p))
+            sv = store.get_split_val(p)
+            if child == store.get_left(p):
+                ivs[dim] = (ivs[dim][0], sv)
+            else:
+                ivs[dim] = (sv, ivs[dim][1])
+        return ivs
+
+    @staticmethod
+    def _intersect_intervals(
+        a: List[Tuple[float, float]],
+        b: List[Tuple[float, float]],
+    ) -> Optional[List[Tuple[float, float]]]:
+        if len(a) != len(b):
+            return None
+        out: List[Tuple[float, float]] = []
+        for (a_lo, a_hi), (b_lo, b_hi) in zip(a, b):
+            lo = max(a_lo, b_lo)
+            hi = min(a_hi, b_hi)
+            if hi <= lo:
+                return None
+            out.append((lo, hi))
+        return out
+
+    @staticmethod
+    def _is_config_in_intervals(
+        q: np.ndarray,
+        ivs: List[Tuple[float, float]],
+        tol: float = 1e-12,
+    ) -> bool:
+        if len(q) < len(ivs):
+            return False
+        for i, (lo, hi) in enumerate(ivs):
+            if q[i] < lo - tol or q[i] > hi + tol:
+                return False
+        return True
 
     # ──────────────────────────────────────────────
     #  AABB 计算
@@ -422,7 +533,7 @@ class HierAABBTree:
             return  # 已分裂
 
         depth = store.get_depth(idx)
-        dim = depth % self.n_dims
+        dim = self._split_dim_for_depth(depth)
 
         if intervals is None:
             intervals = self._get_intervals(idx)
@@ -513,7 +624,6 @@ class HierAABBTree:
     def find_containing_box_id(self, config: np.ndarray) -> Optional[int]:
         """找到包含 config 的已占用节点对应的 forest_box_id（O(depth)）"""
         idx = 0
-        nd = self.n_dims
         store = self._store
         while True:
             if store.is_occupied(idx):
@@ -521,7 +631,7 @@ class HierAABBTree:
                 return fid if fid >= 0 else None
             if store.get_left(idx) < 0 or store.get_subtree_occ(idx) == 0:
                 return None
-            dim = store.get_depth(idx) % nd
+            dim = self._split_dim_for_depth(store.get_depth(idx))
             if config[dim] < store.get_split_val(idx):
                 idx = store.get_left(idx)
             else:
@@ -572,6 +682,7 @@ class HierAABBTree:
         post_expand_fn=None,
         mark_occupied: bool = False,
         forest_box_id: Optional[int] = None,
+        constrained_intervals: Optional[List[Tuple[float, float]]] = None,
     ) -> Optional[FindFreeBoxResult]:
         """从顶向下切分，找到包含 seed 的最大无碰撞 box
 
@@ -590,8 +701,19 @@ class HierAABBTree:
         obs_packed = self._prepack_obstacles_c(obstacles, safety_margin)
 
         # running_ivs: 原地更新，不做 list 拷贝
-        running_ivs = list(self.joint_limits)
-        nd = self.n_dims
+        if constrained_intervals is not None:
+            clipped = self._intersect_intervals(self.joint_limits, list(constrained_intervals))
+            if clipped is None:
+                self._last_ffb_none_reason = "invalid_constraint"
+                return None
+            if not self._is_config_in_intervals(seed, clipped):
+                self._last_ffb_none_reason = "seed_outside_constraint"
+                return None
+            base_ivs = clipped
+        else:
+            base_ivs = list(self.joint_limits)
+
+        running_ivs = list(base_ivs)
 
         # ── 下行 ──
         while True:
@@ -611,7 +733,7 @@ class HierAABBTree:
                 self._last_ffb_none_reason = "max_depth"
                 return None
 
-            split_dim = depth % nd
+            split_dim = self._split_dim_for_depth(depth)
             edge = running_ivs[split_dim][1] - running_ivs[split_dim][0]
             if min_edge_length > 0 and edge < min_edge_length * 2:
                 self._last_ffb_none_reason = "min_edge"
@@ -654,7 +776,10 @@ class HierAABBTree:
                     break
 
         # 结果 intervals：从 root 推导（O(depth)，一次性）
-        result_intervals = self._get_intervals(result_idx)
+        if constrained_intervals is not None:
+            result_intervals = self._get_intervals_from_base(result_idx, base_ivs)
+        else:
+            result_intervals = self._get_intervals(result_idx)
 
         if mark_occupied:
             self._mark_occupied(result_idx, forest_box_id)
@@ -700,7 +825,7 @@ class HierAABBTree:
             return store.get_aabb(idx) if store.get_has_aabb(idx) else None
 
         # 内部节点：构建子节点 intervals 并递归
-        dim = store.get_depth(idx) % self.n_dims
+        dim = self._split_dim_for_depth(store.get_depth(idx))
         sv = store.get_split_val(idx)
 
         left_ivs = list(node_ivs)
@@ -886,6 +1011,7 @@ class HierAABBTree:
         tree._zero_length_links = robot.zero_length_links.copy()
         tree.n_dims = nd
         tree.joint_limits = hdr['joint_limits']
+        tree.active_split_dims = list(range(nd))
         tree.n_nodes = hdr['n_nodes']
         tree.n_fk_calls = hdr['n_fk_calls']
         tree._last_ffb_none_reason = None
@@ -930,6 +1056,7 @@ class HierAABBTree:
         cls,
         robot: Robot,
         joint_limits: Optional[List[Tuple[float, float]]] = None,
+        active_split_dims: Optional[List[int]] = None,
     ) -> 'HierAABBTree':
         cache_dir = cls._global_cache_dir()
         hcache_file = cache_dir / cls._cache_filename(robot)
@@ -946,14 +1073,15 @@ class HierAABBTree:
                         )
                         if not match:
                             logger.info("joint_limits 不匹配，忽略缓存，新建空树")
-                            return cls(robot, joint_limits)
+                            return cls(robot, joint_limits, active_split_dims=active_split_dims)
+                tree.active_split_dims = tree._resolve_active_split_dims(active_split_dims)
                 return tree
             except Exception as e:
                 logger.warning("全局缓存加载失败 (%s): %s",
                                hcache_file, e)
 
         logger.info("未找到全局缓存，新建 HierAABBTree (%s)", robot.name)
-        return cls(robot, joint_limits)
+        return cls(robot, joint_limits, active_split_dims=active_split_dims)
 
     def auto_save(self) -> str:
         cache_dir = self._global_cache_dir()

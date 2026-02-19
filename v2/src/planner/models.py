@@ -89,6 +89,13 @@ class PlannerConfig:
     overlap_weight: float = 1.0
     adjacency_tolerance: float = 1e-8
     hard_overlap_reject: bool = True
+    parallel_expand: bool = False
+    parallel_workers: int = 0
+    parallel_batch_size: int = 32
+    parallel_partition_depth: int = 2
+    parallel_partition_dims: Optional[List[int]] = None
+    parallel_boundary_owner: str = "right"
+    parallel_cross_partition_connect: bool = True
 
     def to_dict(self) -> Dict[str, Any]:
         from dataclasses import fields as dc_fields

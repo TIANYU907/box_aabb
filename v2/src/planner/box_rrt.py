@@ -26,6 +26,7 @@ v5.0 更新：
 
 import time
 import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Tuple, Optional, Set, Dict
 
 import numpy as np
@@ -35,7 +36,7 @@ from .models import PlannerConfig, PlannerResult, gmean_edge_length
 from forest.models import BoxNode
 from forest.scene import Scene
 from forest.collision import CollisionChecker
-from forest.hier_aabb_tree import HierAABBTree
+from forest.hier_aabb_tree import HierAABBTree, build_kd_partitions
 from .box_tree import BoxTreeManager
 from forest.box_forest import BoxForest
 from .connector import TreeConnector
@@ -44,6 +45,83 @@ from .gcs_optimizer import GCSOptimizer
 from forest.deoverlap import deoverlap, compute_adjacency
 
 logger = logging.getLogger(__name__)
+
+
+def _partition_expand_worker(payload: Dict[str, object]) -> Dict[str, object]:
+    """多进程 worker：在单分区内扩展局部 boxes。"""
+    robot = payload["robot"]
+    obstacles = payload["obstacles"]
+    q_start = np.asarray(payload["q_start"], dtype=np.float64)
+    q_goal = np.asarray(payload["q_goal"], dtype=np.float64)
+    partition_meta = payload["partition_meta"]
+    max_iterations = int(payload["max_iterations"])
+    min_box_size = float(payload["min_box_size"])
+    active_split_dims = payload.get("active_split_dims")
+    seed = payload.get("seed")
+
+    intervals = partition_meta["intervals"]
+    if not isinstance(intervals, list):
+        return {"partition_id": int(partition_meta.get("partition_id", -1)), "boxes": []}
+
+    local_tree = HierAABBTree(
+        robot,
+        joint_limits=intervals,
+        active_split_dims=active_split_dims,
+    )
+    rng = np.random.default_rng(seed)
+    local_boxes: Dict[int, Dict[str, object]] = {}
+    next_local_id = 0
+    n_dims = len(intervals)
+
+    lows = np.array([lo for lo, _ in intervals], dtype=np.float64)
+    highs = np.array([hi for _, hi in intervals], dtype=np.float64)
+
+    def _sample_seed_local() -> np.ndarray:
+        use_goal = bool(rng.uniform() < 0.1)
+        if use_goal:
+            noise = rng.normal(0.0, 0.3, size=(n_dims,))
+            return np.clip(q_goal[:n_dims] + noise, lows, highs)
+        return rng.uniform(lows, highs)
+
+    def _try_expand(seed_q: np.ndarray) -> None:
+        nonlocal next_local_id
+        local_id = next_local_id
+        ffb = local_tree.find_free_box(
+            seed_q,
+            obstacles,
+            mark_occupied=True,
+            forest_box_id=local_id,
+            constrained_intervals=intervals,
+        )
+        if ffb is None:
+            return
+        vol = 1.0
+        for lo, hi in ffb.intervals:
+            vol *= max(hi - lo, 0.0)
+        if gmean_edge_length(vol, n_dims) < min_box_size:
+            return
+        if ffb.absorbed_box_ids:
+            for absorbed_id in ffb.absorbed_box_ids:
+                local_boxes.pop(int(absorbed_id), None)
+        local_boxes[local_id] = {
+            "joint_intervals": ffb.intervals,
+            "seed_config": seed_q.copy(),
+            "volume": vol,
+        }
+        next_local_id += 1
+
+    if local_tree._is_config_in_intervals(q_start, intervals):
+        _try_expand(q_start[:n_dims])
+    if local_tree._is_config_in_intervals(q_goal, intervals):
+        _try_expand(q_goal[:n_dims])
+
+    for _ in range(max_iterations):
+        _try_expand(_sample_seed_local())
+
+    return {
+        "partition_id": int(partition_meta.get("partition_id", -1)),
+        "boxes": [local_boxes[k] for k in sorted(local_boxes.keys())],
+    }
 
 
 class BoxRRT:
@@ -96,7 +174,11 @@ class BoxRRT:
             scene=scene,
         )
         # 使用 HierAABBTree 做 box 拓展（自顶向下切分 + 缓存精化）
-        self.hier_tree = HierAABBTree.auto_load(robot, self.joint_limits)
+        self.hier_tree = HierAABBTree.auto_load(
+            robot,
+            self.joint_limits,
+            active_split_dims=self.config.parallel_partition_dims,
+        )
         self.obstacles = scene.get_obstacles()
         self.tree_manager = BoxTreeManager()
         self.connector = TreeConnector(
@@ -114,6 +196,150 @@ class BoxRRT:
             fallback=True,
             bezier_degree=self.config.gcs_bezier_degree,
         )
+
+    def _prepare_partitions(self) -> List[Dict[str, object]]:
+        """构建 KD 子空间分区元数据（供后续并行扩展使用）。"""
+        depth = max(0, int(self.config.parallel_partition_depth))
+        dims = self.config.parallel_partition_dims
+        partitions = build_kd_partitions(self.joint_limits, depth, dims=dims)
+
+        result: List[Dict[str, object]] = []
+        for pid, ivs in enumerate(partitions):
+            result.append({
+                "partition_id": pid,
+                "intervals": ivs,
+            })
+
+        # 预计算相邻分区对（共享切分面的候选）
+        adjacent_pairs: List[Tuple[int, int]] = []
+        for i in range(len(partitions)):
+            for j in range(i + 1, len(partitions)):
+                if self._partitions_adjacent(partitions[i], partitions[j]):
+                    adjacent_pairs.append((i, j))
+
+        for entry in result:
+            entry["adjacent_pairs"] = adjacent_pairs
+            entry["boundary_owner"] = self.config.parallel_boundary_owner
+        return result
+
+    def _expand_partition_worker(
+        self,
+        partition_meta: Dict[str, object],
+        q_start: np.ndarray,
+        q_goal: np.ndarray,
+        max_iterations: int,
+        seed: Optional[int] = None,
+    ) -> List[Dict[str, object]]:
+        """在单个子空间中扩展 box（worker 逻辑，当前进程内执行）。"""
+        intervals = partition_meta["intervals"]
+        if not isinstance(intervals, list):
+            return []
+
+        local_tree = HierAABBTree(
+            self.robot,
+            joint_limits=intervals,
+            active_split_dims=self.config.parallel_partition_dims,
+        )
+        rng = np.random.default_rng(seed)
+        local_boxes: Dict[int, Dict[str, object]] = {}
+        next_local_id = 0
+
+        def _try_expand(seed_q: np.ndarray) -> None:
+            nonlocal next_local_id
+            local_id = next_local_id
+            ffb = local_tree.find_free_box(
+                seed_q,
+                self.obstacles,
+                mark_occupied=True,
+                forest_box_id=local_id,
+                constrained_intervals=intervals,
+            )
+            if ffb is None:
+                return
+            vol = 1.0
+            for lo, hi in ffb.intervals:
+                vol *= max(hi - lo, 0.0)
+            if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
+                return
+            if ffb.absorbed_box_ids:
+                for absorbed_id in ffb.absorbed_box_ids:
+                    local_boxes.pop(int(absorbed_id), None)
+            local_boxes[local_id] = {
+                "joint_intervals": ffb.intervals,
+                "seed_config": seed_q.copy(),
+                "volume": vol,
+            }
+            next_local_id += 1
+
+        if self.hier_tree._is_config_in_intervals(q_start, intervals):
+            _try_expand(q_start)
+        if self.hier_tree._is_config_in_intervals(q_goal, intervals):
+            _try_expand(q_goal)
+
+        for _ in range(max_iterations):
+            q_seed = self._sample_seed_in_partition(q_start, q_goal, rng, intervals)
+            if q_seed is None:
+                continue
+            _try_expand(q_seed)
+
+        return [local_boxes[k] for k in sorted(local_boxes.keys())]
+
+    def _sample_seed_in_partition(
+        self,
+        q_start: np.ndarray,
+        q_goal: np.ndarray,
+        rng: np.random.Generator,
+        partition_intervals: List[Tuple[float, float]],
+    ) -> Optional[np.ndarray]:
+        return self._sample_seed(
+            q_start,
+            q_goal,
+            rng,
+            sampling_intervals=partition_intervals,
+        )
+
+    def _merge_connect_partitions(
+        self,
+        forest: BoxForest,
+        local_results: List[Dict[str, object]],
+        partitions: List[Dict[str, object]],
+    ) -> List:
+        partition_box_ids = forest.merge_partition_forests(local_results)
+
+        if self.config.parallel_cross_partition_connect:
+            pair_set: Set[Tuple[int, int]] = set()
+            for p in partitions:
+                for a, b in p.get("adjacent_pairs", []):
+                    pair_set.add((int(a), int(b)))
+            cross_edges = self.connector.connect_across_partitions(
+                sorted(pair_set),
+                forest.boxes,
+                partition_box_ids,
+            )
+        else:
+            cross_edges = []
+
+        forest.validate_invariants(strict=True)
+        return cross_edges
+
+    @staticmethod
+    def _partitions_adjacent(
+        a: List[Tuple[float, float]],
+        b: List[Tuple[float, float]],
+        tol: float = 1e-10,
+    ) -> bool:
+        """判断两个子空间是否共享切分边界（用于跨区补边候选）。"""
+        if len(a) != len(b):
+            return False
+
+        touching_dims = 0
+        for (a_lo, a_hi), (b_lo, b_hi) in zip(a, b):
+            overlap = min(a_hi, b_hi) - max(a_lo, b_lo)
+            if overlap < -tol:
+                return False
+            if abs(overlap) <= tol:
+                touching_dims += 1
+        return touching_dims >= 1
 
     def plan(
         self,
@@ -193,78 +419,135 @@ class BoxRRT:
         # ---- Step 3: 扩展新 box ----
         existing_list = list(valid_boxes.values())
         raw_new_boxes: List[BoxNode] = []
+        partition_cross_edges: List = []
+        parallel_mode = self.config.parallel_expand and self.config.parallel_workers != 1
 
-        # 从始末点扩展（使用 HierAABBTree）
-        for q_seed in [q_start, q_goal]:
-            if self.hier_tree.is_occupied(q_seed):
-                continue
-            nid = forest.allocate_id()
-            ffb_result = self.hier_tree.find_free_box(
-                q_seed, self.obstacles, mark_occupied=True,
-                forest_box_id=nid)
-            if ffb_result is None:
-                continue
-            ivs = ffb_result.intervals
-            vol = 1.0
-            for lo, hi in ivs:
-                vol *= max(hi - lo, 0.0)
-            if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
-                continue
-            if ffb_result.absorbed_box_ids:
-                forest.remove_boxes(ffb_result.absorbed_box_ids)
-            box = BoxNode(
-                node_id=nid,
-                joint_intervals=ivs,
-                seed_config=q_seed.copy(),
-                volume=vol,
-            )
-            forest.add_box_direct(box)
-            raw_new_boxes.append(box)
-
-        # 主采样循环
-        n_boxes = len(existing_list) + len(raw_new_boxes)
-        for iteration in range(self.config.max_iterations):
-            if n_boxes >= self.config.max_box_nodes:
-                break
-
-            q_seed = self._sample_seed(q_start, q_goal, rng)
-            if q_seed is None:
-                continue
-
-            # 用树的占用状态检查（O(depth)）
-            if self.hier_tree.is_occupied(q_seed):
-                continue
-
-            nid = forest.allocate_id()
-            ffb_result = self.hier_tree.find_free_box(
-                q_seed, self.obstacles, mark_occupied=True,
-                forest_box_id=nid)
-            if ffb_result is None:
-                continue
-            ivs = ffb_result.intervals
-            vol = 1.0
-            for lo, hi in ivs:
-                vol *= max(hi - lo, 0.0)
-            if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
-                continue
-            if ffb_result.absorbed_box_ids:
-                forest.remove_boxes(ffb_result.absorbed_box_ids)
-
-            box = BoxNode(
-                node_id=nid,
-                joint_intervals=ivs,
-                seed_config=q_seed.copy(),
-                volume=vol,
-            )
-            forest.add_box_direct(box)
-            raw_new_boxes.append(box)
-            n_boxes = len(existing_list) + len(raw_new_boxes)
-
-            if (iteration + 1) % 20 == 0 and self.config.verbose:
-                logger.info(
-                    "迭代 %d: %d 已有 box + %d 新 box",
-                    iteration + 1, len(existing_list), len(raw_new_boxes),
+        # 从始末点扩展（单区模式）
+        # 并行分区模式下由各分区 worker 在 constrained_intervals 内处理始末点，
+        # 避免先全空间扩展再合并分区结果导致重叠。
+        if not parallel_mode:
+            for q_seed in [q_start, q_goal]:
+                if self.hier_tree.is_occupied(q_seed):
+                    continue
+                nid = forest.allocate_id()
+                ffb_result = self.hier_tree.find_free_box(
+                    q_seed, self.obstacles, mark_occupied=True,
+                    forest_box_id=nid)
+                if ffb_result is None:
+                    continue
+                ivs = ffb_result.intervals
+                vol = 1.0
+                for lo, hi in ivs:
+                    vol *= max(hi - lo, 0.0)
+                if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
+                    continue
+                if ffb_result.absorbed_box_ids:
+                    forest.remove_boxes(ffb_result.absorbed_box_ids)
+                box = BoxNode(
+                    node_id=nid,
+                    joint_intervals=ivs,
+                    seed_config=q_seed.copy(),
+                    volume=vol,
                 )
+                forest.add_box_direct(box)
+                raw_new_boxes.append(box)
+
+        # 主采样循环（并行分区模式 / 单区模式）
+        n_boxes = len(existing_list) + len(raw_new_boxes)
+        if parallel_mode:
+            partitions = self._prepare_partitions()
+            if partitions:
+                per_partition_iters = max(1, self.config.max_iterations // len(partitions))
+                local_results: List[Dict[str, object]] = []
+                workers = self.config.parallel_workers if self.config.parallel_workers > 0 else len(partitions)
+                try:
+                    with ProcessPoolExecutor(max_workers=max(1, workers)) as ex:
+                        futs = []
+                        for pm in partitions:
+                            part_seed = int(rng.integers(0, 2**31 - 1))
+                            payload = {
+                                "robot": self.robot,
+                                "obstacles": self.obstacles,
+                                "q_start": q_start,
+                                "q_goal": q_goal,
+                                "partition_meta": pm,
+                                "max_iterations": per_partition_iters,
+                                "min_box_size": self.config.min_box_size,
+                                "active_split_dims": self.config.parallel_partition_dims,
+                                "seed": part_seed,
+                            }
+                            futs.append(ex.submit(_partition_expand_worker, payload))
+                        for fut in as_completed(futs):
+                            local_results.append(fut.result())
+                except Exception as e:
+                    logger.warning("ProcessPool 执行失败，回退进程内扩展: %s", e)
+                    local_results = []
+                    for pm in partitions:
+                        part_seed = int(rng.integers(0, 2**31 - 1))
+                        local_boxes = self._expand_partition_worker(
+                            pm, q_start, q_goal,
+                            max_iterations=per_partition_iters,
+                            seed=part_seed,
+                        )
+                        local_results.append({
+                            "partition_id": int(pm["partition_id"]),
+                            "boxes": local_boxes,
+                        })
+
+                if local_results:
+                    partition_cross_edges = self._merge_connect_partitions(
+                        forest,
+                        local_results,
+                        partitions,
+                    )
+                    raw_new_boxes = list(forest.boxes.values())
+                    n_boxes = len(forest.boxes)
+            else:
+                logger.warning("parallel_expand 启用但未生成分区，回退单区扩展")
+
+        if not parallel_mode:
+            for iteration in range(self.config.max_iterations):
+                if n_boxes >= self.config.max_box_nodes:
+                    break
+
+                q_seed = self._sample_seed(q_start, q_goal, rng)
+                if q_seed is None:
+                    continue
+
+                # 用树的占用状态检查（O(depth)）
+                if self.hier_tree.is_occupied(q_seed):
+                    continue
+
+                nid = forest.allocate_id()
+                ffb_result = self.hier_tree.find_free_box(
+                    q_seed, self.obstacles, mark_occupied=True,
+                    forest_box_id=nid)
+                if ffb_result is None:
+                    continue
+                ivs = ffb_result.intervals
+                vol = 1.0
+                for lo, hi in ivs:
+                    vol *= max(hi - lo, 0.0)
+                if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
+                    continue
+                if ffb_result.absorbed_box_ids:
+                    forest.remove_boxes(ffb_result.absorbed_box_ids)
+
+                box = BoxNode(
+                    node_id=nid,
+                    joint_intervals=ivs,
+                    seed_config=q_seed.copy(),
+                    volume=vol,
+                )
+                forest.add_box_direct(box)
+                raw_new_boxes.append(box)
+                n_boxes = len(existing_list) + len(raw_new_boxes)
+
+                if (iteration + 1) % 20 == 0 and self.config.verbose:
+                    logger.info(
+                        "迭代 %d: %d 已有 box + %d 新 box",
+                        iteration + 1, len(existing_list), len(raw_new_boxes),
+                    )
 
         # ---- Step 4: 验证 ----
         # 简化：对所有 box 做惰性验证（新增的通常很少）
@@ -285,6 +568,8 @@ class BoxRRT:
         # ---- Step 5: 构建搜索图 + 连接端点 ----
         adj_edges = self.connector.build_adjacency_edges(
             valid_boxes, valid_adjacency)
+        if partition_cross_edges:
+            adj_edges = adj_edges + partition_cross_edges
         endpoint_edges, start_box_id, goal_box_id = \
             self.connector.connect_endpoints_to_forest(
                 q_start, q_goal, valid_boxes)
@@ -600,6 +885,7 @@ class BoxRRT:
         q_start: np.ndarray,
         q_goal: np.ndarray,
         rng: np.random.Generator,
+        sampling_intervals: Optional[List[Tuple[float, float]]] = None,
     ) -> Optional[np.ndarray]:
         """采样一个无碰撞 seed 点
 
@@ -610,8 +896,9 @@ class BoxRRT:
         """
         max_attempts = 20
 
-        lows = np.array([lo for lo, _ in self.joint_limits], dtype=np.float64)
-        highs = np.array([hi for _, hi in self.joint_limits], dtype=np.float64)
+        intervals = sampling_intervals if sampling_intervals is not None else self.joint_limits
+        lows = np.array([lo for lo, _ in intervals], dtype=np.float64)
+        highs = np.array([hi for _, hi in intervals], dtype=np.float64)
 
         # 先批量生成候选
         candidates = np.empty((max_attempts, self._n_dims), dtype=np.float64)

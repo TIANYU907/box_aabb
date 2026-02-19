@@ -518,6 +518,75 @@ class TreeConnector:
             'goal_box': goal_box_id,
         }
 
+    def connect_across_partitions(
+        self,
+        partition_pairs: List[Tuple[int, int]],
+        boxes: Dict[int, BoxNode],
+        partition_box_ids: Dict[int, Set[int]],
+        band_width: float = 1e-8,
+        max_pairs_per_partition: int = 200,
+    ) -> List[Edge]:
+        """为相邻分区补跨区连接边。"""
+        edges: List[Edge] = []
+        seen: Set[Tuple[int, int]] = set()
+
+        for pa, pb in partition_pairs:
+            ids_a = [bid for bid in partition_box_ids.get(pa, set()) if bid in boxes]
+            ids_b = [bid for bid in partition_box_ids.get(pb, set()) if bid in boxes]
+            if not ids_a or not ids_b:
+                continue
+
+            candidates: List[Tuple[float, int, int]] = []
+            for a_id in ids_a:
+                a = boxes[a_id]
+                a_center = a.center
+                for b_id in ids_b:
+                    b = boxes[b_id]
+                    key = (min(a_id, b_id), max(a_id, b_id))
+                    if key in seen:
+                        continue
+                    # 边界带筛选：至少一个维度接近接触
+                    close_dims = 0
+                    for (alo, ahi), (blo, bhi) in zip(a.joint_intervals, b.joint_intervals):
+                        gap = max(blo - ahi, alo - bhi, 0.0)
+                        if gap <= band_width:
+                            close_dims += 1
+                    if close_dims == 0:
+                        continue
+                    dist = float(np.linalg.norm(a_center - b.center))
+                    if dist <= self.connection_radius * 2.0:
+                        candidates.append((dist, a_id, b_id))
+
+            candidates.sort(key=lambda x: x[0])
+            for _, a_id, b_id in candidates[:max_pairs_per_partition]:
+                key = (min(a_id, b_id), max(a_id, b_id))
+                if key in seen:
+                    continue
+                seen.add(key)
+                a = boxes[a_id]
+                b = boxes[b_id]
+                q_a = a.nearest_point_to(b.center)
+                q_b = b.nearest_point_to(a.center)
+                if self.collision_checker.check_segment_collision(
+                    q_a, q_b, self.segment_resolution,
+                ):
+                    continue
+                edge = Edge(
+                    edge_id=self._allocate_edge_id(),
+                    source_box_id=a_id,
+                    target_box_id=b_id,
+                    source_config=q_a,
+                    target_config=q_b,
+                    source_tree_id=a.tree_id,
+                    target_tree_id=b.tree_id,
+                    is_collision_free=True,
+                )
+                edges.append(edge)
+
+        if edges:
+            logger.info("跨分区补边: %d 条", len(edges))
+        return edges
+
     # ==================== 图构建 (legacy) ====================
 
     def build_adjacency_graph(
