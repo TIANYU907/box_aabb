@@ -9,7 +9,7 @@ hyperrectangle（BoxNode），以及它们之间的邻接关系。
 - **扁平邻接图**：无树层级，只有 box 和邻接边
 - **跨场景复用**：森林绑定机器人型号而非场景，不同场景加载后
   惰性验证碰撞（AABB 缓存避免重复 FK）
-- **增量增密**：每次规划可添加新 box，自动 deoverlap + 邻接更新
+- **增量增密**：每次规划可添加新 box，自动邻接更新
 
 使用方式：
     # 构建
@@ -37,10 +37,7 @@ from aabb.robot import Robot
 from .models import PlannerConfig, BoxNode
 from .scene import Scene
 from .collision import CollisionChecker
-from .deoverlap import (
-    deoverlap,
-    compute_adjacency,
-)
+from .deoverlap import compute_adjacency
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +62,12 @@ class BoxForest:
         robot_fingerprint: str,
         joint_limits: List[Tuple[float, float]],
         config: Optional[PlannerConfig] = None,
+        period: Optional[float] = None,
     ) -> None:
         self.robot_fingerprint = robot_fingerprint
         self.joint_limits = joint_limits
         self.config = config or PlannerConfig()
+        self.period = period  # 关节空间周期（例如 2π），用于邻接检测
         self.boxes: Dict[int, BoxNode] = {}
         self.adjacency: Dict[int, Set[int]] = {}
         self._next_id: int = 0
@@ -95,124 +94,8 @@ class BoxForest:
         self._next_id += 1
         return nid
 
-    def add_boxes(
-        self,
-        new_boxes: List[BoxNode],
-    ) -> List[BoxNode]:
-        """将新 box 集合并入森林
-
-        对新 box 与已有 box 执行 deoverlap（先来先得：已有 box 优先），
-        然后增量更新邻接关系。
-
-        Args:
-            new_boxes: 新扩展的 BoxNode 列表
-
-        Returns:
-            实际添加的 box 列表（去重叠后的碎片）
-        """
-        if not new_boxes:
-            return []
-
-        # 合并列表：已有 box 在前（优先），新 box 在后
-        existing_list = list(self.boxes.values())
-        all_input = existing_list + new_boxes
-
-        # 执行全量 deoverlap（当前 HierAABBTree 保证不重叠，仅安全网）
-        all_deoverlapped = deoverlap(
-            all_input,
-            id_start=self._next_id,
-        )
-
-        # 分离：前 len(existing_list) 个对应已有 box（可能未变），
-        # 后面的是新碎片。但 deoverlap 的 id 已重新分配。
-        # 简单起见：清空重建（N 通常不大，O(N²D) 可接受）
-        self.boxes.clear()
-        self.adjacency.clear()
-
-        for box in all_deoverlapped:
-            self.boxes[box.node_id] = box
-            if box.node_id >= self._next_id:
-                self._next_id = box.node_id + 1
-
-        # 全量邻接重算（向量化，快速）
-        self.adjacency = compute_adjacency(
-            all_deoverlapped, tol=self.config.adjacency_tolerance)
-        self._rebuild_interval_cache()
-        self._kdtree_dirty = True
-
-        # 返回新增的 box（不在 existing_list id 中的）
-        old_ids = {b.node_id for b in existing_list}
-        added = [b for b in all_deoverlapped if b.node_id not in old_ids]
-
-        logger.info(
-            "BoxForest.add_boxes: %d new input → %d deoverlapped total "
-            "(%d added), %d adjacency edges",
-            len(new_boxes), len(all_deoverlapped), len(added),
-            sum(len(v) for v in self.adjacency.values()) // 2,
-        )
-        return added
-
-    def add_boxes_incremental(
-        self,
-        new_boxes: List[BoxNode],
-    ) -> List[BoxNode]:
-        """增量添加新 box（仅对新 box 做 deoverlap）
-
-        更快的版本：只让新 box 被已有 box 切分（已有 box 不变），
-        然后增量更新邻接。适用于每次添加少量 box 的场景。
-
-        注意：当前 HierAABBTree 保证不重叠，此方法仅作为安全网。
-
-        Args:
-            new_boxes: 新扩展的 BoxNode 列表
-
-        Returns:
-            实际添加的 box 列表
-        """
-        if not new_boxes:
-            return []
-
-        existing_list = list(self.boxes.values())
-
-        # 仅对新 box 做切分（已有 box 作为 committed 不变）
-        added: List[BoxNode] = []
-        for box in new_boxes:
-            fragments = [list(box.joint_intervals)]
-            for committed_box in existing_list:
-                from .deoverlap import subtract_box, _overlap_volume_intervals
-                new_frags = []
-                for frag in fragments:
-                    ovlp = _overlap_volume_intervals(
-                        frag, list(committed_box.joint_intervals))
-                    if ovlp <= 0:
-                        new_frags.append(frag)
-                    else:
-                        pieces = subtract_box(
-                            frag, list(committed_box.joint_intervals))
-                        new_frags.extend(pieces)
-                fragments = new_frags
-
-            for frag in fragments:
-                from .deoverlap import _interval_volume
-                vol = _interval_volume(frag)
-                if vol <= 0:
-                    continue
-                nid = self.allocate_id()
-                new_node = BoxNode(
-                    node_id=nid,
-                    joint_intervals=frag,
-                    seed_config=box.seed_config.copy(),
-                    parent_id=box.node_id,
-                    volume=vol,
-                    tree_id=box.tree_id,
-                )
-                self.add_box_direct(new_node)
-                added.append(new_node)
-
-        return added
-
     def add_box_direct(self, box: BoxNode) -> None:
-        """直接添加 box（跳过 deoverlap）
+        """添加 box 并增量更新邻接
 
         调用方须保证 box 与已有 box 无重叠（如通过
         HierAABBTree 的占用跟踪）。仅执行增量邻接更新。
@@ -305,7 +188,15 @@ class BoxForest:
         lo_new = ivs[:, 0][None, :]            # (1,D)
         hi_new = ivs[:, 1][None, :]            # (1,D)
 
+        # 直接 overlap width
         overlap_width = np.minimum(hi_all, hi_new) - np.maximum(lo_all, lo_new)
+
+        # 周期边界支持：取直接 / 左移 / 右移中的最大 overlap_width
+        if self.period is not None:
+            p = self.period
+            ow_right = np.minimum(hi_all, hi_new + p) - np.maximum(lo_all, lo_new + p)
+            ow_left  = np.minimum(hi_all, hi_new - p) - np.maximum(lo_all, lo_new - p)
+            overlap_width = np.maximum(overlap_width, np.maximum(ow_right, ow_left))
 
         separated = overlap_width < -tol
         touching = (overlap_width >= -tol) & (overlap_width <= tol)

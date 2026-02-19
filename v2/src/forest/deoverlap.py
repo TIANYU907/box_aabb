@@ -1,18 +1,16 @@
 """
-planner/deoverlap.py - Box 去重叠与邻接检测
+forest/deoverlap.py - 邻接检测与共享面计算
 
-将一组可能有重叠的 axis-aligned hyperrectangle (BoxNode) 转化为
-互不重叠（或微小重叠容忍）的碎片集，同时计算邻接关系。
+为一组 axis-aligned hyperrectangle (BoxNode) 计算邻接关系和共享面。
 
 核心算法：
-- subtract_box: 超矩形减法 —— 沿重叠区域逐维切割，最多产生 2D 碎片
-- deoverlap: 按生成顺序处理，先来先得，后来的被切分
 - compute_adjacency: 向量化 O(N²·D) 全量邻接检测
 - compute_adjacency_incremental: O(K·N·D) 增量邻接更新
+- shared_face / shared_face_center: 相邻 box 共享面提取
 
 设计决策：
-- 当前 HierAABBTree 保证输出 box 不重叠，deoverlap 仅作为安全网保留
 - 邻接条件：恰好一个维度面相接，其余维度投影有正面积重叠
+- HierAABBTree 的占用跟踪保证 box 不重叠，无需 deoverlap 安全网
 """
 
 import logging
@@ -27,156 +25,6 @@ logger = logging.getLogger(__name__)
 # 类型别名：区间列表
 Intervals = List[Tuple[float, float]]
 
-
-def subtract_box(
-    base_intervals: Intervals,
-    cut_intervals: Intervals,
-) -> List[Intervals]:
-    """超矩形减法：base - cut
-
-    从 base 中移除与 cut 的交集区域，返回剩余碎片列表。
-    逐维度沿 cut 的边界切割 base，每维最多产生 2 个碎片
-    （左侧和右侧），核心区域（与 cut 完全重叠的部分）被丢弃。
-
-    算法：
-    1. 对每个维度 d，检查 cut 是否在该维度"切入" base
-    2. 若 cut.lo[d] > base.lo[d]：切出左碎片 [base.lo[d], cut.lo[d]]
-    3. 若 cut.hi[d] < base.hi[d]：切出右碎片 [cut.hi[d], base.hi[d]]
-    4. 将 base 在维度 d 收缩到 [max(base.lo, cut.lo), min(base.hi, cut.hi)]
-    5. 继续处理下一维度
-
-    Args:
-        base_intervals: 被减的超矩形 [(lo_0, hi_0), ...]
-        cut_intervals: 减去的超矩形
-
-    Returns:
-        碎片列表（每个碎片是 intervals 列表），可能为空（完全被切除）
-    """
-    n_dims = len(base_intervals)
-    fragments: List[Intervals] = []
-
-    # 首先检查是否有交集
-    for d in range(n_dims):
-        b_lo, b_hi = base_intervals[d]
-        c_lo, c_hi = cut_intervals[d]
-        if b_hi <= c_lo or c_hi <= b_lo:
-            # 无交集，base 完整保留
-            return [list(base_intervals)]
-
-    # 逐维切割
-    current = list(base_intervals)  # 逐步收缩的"中间区域"
-
-    for d in range(n_dims):
-        b_lo, b_hi = current[d]
-        c_lo, c_hi = cut_intervals[d]
-
-        # 左碎片：base 在维度 d 的 [b_lo, c_lo] 部分
-        if c_lo > b_lo:
-            frag = list(current)
-            frag[d] = (b_lo, c_lo)
-            fragments.append(frag)
-
-        # 右碎片：base 在维度 d 的 [c_hi, b_hi] 部分
-        if c_hi < b_hi:
-            frag = list(current)
-            frag[d] = (c_hi, b_hi)
-            fragments.append(frag)
-
-        # 收缩 current 到交集区域（继续处理后续维度）
-        current[d] = (max(b_lo, c_lo), min(b_hi, c_hi))
-
-    # current 最终是 base ∩ cut 的交集，被丢弃
-    return fragments
-
-
-def _interval_volume(intervals: Intervals) -> float:
-    """计算超矩形体积"""
-    vol = 1.0
-    has_nonzero = False
-    for lo, hi in intervals:
-        w = hi - lo
-        if w > 0:
-            vol *= w
-            has_nonzero = True
-    return vol if has_nonzero else 0.0
-
-
-def deoverlap(
-    boxes: List[BoxNode],
-    id_start: int = 0,
-) -> List[BoxNode]:
-    """将一组 box 去重叠，先来先得
-
-    按 boxes 列表顺序处理：先加入的 box 保持完整，后来的 box 被
-    已有 box 切分。
-
-    注意：当前 HierAABBTree 已保证输出 box 不重叠，此函数仅作为
-    安全网保留。
-
-    Args:
-        boxes: 输入 box 列表（按优先级排序，靠前优先）
-        id_start: 新碎片 node_id 起始值
-
-    Returns:
-        去重叠后的 BoxNode 列表
-    """
-    if not boxes:
-        return []
-
-    committed: List[BoxNode] = []
-    next_id = id_start
-
-    for box in boxes:
-        # 当前 box 的区间碎片（初始为整个 box）
-        fragments: List[Intervals] = [list(box.joint_intervals)]
-
-        # 对每个已提交的 box，切分当前碎片
-        for committed_box in committed:
-            new_fragments: List[Intervals] = []
-            for frag in fragments:
-                ovlp_vol = _overlap_volume_intervals(frag, list(committed_box.joint_intervals))
-                if ovlp_vol <= 0:
-                    # 无重叠，直接保留
-                    new_fragments.append(frag)
-                else:
-                    # 需要切分
-                    pieces = subtract_box(frag, list(committed_box.joint_intervals))
-                    new_fragments.extend(pieces)
-            fragments = new_fragments
-
-        # 将存活碎片转为 BoxNode
-        for frag in fragments:
-            vol = _interval_volume(frag)
-            if vol <= 0:
-                continue
-            new_box = BoxNode(
-                node_id=next_id,
-                joint_intervals=frag,
-                seed_config=box.seed_config.copy(),
-                parent_id=box.node_id,  # 追溯原始 box
-                volume=vol,
-                tree_id=box.tree_id,
-            )
-            committed.append(new_box)
-            next_id += 1
-
-    logger.info(
-        "deoverlap: %d 输入 box → %d 无重叠碎片",
-        len(boxes), len(committed),
-    )
-    return committed
-
-
-def _overlap_volume_intervals(a: Intervals, b: Intervals) -> float:
-    """计算两组区间的重叠体积"""
-    vol = 1.0
-    for (a_lo, a_hi), (b_lo, b_hi) in zip(a, b):
-        lo = max(a_lo, b_lo)
-        hi = min(a_hi, b_hi)
-        if lo >= hi:
-            return 0.0
-        vol *= (hi - lo)
-    return vol
 
 
 def compute_adjacency(

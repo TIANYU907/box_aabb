@@ -64,7 +64,7 @@
 核心内容：
 
 - 无重叠 box 集合与邻接图不变量
-- `deoverlap` / 邻接向量化 / 层级 AABB 树
+- 邻接向量化 / 层级 AABB 树
 - 分区合并去重与 `validate_invariants` 强校验
 
 核心代码：

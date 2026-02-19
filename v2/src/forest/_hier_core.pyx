@@ -14,7 +14,7 @@ planner/_hier_core.pyx - HierAABBTree Cython 热路径
 import numpy as np
 cimport numpy as cnp
 from libc.string cimport memcpy, memset
-from libc.math cimport fabsf
+from libc.math cimport fabsf, ldexp
 
 cnp.import_array()
 
@@ -92,6 +92,7 @@ cdef class NodeStore:
         # 临时数组 (占用状态, 不持久化)
         cnp.uint8_t[::1]  _occupied
         cnp.int32_t[::1]  _subtree_occ
+        cnp.float64_t[::1] _subtree_occ_vol   # 子树占用体积分数 (占 root 体积的比例)
         cnp.int32_t[::1]  _forest_id
 
     def __init__(self, int n_links, int n_dims, int stride, int cap,
@@ -122,6 +123,7 @@ cdef class NodeStore:
         # 临时数组
         self._occupied = np.zeros(cap, dtype=np.uint8)
         self._subtree_occ = np.zeros(cap, dtype=np.int32)
+        self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)
         self._forest_id = np.full(cap, -1, dtype=np.int32)
 
         # 连杆元数据
@@ -152,6 +154,7 @@ cdef class NodeStore:
         # 重新分配临时数组
         self._occupied = np.zeros(cap, dtype=np.uint8)
         self._subtree_occ = np.zeros(cap, dtype=np.int32)
+        self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)
         self._forest_id = np.full(cap, -1, dtype=np.int32)
 
     # ── 容量管理 ──
@@ -181,6 +184,11 @@ cdef class NodeStore:
             new_cap, dtype=np.int32)
         new_sub[:self._cap] = np.asarray(self._subtree_occ)
         self._subtree_occ = new_sub
+
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] new_subv = np.zeros(
+            new_cap, dtype=np.float64)
+        new_subv[:self._cap] = np.asarray(self._subtree_occ_vol)
+        self._subtree_occ_vol = new_subv
 
         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_fid = np.full(
             new_cap, -1, dtype=np.int32)
@@ -280,6 +288,10 @@ cdef class NodeStore:
 
     def get_subtree_occ(self, int idx):
         return self._subtree_occ[idx]
+
+    def get_subtree_occ_vol(self, int idx):
+        """返回子树占用体积分数 (相对 root 总体积)"""
+        return self._subtree_occ_vol[idx]
 
     def get_forest_id(self, int idx):
         return self._forest_id[idx]
@@ -428,15 +440,21 @@ cdef class NodeStore:
     # ── 标记/重置占用 ──
 
     cdef void _mark_occupied_c(self, int idx, int forest_box_id) noexcept:
-        """标记节点为已占用，并向上传播 subtree_occ"""
+        """标记节点为已占用，并向上传播 subtree_occ / subtree_occ_vol"""
         self._occupied[idx] = 1
         self._forest_id[idx] = forest_box_id
         self._subtree_occ[idx] += 1
 
+        # 体积分数：depth d 的节点占 root 体积的 1/2^d
         cdef char* node = _node_ptr(self._base, self._stride, idx)
+        cdef int depth = _get_i32(node, _OFF_DEPTH)
+        cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)
+        self._subtree_occ_vol[idx] += vol
+
         cdef int pidx = _get_i32(node, _OFF_PARENT)
         while pidx >= 0:
             self._subtree_occ[pidx] += 1
+            self._subtree_occ_vol[pidx] += vol
             node = _node_ptr(self._base, self._stride, pidx)
             pidx = _get_i32(node, _OFF_PARENT)
 
@@ -480,20 +498,25 @@ cdef class NodeStore:
         cdef list stack = [idx]
         cdef int i, left, right, pidx
         cdef char* node
+        cdef double vol
 
         while stack:
             i = stack.pop()
             if self._occupied[i]:
                 self._occupied[i] = 0
                 self._forest_id[i] = -1
-                # 向上减少 subtree_occ
+                # 计算该节点的体积分数
                 node = _node_ptr(self._base, self._stride, i)
+                vol = ldexp(1.0, -_get_i32(node, _OFF_DEPTH))
+                # 向上减少 subtree_occ / subtree_occ_vol
                 pidx = _get_i32(node, _OFF_PARENT)
                 while pidx >= 0:
                     self._subtree_occ[pidx] -= 1
+                    self._subtree_occ_vol[pidx] -= vol
                     node = _node_ptr(self._base, self._stride, pidx)
                     pidx = _get_i32(node, _OFF_PARENT)
                 self._subtree_occ[i] = 0
+                self._subtree_occ_vol[i] = 0.0
             node = _node_ptr(self._base, self._stride, i)
             left = _get_i32(node, _OFF_LEFT)
             right = _get_i32(node, _OFF_RIGHT)
@@ -511,6 +534,7 @@ cdef class NodeStore:
         for i in range(self.next_idx):
             self._occupied[i] = 0
             self._subtree_occ[i] = 0
+            self._subtree_occ_vol[i] = 0.0
             self._forest_id[i] = -1
 
     # ── 脏节点迭代 (增量保存) ──

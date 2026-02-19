@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Forest 层将连续 C-space 近似为“无重叠 box 图”，并为规划层提供可复用的离散拓扑骨架。本文档聚焦实现级细节：`box_forest.py`、`deoverlap.py`、`collision.py`、`hier_aabb_tree.py` 及相关模型。
+Forest 层将连续 C-space 近似为“无重叠 box 图”，并为规划层提供可复用的离散拓扑骨架。本文档聚焦实现级细节：`box_forest.py`、`deoverlap.py`（邻接检测）、`collision.py`、`hier_aabb_tree.py` 及相关模型。
 
 ---
 
@@ -40,20 +40,9 @@ Forest 维护两个核心对象：
 
 ### 2.2 Update modes
 
-#### Mode A: full merge (`add_boxes`)
+#### Mode A: direct append (`add_box_direct`)
 
-流程：
-
-1. `existing + new` 合并。
-2. `deoverlap(...)` 全量去重叠。
-3. 清空并重建 `boxes/adjacency`。
-4. `compute_adjacency(...)` 全量向量化重算。
-
-优点是稳健，缺点是大 N 时有较高重建成本。
-
-#### Mode B: incremental append (`add_box_direct` / `add_boxes_incremental`)
-
-在“调用方保证无重叠”的假设下：
+在“调用方保证无重叠”的假设下（HierAABBTree 占用跟踪保证）：
 
 - 仅用缓存判定新 box 邻居；
 - 增量更新边；
@@ -69,25 +58,9 @@ Forest 维护两个核心对象：
 
 ---
 
-## 3. Deoverlap and Adjacency (`deoverlap.py`)
+## 3. Adjacency (`deoverlap.py`)
 
-### 3.1 Hyper-rectangle subtraction
-
-`subtract_box(base, cut)` 在每个维度产生左右碎片并逐维收缩当前核心区域，最终丢弃 `base∩cut`。
-
-若任意维满足分离，则直接返回原 `base`，避免无效切分。
-
-### 3.2 Ordered decomposition (`deoverlap`)
-
-按输入顺序处理：
-
-- 已提交集合 `committed` 保持不变；
-- 新 box 反复减去 `committed`，保留非零体积碎片；
-- 每个碎片生成新 `BoxNode` 并继承溯源信息 `parent_id`。
-
-该策略保证“先来先得”的优先级语义，便于调试与复现。
-
-### 3.3 Vectorized adjacency
+### 3.1 Vectorized adjacency
 
 令重叠宽度矩阵
 

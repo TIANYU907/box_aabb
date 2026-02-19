@@ -8,7 +8,7 @@ planner/connector.py - 树间连接与始末点连接
 4. 构建整体图用于路径搜索
 
 连接策略（v5.0 更新）：
-- 邻接模式：从 deoverlap 后的邻接表直接构建边，transition 在共享面中心
+- 邻接模式：从邻接表直接构建边，transition 在共享面中心
 - Legacy 模式：兼容旧的 overlap-based 和 segment-based 连接
 """
 

@@ -312,15 +312,6 @@ Three Boolean masks are constructed:
 
 Adjacency condition: exactly one dimension is ``touching'' and all others are ``overlapping.'' Only the upper triangle is computed, then mirrored. For large $N$, a chunked upper-triangle strategy reduces peak memory.
 
-\subsection{Deoverlap Decomposition}
-\label{sec:deoverlap}
-
-\texttt{subtract\_box(base, cut)} produces left/right fragments per dimension, discarding the overlap. \texttt{deoverlap} processes boxes in input order (``first come, first served''), preserving priority semantics:
-\begin{enumerate}[nosep]
-  \item The committed set remains unchanged;
-  \item Each new box is repeatedly subtracted against committed boxes, retaining non-zero-volume fragments.
-\end{enumerate}
-
 \subsection{Collision Layer}
 \label{sec:collision}
 

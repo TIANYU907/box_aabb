@@ -16,7 +16,7 @@
 1. `box_forest.py`
   - `BoxForest`：box 字典、邻接表、缓存、合并与校验。
 2. `deoverlap.py`
-  - `deoverlap`、`subtract_box`、`compute_adjacency`。
+  - `compute_adjacency`、`shared_face`、`shared_face_center`。
 3. `collision.py`
   - `CollisionChecker`：配置/区间/线段碰撞 API。
 4. `hier_aabb_tree.py`

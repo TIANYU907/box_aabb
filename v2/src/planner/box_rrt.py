@@ -6,7 +6,6 @@ planner/box_rrt.py - Box-RRT 主规划器
 v5.0 更新：
 - 集成 BoxForest 扁平无重叠 box 集合
 - 扩展时边界截断（避免重叠已有 box）
-- deoverlap 后处理保证零重叠
 - 邻接图搜索 + 共享面 waypoint 优化
 - 路径限制在 box 内（box-aware shortcut + smoothing）
 - BoxForest 跨场景持久化
@@ -16,7 +15,7 @@ v5.0 更新：
 2. 验证始末点无碰撞
 3. 尝试直连
 4. 扩展 box（边界截断避免重叠）
-5. deoverlap + 邻接图构建
+5. 邻接图构建
 6. 惰性碰撞验证
 7. Dijkstra 搜 box 序列
 8. 共享面 waypoint 优化
@@ -42,7 +41,7 @@ from forest.box_forest import BoxForest
 from .connector import TreeConnector
 from .path_smoother import PathSmoother, compute_path_length
 from .gcs_optimizer import GCSOptimizer
-from forest.deoverlap import deoverlap, compute_adjacency
+from forest.deoverlap import compute_adjacency
 
 logger = logging.getLogger(__name__)
 
@@ -679,10 +678,13 @@ class BoxRRT:
             except Exception as e:
                 logger.warning("加载 BoxForest 失败: %s, 创建新实例", e)
 
+        # period 从实际 joint_limits 计算，而非 2π（避免浮点截断误差）
+        period = float(self.joint_limits[0][1] - self.joint_limits[0][0])
         return BoxForest(
             robot_fingerprint=self.robot.fingerprint(),
             joint_limits=self.joint_limits,
             config=self.config,
+            period=period,
         )
 
     def _save_forest(self, forest: BoxForest) -> None:
@@ -888,10 +890,11 @@ class BoxRRT:
     ) -> Optional[np.ndarray]:
         """采样一个无碰撞 seed 点
 
-        策略：
-        - 以 goal_bias 概率朝目标采样
-        - 否则在关节限制内均匀随机采样
-        - 一次批量检测候选点，返回首个无碰撞配置
+        策略（三层优先级）：
+        1. 以 goal_bias 概率朝目标采样
+        2. 以 guided_sample_ratio 概率使用 KD 树引导采样（偏向未占用区域）
+        3. 其余情况均匀随机采样
+        逐个检测碰撞，找到首个无碰撞配置即返回（早停）。
         """
         max_attempts = 20
 
@@ -899,34 +902,25 @@ class BoxRRT:
         lows = np.array([lo for lo, _ in intervals], dtype=np.float64)
         highs = np.array([hi for _, hi in intervals], dtype=np.float64)
 
-        # 先批量生成候选
-        candidates = np.empty((max_attempts, self._n_dims), dtype=np.float64)
-        use_goal = rng.uniform(size=max_attempts) < self.config.goal_bias
+        goal_bias = self.config.goal_bias
+        guided_ratio = getattr(self.config, 'guided_sample_ratio', 0.6)
+        has_hier_tree = hasattr(self, 'hier_tree') and self.hier_tree is not None
 
-        n_goal = int(np.sum(use_goal))
-        if n_goal > 0:
-            noise = rng.normal(0.0, 0.3, size=(n_goal, self._n_dims))
-            goal_samples = q_goal[None, :] + noise
-            candidates[use_goal] = np.clip(goal_samples, lows, highs)
+        for _ in range(max_attempts):
+            roll = rng.uniform()
+            if roll < goal_bias:
+                # goal 偏向
+                noise = rng.normal(0.0, 0.3, size=self._n_dims)
+                q = np.clip(q_goal + noise, lows, highs)
+            elif has_hier_tree and roll < goal_bias + guided_ratio:
+                # KD 树引导采样
+                q = self.hier_tree.sample_unoccupied_seed(rng)
+                if q is None:
+                    q = rng.uniform(lows, highs)
+            else:
+                # 均匀随机
+                q = rng.uniform(lows, highs)
 
-        n_uniform = max_attempts - n_goal
-        if n_uniform > 0:
-            candidates[~use_goal] = rng.uniform(
-                lows,
-                highs,
-                size=(n_uniform, self._n_dims),
-            )
-
-        # 优先走批量碰撞检测接口（P5）
-        if hasattr(self.collision_checker, "check_config_collision_batch"):
-            collisions = self.collision_checker.check_config_collision_batch(candidates)
-            free_idx = np.flatnonzero(~collisions)
-            if free_idx.size > 0:
-                return candidates[int(free_idx[0])].copy()
-            return None
-
-        # 兼容兜底：逐个检测
-        for q in candidates:
             if not self.collision_checker.check_config_collision(q):
                 return q.copy()
 

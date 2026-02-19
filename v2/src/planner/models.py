@@ -66,6 +66,7 @@ class PlannerConfig:
     seed_batch_size: int = 5
     min_box_size: float = 0.001
     goal_bias: float = 0.1
+    guided_sample_ratio: float = 0.6
     expansion_resolution: float = 0.01
     max_expansion_rounds: int = 3
     jacobian_delta: float = 0.01

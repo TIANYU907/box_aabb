@@ -315,15 +315,6 @@ w_{ij}^{(d)} = \min(u_{i,d}, u_{j,d}) - \max(l_{i,d}, l_{j,d})
 
 邻接条件：恰好有一个维度为``接触''，其余维度为``重叠''。实现中只取上三角避免重复，再镜像到全图。大 $N$ 时采用分块上三角策略降低峰值内存。
 
-\subsection{去重叠分解}
-\label{sec:deoverlap}
-
-\texttt{subtract\_box(base, cut)} 在每个维度产生左右碎片并逐维收缩核心区域，丢弃重叠部分。\texttt{deoverlap} 按输入顺序``先来先得''处理，保证优先级语义：
-\begin{enumerate}[nosep]
-  \item 已提交集合 \texttt{committed} 不变；
-  \item 新 box 反复减去 \texttt{committed}，保留非零体积碎片。
-\end{enumerate}
-
 \subsection{碰撞判定层}
 \label{sec:collision}
 

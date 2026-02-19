@@ -5,7 +5,8 @@ from .scene import Scene
 from .collision import CollisionChecker, aabb_overlap
 from .models import BoxNode, PlannerConfig
 from .box_forest import BoxForest
-from .deoverlap import deoverlap, compute_adjacency, compute_adjacency_incremental
+from .deoverlap import compute_adjacency, compute_adjacency_incremental
+from .connectivity import UnionFind, find_islands, bridge_islands
 from .parallel_collision import ParallelCollisionChecker, SpatialIndex
 
 __all__ = [
@@ -16,9 +17,11 @@ __all__ = [
 	"CollisionChecker",
 	"aabb_overlap",
 	"BoxForest",
-	"deoverlap",
 	"compute_adjacency",
 	"compute_adjacency_incremental",
+	"UnionFind",
+	"find_islands",
+	"bridge_islands",
 	"ParallelCollisionChecker",
 	"SpatialIndex",
 ]

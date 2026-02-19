@@ -322,8 +322,8 @@ class HierAABBTree:
             self.joint_limits = [(-np.pi, np.pi)] * robot.n_joints
 
         self.n_dims = len(self.joint_limits)
-        self.active_split_dims = self._resolve_active_split_dims(active_split_dims)
         self._init_link_metadata()
+        self.active_split_dims = self._resolve_active_split_dims(active_split_dims)
 
         cap = self._INIT_CAP
         nl = self._n_links
@@ -347,12 +347,26 @@ class HierAABBTree:
         dims: Optional[List[int]],
     ) -> List[int]:
         if dims:
-            valid = [int(d) for d in dims if 0 <= int(d) < self.n_dims]
+            base = [int(d) for d in dims if 0 <= int(d) < self.n_dims]
         else:
-            valid = []
-        if not valid:
-            valid = list(range(self.n_dims))
-        return valid
+            base = list(range(self.n_dims))
+
+        if not base:
+            base = list(range(self.n_dims))
+
+        relevant_set = self._aabb_relevant_split_dim_set
+        filtered: List[int] = []
+        seen: Set[int] = set()
+        for d in base:
+            if d in relevant_set and d not in seen:
+                filtered.append(d)
+                seen.add(d)
+
+        if filtered:
+            return filtered
+
+        # 兜底：若数值判定失败导致无可用维度，回退到全维切分
+        return list(range(self.n_dims))
 
     def _split_dim_for_depth(self, depth: int) -> int:
         dims = self.active_split_dims
@@ -373,6 +387,40 @@ class HierAABBTree:
             dtype=bool,
         )
         self._zl_list = self._zl_mask.tolist()
+        self._aabb_relevant_split_dims = self._infer_aabb_relevant_split_dims(
+            self.robot,
+            self.n_dims,
+            self._n_links,
+        )
+        self._aabb_relevant_split_dim_set = set(self._aabb_relevant_split_dims)
+
+    @staticmethod
+    def _infer_aabb_relevant_split_dims(
+        robot: Robot,
+        n_dims: int,
+        n_links: int,
+    ) -> List[int]:
+        """推断会影响 AABB 计算的关节维度。
+
+        通过 ``Robot.compute_relevant_joints`` 统计所有连杆位置受影响的关节。
+        若推断失败或为空，则回退为全维度，保证行为稳定。
+        """
+        if n_dims <= 0:
+            return []
+
+        try:
+            relevant: Set[int] = set()
+            for link_idx in range(1, n_links + 1):
+                for joint_idx in robot.compute_relevant_joints(link_idx):
+                    if 0 <= int(joint_idx) < n_dims:
+                        relevant.add(int(joint_idx))
+
+            if relevant:
+                return sorted(relevant)
+        except Exception as e:
+            logger.warning("推断 AABB 相关关节维度失败，回退全维切分: %s", e)
+
+        return list(range(n_dims))
 
     # ──────────────────────────────────────────────
     #  容量管理
@@ -667,6 +715,95 @@ class HierAABBTree:
                 mx = mx_l[oi]
                 packed.append((li, mn[0], mx[0], mn[1], mx[1], mn[2], mx[2]))
         return packed
+
+    # ──────────────────────────────────────────────
+    #  引导采样：优先选择未占用区域
+    # ──────────────────────────────────────────────
+
+    def sample_unoccupied_seed(
+        self,
+        rng: np.random.Generator,
+        max_walk_depth: int = 12,
+    ) -> Optional[np.ndarray]:
+        """沿 KD 树按空闲体积权重下行采样，返回落在空闲区域的 seed 点。
+
+        算法：
+        1. 从根节点出发，维护当前区间 running_ivs。
+        2. 每到一个内部节点（有子节点），按左/右子树的 **空闲体积** 随机选择下行方向。
+           空闲体积 = 子节点总体积 - subtree_occ_vol，使采样概率与真实空闲体积成正比。
+        3. 到达叶节点（未展开 / 未占用）时，在其区间内均匀采样。
+        4. 若到达已占用叶节点则返回 None（概率极低）。
+
+        复杂度：O(max_walk_depth)，与均匀采样相当。
+
+        Args:
+            rng: numpy 随机数生成器
+            max_walk_depth: 最大下行深度（超过后在当前区间采样）
+
+        Returns:
+            采样点 (ndarray) 或 None（若所有区间均已占用）
+        """
+        store = self._store
+        idx = 0
+
+        # 根节点全部占满
+        if store.is_occupied(idx):
+            return None
+
+        running_ivs = list(self.joint_limits)
+
+        for _ in range(max_walk_depth):
+            left_idx = store.get_left(idx)
+
+            # 叶节点：直接在此采样
+            if left_idx < 0:
+                break
+
+            right_idx = store.get_right(idx)
+
+            # 子节点总体积（占 root 体积的比例）= 2^(-(depth+1))
+            child_depth = store.get_depth(idx) + 1
+            child_vol = 2.0 ** (-child_depth)
+
+            # 空闲体积 = 总体积 - 已占用体积
+            occ_vol_l = store.get_subtree_occ_vol(left_idx)
+            occ_vol_r = store.get_subtree_occ_vol(right_idx)
+            w_l = max(0.0, child_vol - occ_vol_l)
+            w_r = max(0.0, child_vol - occ_vol_r)
+
+            # 若一侧是已占用叶节点（整个子空间被覆盖），强制置零
+            if store.is_occupied(left_idx) and store.get_left(left_idx) < 0:
+                w_l = 0.0
+            if store.is_occupied(right_idx) and store.get_left(right_idx) < 0:
+                w_r = 0.0
+
+            if w_l + w_r <= 0:
+                break  # 两侧都满，在当前区间采样
+
+            # 按空闲体积比例选择方向
+            dim = self._split_dim_for_depth(store.get_depth(idx))
+            sv = store.get_split_val(idx)
+
+            go_left = rng.uniform() < (w_l / (w_l + w_r))
+
+            if go_left:
+                running_ivs[dim] = (running_ivs[dim][0], sv)
+                idx = left_idx
+            else:
+                running_ivs[dim] = (sv, running_ivs[dim][1])
+                idx = right_idx
+
+            # 当前节点已被占用（整个子空间被一个 box 覆盖），退回上层
+            if store.is_occupied(idx):
+                return None
+
+        # 在 running_ivs 区间内均匀采样
+        seed = np.empty(self.n_dims, dtype=np.float64)
+        for d in range(self.n_dims):
+            lo, hi = running_ivs[d]
+            seed[d] = rng.uniform(lo, hi)
+
+        return seed
 
     # ──────────────────────────────────────────────
     #  核心 API：找无碰撞 box
@@ -1011,11 +1148,11 @@ class HierAABBTree:
         tree._zero_length_links = robot.zero_length_links.copy()
         tree.n_dims = nd
         tree.joint_limits = hdr['joint_limits']
-        tree.active_split_dims = list(range(nd))
         tree.n_nodes = hdr['n_nodes']
         tree.n_fk_calls = hdr['n_fk_calls']
         tree._last_ffb_none_reason = None
         tree._init_link_metadata()
+        tree.active_split_dims = tree._resolve_active_split_dims(None)
 
         # 创建 NodeStore 并绑定加载的缓冲区
         store = NodeStore(nl, nd, stride, 1, tree._zero_length_links)
