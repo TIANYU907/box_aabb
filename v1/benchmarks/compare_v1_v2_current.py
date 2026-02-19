@@ -34,7 +34,7 @@ variant = sys.argv[2]
 repeats = int(sys.argv[3])
 
 if variant == "v1":
-    sys.path.insert(0, str(root / "src"))
+    sys.path.insert(0, str(root / "v1" / "src"))
     from box_aabb.robot import load_robot
     from planner.obstacles import Scene
     from planner.models import PlannerConfig

@@ -106,5 +106,9 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# Project output directories
 examples/output/*
 benchmarks/output/*
+v1/examples/output/*
+v1/benchmarks/output/*
+v2/output/*

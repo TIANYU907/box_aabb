@@ -323,7 +323,11 @@ def main():
     
     # ==================== 保存详细报告 ====================
     
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "comparison_reports")
+    # 输出到项目根目录的 comparison_reports
+    _benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+    _v1_dir = os.path.dirname(_benchmark_dir)
+    _root_dir = os.path.dirname(_v1_dir)
+    output_dir = os.path.join(_root_dir, "comparison_reports")
     os.makedirs(output_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_path = os.path.join(output_dir, f"critical_vs_random_{timestamp}.txt")

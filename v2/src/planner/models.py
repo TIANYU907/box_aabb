@@ -94,7 +94,6 @@ class PlannerConfig:
     parallel_batch_size: int = 32
     parallel_partition_depth: int = 2
     parallel_partition_dims: Optional[List[int]] = None
-    parallel_boundary_owner: str = "right"
     parallel_cross_partition_connect: bool = True
 
     def to_dict(self) -> Dict[str, Any]:

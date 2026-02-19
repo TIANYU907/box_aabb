@@ -54,8 +54,7 @@
 ### 4.2 关键约束
 
 1. 并行模式下不再走全空间起终点预扩展，避免重复占用与重叠。
-2. 分区边界归属规则固定（配置可控，默认 `right`）。
-3. 合并后执行 `validate_invariants(strict=True)`。
+2. 合并后执行 `validate_invariants(strict=True)`。
 
 ---
 
@@ -79,7 +78,6 @@
 - `parallel_workers`
 - `parallel_partition_depth`
 - `parallel_partition_dims`
-- `parallel_boundary_owner`
 - `parallel_cross_partition_connect`
 
 ---

@@ -282,5 +282,4 @@ mark occupied and return resulting intervals (+ absorbed ids)
 
 1. 输入分区是否互斥（切分区间是否存在穿插）；
 2. 局部结果是否重复提交（同 seed 多次返回）；
-3. 边界归属是否一致（`boundary_owner`）；
-4. 去重容差是否过小导致“数值同盒未识别”。
+3. 去重容差是否过小导致"数值同盒未识别"。

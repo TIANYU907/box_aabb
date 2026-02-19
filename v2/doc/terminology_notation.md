@@ -14,7 +14,6 @@
 | seed | Seed sample | 用于触发 `find_free_box` 扩展的候选配置点。 |
 | 吸收提升 | Promotion / Absorb | 层级树上行时用更大无碰撞节点替代子节点并回收旧 box。 |
 | 子空间分区 | Partitioned subspace | KD 切分得到的互不重叠 C-space 子区间。 |
-| 边界归属 | Boundary ownership | 种子位于切分超平面时的确定性归属规则（left/right）。 |
 | 跨区补边 | Cross-partition connection | 仅在相邻子空间之间补充可行过渡边的过程。 |
 | 严格不变量校验 | Strict invariants validation | 对重叠、邻接对称、引用有效性做强约束检查，失败即抛错。 |
 | 保守碰撞 | Conservative collision | “无碰撞”结论可信；“碰撞”可能含误报。 |

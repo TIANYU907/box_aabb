@@ -219,7 +219,6 @@ class BoxRRT:
 
         for entry in result:
             entry["adjacent_pairs"] = adjacent_pairs
-            entry["boundary_owner"] = self.config.parallel_boundary_owner
         return result
 
     def _expand_partition_worker(
