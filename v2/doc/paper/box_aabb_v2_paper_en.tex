@@ -431,6 +431,35 @@ Dijkstra is used by default (edge weight: joint-space Euclidean distance). If th
   \item On success, add bridge edge and re-run search.
 \end{enumerate}
 
+\subsection{Coarsen: Dimension-Sweep Box Merging}
+\label{sec:coarsen}
+
+After forest growth, a coarsening pass reduces the number of boxes by merging adjacent boxes that share identical boundaries on all dimensions except one. The implementation uses several vectorized optimizations:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Vectorized grouping (C2):} NumPy structured array \texttt{np.unique} groups boxes by profile key (boundaries on non-active dimensions), replacing Python-loop grouping (32ms vs 194ms).
+  \item \textbf{Bulk forest ID array (C3):} Cython \texttt{NodeStore.forest\_ids\_array()} returns all forest IDs in one call, enabling fast box$\to$tree-node mapping.
+  \item \textbf{Skip adjacency during merge (C1):} Uses \texttt{add\_box\_no\_adjacency} / \texttt{remove\_boxes\_no\_adjacency}, then a single \texttt{rebuild\_adjacency()} at the end.
+  \item \textbf{No thread pool (C4):} ThreadPoolExecutor removed due to GIL overhead exceeding benefit.
+  \item \textbf{Batch merge (C5):} Multiple boxes in a run merged in one shot.
+\end{enumerate}
+
+A two-phase architecture separates merge detection (read-only scan with array copies to avoid stale NumPy views) from execution (batch forest modification). Typical performance: 500 boxes $\to$ 486, 12 merges, $\sim$37\,ms.
+
+\subsection{Island Bridging}
+\label{sec:bridge}
+
+The bridge stage connects disconnected components using \texttt{bridge\_islands} (\texttt{connectivity.py}):
+
+\begin{enumerate}[nosep]
+  \item Identify islands via \texttt{find\_islands} (UnionFind on loose-overlap adjacency graph);
+  \item For each island pair containing start/goal, attempt \texttt{\_try\_expand\_bridge\_box};
+  \item Dry-run \texttt{find\_free\_box} (mark\_occupied=False), check overlap, then commit with mark\_occupied=True;
+  \item Vectorized bridge-box adjacency update via interval cache (B3 optimization).
+\end{enumerate}
+
+\paragraph{Two adjacency conditions.} The forest internally uses \emph{strict face-touching} adjacency (\texttt{compute\_adjacency}), which yields $\sim$5 edges for 500 boxes. The bridge/Dijkstra stage uses \emph{loose overlap} adjacency ($\sim$157 edges), which allows dimensional overlap with tolerance. This distinction is critical for connectivity after coarsening.
+
 \subsection{Trajectory Optimization}
 \label{sec:traj_opt}
 

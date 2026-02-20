@@ -458,6 +458,17 @@ The dimension-sweep algorithm operates as follows:
 
 \paragraph{Complexity}: $O(\text{rounds}  \cdot D \cdot (N \log N + T))$ where $T$ is the number of tree nodes requiring forest-id relabeling.
 
+\paragraph{Implementation optimizations (C1--C5).}
+The current implementation includes five vectorized optimizations:
+\begin{itemize}[nosep]
+\item \textbf{C1}: Skip adjacency updates during merge; rebuild once at end via \texttt{rebuild\_adjacency()}.
+\item \textbf{C2}: Vectorized grouping using NumPy structured arrays (\texttt{np.unique}), replacing Python-loop grouping (32\,ms vs 194\,ms on 500 boxes).
+\item \textbf{C3}: Bulk forest ID retrieval via Cython \texttt{NodeStore.forest\_ids\_array()}.
+\item \textbf{C4}: ThreadPoolExecutor removed (GIL overhead exceeded benefit).
+\item \textbf{C5}: Batch merge---$k$ boxes in a run merged in one shot.
+\end{itemize}
+A two-phase architecture first detects all merge candidates (read-only, with array copies to prevent stale NumPy views from swap-on-delete), then executes all merges in batch. Measured performance: 500 boxes $\to$ 486, 12 merges, $\sim$37\,ms (down from $\sim$63\,ms before optimization).
+
 \subsection{Comparison with IRIS Region Growing}
 
 IRIS grows each region independently by inflating an ellipsoid. There is no ``merging'' post-processing because IRIS regions \emph{may overlap by design}. This leads to several trade-offs:

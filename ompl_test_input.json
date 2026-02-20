@@ -1,0 +1,1 @@
+{"q_start": [0, -0.3, 0, -2.2, 0, 2.0, 0.785], "q_goal": [2.0, 0.5, -1.0, -1.5, 0.5, 1.5, -0.5], "obstacles": [{"min_point": [0.3, -0.2, 0.0], "max_point": [0.6, 0.2, 0.4], "name": "obs1"}], "algorithms": ["RRT", "RRTConnect", "RRTstar", "InformedRRTstar", "BITstar"], "timeout": 2.0, "trials": 1, "seed": 42, "step_size": 0.5}

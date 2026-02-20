@@ -434,6 +434,35 @@ q \sim
   \item 成功则加桥接边，重新搜索。
 \end{enumerate}
 
+\subsection{Coarsen：维度扫描 Box 合并}
+\label{sec:coarsen}
+
+在 Forest 生长完成后，粗化阶段通过合并共享相同边界轮廓的相邻 box 来减少图节点数量。实现采用了多项向量化优化：
+
+\begin{enumerate}[nosep]
+  \item \textbf{向量化分组 (C2)：} 使用 NumPy 结构化数组 \texttt{np.unique} 按 profile key 分组，替代 Python 循环（32ms vs 194ms）。
+  \item \textbf{批量 forest ID (C3)：} Cython \texttt{NodeStore.forest\_ids\_array()} 一次性返回所有 forest ID 映射。
+  \item \textbf{跳过邻接更新 (C1)：} 合并期间使用 \texttt{add\_box\_no\_adjacency} / \texttt{remove\_boxes\_no\_adjacency}，最后一次 \texttt{rebuild\_adjacency()}。
+  \item \textbf{去除线程池 (C4)：} 移除 ThreadPoolExecutor（GIL 开销大于收益）。
+  \item \textbf{批量合并 (C5)：} 同一组内多个 box 一次性合并。
+\end{enumerate}
+
+采用两阶段架构：检测阶段（只读扫描，复制数组避免 stale NumPy view）和执行阶段（批量修改 forest）。典型性能：500 boxes $\to$ 486，12 merges，$\sim$37\,ms。
+
+\subsection{孤岛桥接}
+\label{sec:bridge}
+
+桥接阶段使用 \texttt{bridge\_islands}（\texttt{connectivity.py}）连接不连通分量：
+
+\begin{enumerate}[nosep]
+  \item 通过 \texttt{find\_islands}（基于 loose-overlap 邻接的 UnionFind）识别孤岛；
+  \item 对包含 start/goal 的孤岛对，尝试 \texttt{\_try\_expand\_bridge\_box}；
+  \item 先 dry-run FFB（mark\_occupied=False），检查重叠，再正式 FFB（mark\_occupied=True）；
+  \item 向量化桥接-box 邻接更新（B3 优化，使用区间缓存）。
+\end{enumerate}
+
+\paragraph{两种邻接条件。} Forest 内部使用 \emph{strict face-touching} 邻接（\texttt{compute\_adjacency}），对 500 个 box 产生 $\sim$5 条边。桥接/Dijkstra 阶段使用 \emph{loose overlap} 邻接（$\sim$157 条边），允许带容差的维度重叠。这一区分对 coarsen 后的连通性至关重要。
+
 \subsection{轨迹优化}
 \label{sec:traj_opt}
 

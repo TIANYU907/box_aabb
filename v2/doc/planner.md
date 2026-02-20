@@ -4,7 +4,7 @@
 
 - 实现路径：`v2/src/planner`
 - 核心职责：
-  1. 组织 Box-RRT 端到端规划流程
+  1. 组织 BoxPlanner 端到端规划流程
   2. 将 forest 拓扑转为可搜索图
   3. 进行路径搜索、桥接修复与后处理优化
 
@@ -12,8 +12,8 @@
 
 ## 2. 核心组件
 
-1. `box_rrt.py`
-  - `BoxRRT.plan` 主流程
+1. `box_planner.py`
+  - `BoxPlanner.plan` 主流程
   - 串行/并行扩展分支
 2. `connector.py`
   - 邻接边构建
@@ -30,6 +30,10 @@
 
 ## 3. 主流程摘要
 
+Planner 模块现在有两条主线：
+
+### 3.1 经典规划路径（`BoxPlanner.plan`）
+
 1. 起终点碰撞预检
 2. 直连快速返回
 3. 加载/新建 forest
@@ -38,6 +42,25 @@
 6. 图搜索与桥接修复
 7. 轨迹优化与平滑
 8. 返回完整结果与指标
+
+### 3.2 Panda 7-DOF 端到端管线（`panda_planner.py`）
+
+用于 Panda 机械臂的专用规划入口，采用优化后的管线：
+
+1. **grow**：调用 `BoxPlanner` 扩展 box forest（支持并行分区生长）
+2. **coarsen**：调用 `coarsen_forest` 进行 dim-sweep 合并，减少 box 数量
+3. **adjacency**：构建 loose-overlap 邻接图（区别于 Forest 层的 strict face-touching）
+4. **bridge**：调用 `bridge_islands` 连接孤立连通分量
+5. **Dijkstra**：图搜索找到最短路径
+6. **waypoint**：在共享面上布置路点、输出可行轨迹
+
+**关键性能指标（典型 Panda 场景）**：
+- grow: ~293ms（500 boxes）
+- coarsen: ~37ms（12 merges, 500→486）
+- adjacency: ~11ms
+- bridge: ~97ms
+- Dijkstra: ~61ms
+- 总规划时间: ~500ms
 
 ---
 
@@ -98,7 +121,7 @@
 
 对比对象：
 
-1. Box-RRT（当前实现）
+1. BoxPlanner（当前实现）
 2. OMPL：RRT / RRTConnect / RRTstar
 3. Drake GCS（Marcucci 方法映射）
 

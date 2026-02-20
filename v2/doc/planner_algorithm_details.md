@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Planner 层实现一种 box-guided 采样规划器：先构建/复用无碰撞 box 森林，再在 box 图上搜索并优化路径。本文档以论文写法给出流程分解、函数级实现细节、复杂度和失败恢复机制。核心文件为 `box_rrt.py`、`connector.py`、`gcs_optimizer.py`、`path_smoother.py`。
+Planner 层实现一种 box-guided 采样规划器：先构建/复用无碰撞 box 森林，再在 box 图上搜索并优化路径。本文档以论文写法给出流程分解、函数级实现细节、复杂度和失败恢复机制。核心文件为 `box_planner.py`、`connector.py`、`gcs_optimizer.py`、`path_smoother.py`。
 
 ---
 
@@ -18,7 +18,7 @@ v2 不直接在连续空间做全局优化，而是先构建 box 覆盖图 $G=(V
 
 ---
 
-## 2. Main Planner Pipeline (`BoxRRT.plan`)
+## 2. Main Planner Pipeline (`BoxPlanner.plan`)
 
 ### Stage 0: pre-check and normalization
 
@@ -56,7 +56,9 @@ v2 不直接在连续空间做全局优化，而是先构建 box 覆盖图 $G=(V
 ### Stage 5: graph search + repair
 
 - 先运行 Dijkstra（`gcs_optimizer._dijkstra`）。
-- 若失败，运行 `_bridge_disconnected`：在可达/不可达分量间尝试桥接边后重试搜索。
+- 若失败，运行 `bridge_islands`（`connectivity.py`）：在可达/不可达分量间尝试桥接边后重试搜索。
+
+> **注意**：在 Panda 7-DOF 管线（`panda_planner.py`）中，使用专用的 `bridge_islands` 函数（`connectivity.py`）而非 `_bridge_disconnected`。桥接阶段使用 loose-overlap 邻接图（与 coarsen 后重建的 strict 邻接图不同），以确保连通性。
 
 ### Stage 6: geometric path reconstruction
 
@@ -70,6 +72,48 @@ v2 不直接在连续空间做全局优化，而是先构建 box 覆盖图 $G=(V
 ### Stage 8: finalize
 
 封装 `PlannerResult`：成功标志、路径、边、碰撞计数、耗时、消息；可选持久化 forest。
+
+## 2.5 Panda 7-DOF 专用管线（`panda_planner.py`）
+
+Panda 场景采用优化后的端到端管线，在基本 BoxPlanner 之上增加了 coarsen 和 bridge 阶段：
+
+1. **grow**: 调用 `BoxPlanner.expand_forest` / `grow_forest` 扩展 box forest
+2. **coarsen**: 调用 `coarsen_forest` 进行 dim-sweep 合并（详见§2.6）
+3. **adjacency**: 构建 loose-overlap 邻接图（带重叠容差，区别于 Forest 层的 strict face-touching）
+4. **bridge**: 调用 `bridge_islands` 连接孤立连通分量（详见§5.3）
+5. **Dijkstra**: 图搜索找到最短路径
+6. **waypoint**: 在共享面上布置路点，输出可行轨迹
+
+### 两种邻接条件的区别
+
+| 邻接类型 | 函数 | 语义 | 用途 |
+|---|---|---|---|
+| strict face-touching | `deoverlap.compute_adjacency` | 仅当两 box 在某维度精确接触且其余维度有重叠 | BoxForest 内部邻接图 |
+| loose overlap | `_build_adjacency_and_islands` | 当两 box 在所有维度均有重叠(带容差) | bridge / Dijkstra 连通性 |
+
+> strict 邻接对于 500 个 box 产生 ~5 条边，而 loose 邻接产生 ~157 条边。bridge/Dijkstra 需要后者以确保连通性。
+
+## 2.6 Coarsen 阶段详解（`forest/coarsen.py`）
+
+Coarsen 通过维度扫描合并相邻 box，减少图节点数量。当前实现采用了多项向量化优化：
+
+**主要优化点**：
+- **C1 跳过邻接更新**: 合并期间使用 `add_box_no_adjacency` / `remove_boxes_no_adjacency`，最后一次性 `rebuild_adjacency`
+- **C2 向量化分组**: 使用 NumPy 结构化数组 `np.unique` 对 box 按 profile key 分组（替代 Python 循环）
+- **C3 批量 forest ID**: 通过 Cython `NodeStore.forest_ids_array()` 一次性获取全部 forest ID 映射
+- **C4 去除线程池**: 移除 ThreadPoolExecutor（GIL 开销大于收益）
+- **C5 批量合并**: 将同一分组内的 k 个 box 一次性合并为 1 个
+
+**两阶段架构**：
+1. 检测阶段（只读）：扫描所有维度，收集可合并的 box 运行（run）
+2. 执行阶段（写入）：批量执行所有合并，避免读写交叉导致的视图失效
+
+**关键实现细节**：
+- `_build_box_to_nodes`: 使用 `store.forest_ids_array()` + `np.flatnonzero` 构建 box→树节点映射
+- `_sweep_merge_dim`: 对每个维度按 lo 值排序后扫描连续运行，使用 `.copy()` 防止 stale numpy view
+- `_execute_merge_batch`: 批量移除旧 box + 创建新 box，并更新树节点 forest_id
+
+**性能**：coarsen 耗时 ~37ms（500 boxes, 12 merges）
 
 ---
 
@@ -121,7 +165,11 @@ $$
 
 图节点为 `start/goal + box ids`，边权默认关节空间欧氏长度。Dijkstra 输出的是“节点序列骨架”，非最终连续轨迹。
 
-### 5.2 disconnected-graph bridging (`_bridge_disconnected`)
+### 5.2 disconnected-graph bridging (`_bridge_disconnected` / `bridge_islands`)
+
+有两种桥接实现：
+
+**经典路径** (`gcs_optimizer._bridge_disconnected`):
 
 迭代步骤：
 
@@ -129,6 +177,17 @@ $$
 2. 在 $R$ 与 $\bar{R}$ 间按中心距离排序候选 box 对。
 3. 取表面最近点连线并做碰撞检查。
 4. 成功则加桥接边，重新搜索。
+
+**Panda 管线路径** (`connectivity.bridge_islands`):
+
+专为 7-DOF 场景优化的桥接实现：
+
+1. 使用 `find_islands` 识别所有连通分量
+2. 用 `_try_expand_bridge_box` 在孤岛间扩展桥接 box
+3. 采用 dry-run FFB (mark_occupied=False) + overlap 检查 + 正式 FFB (mark_occupied=True) 的三步策略
+4. 向量化桥接-box 邻接更新（B3 优化，使用 `_adjacent_existing_ids_from_cache`）
+
+> **设计注意**：早期尝试的 B5 优化（通过 `clear_subtree_occupation` 回滚）已回滚，因为 `clear_subtree_occupation` 会清除所有后代节点的占用标记，包括其他 box 的节点。
 
 该机制在邻接图“几何上可连但拓扑未连”时有效提升成功率。
 
@@ -209,7 +268,7 @@ $$
 
 1. 端点碰撞：直接失败并给出原因。
 2. 端点无法接入 forest：返回连接失败。
-3. 图搜索失败：自动桥接修复。
+3. 图搜索失败：自动桥接修复（`bridge_islands` 或 `_bridge_disconnected`）。
 4. 高级优化不可用：自动 fallback。
 5. 平滑不可改进：保留当前可行路径，保证稳态输出。
 
@@ -225,6 +284,11 @@ if segment(start, goal) is free: return direct path
 forest <- load_or_create()
 valid_boxes <- validate_in_scene(forest, O)
 expand boxes via goal-biased seed sampling + hierarchical free-box search
+
+# --- Panda 管线专用阶段 (panda_planner.py) ---
+coarsen_forest(forest)              # dim-sweep merge, reduce box count
+build loose-overlap adjacency       # different from forest's strict adjacency
+bridge_islands(...)                  # connect disconnected components
 
 G <- build graph(valid_boxes)
 attach start/goal to G

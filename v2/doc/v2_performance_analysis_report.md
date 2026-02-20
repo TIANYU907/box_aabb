@@ -103,7 +103,7 @@ def _sample_seed(self, q_start, q_goal, rng):
 #### V2 实现（批量策略）
 
 ```python
-# v2/src/planner/box_rrt.py L982-L1010
+# v2/src/planner/box_planner.py L982-L1010
 def _sample_seed(self, q_start, q_goal, rng, sampling_intervals=None):
     max_attempts = 20
     
@@ -229,7 +229,7 @@ V2 在 Panda 7-DOF + 10+ 障碍物场景下产生 0 个 box（全局停滞），
 ### 6.1 短期：修复 CC 计数器（低成本，立即可做）
 
 ```python
-# v2/src/planner/box_rrt.py _sample_seed() 中
+# v2/src/planner/box_planner.py _sample_seed() 中
 # 方案 A：改用早停标量检测（与 V1 一致）
 for q in candidates:
     if not self.collision_checker.check_config_collision(q):

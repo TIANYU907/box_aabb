@@ -277,7 +277,11 @@ Speedup (v2/v1) = 0.73×。v2 碰撞检测次数约为 v1 的 5.1×。
 | HierAABBTree | 固定 `depth % D` 切分维度；无约束区间搜索 | `active_split_dims` 可配置；`constrained_intervals` 约束搜索；`build_kd_partitions` 全局函数；Cython 优雅回退 |
 | Collision | 逐障碍物线性扫描 | `SpatialIndex` 网格哈希（M > 阈值时启用）；`spatial_index_threshold`, `spatial_cell_size` 可配置 |
 | Box-RRT | 单线程顺序扩展 | KD 子空间并行扩展 + `ProcessPoolExecutor`；`_partition_expand_worker` 模块级函数；合并后 strict 校验 |
+| Coarsen | N/A（v1 无 coarsen） | `coarsen.py`：dim-sweep 合并（C1-C5 向量化优化）；`add_box_no_adjacency`/`remove_boxes_no_adjacency`/`rebuild_adjacency`；Cython `forest_ids_array()`|
+| Connectivity | N/A（v1 无独立 bridge 模块） | `connectivity.py`：`find_islands` + `bridge_islands` + `_try_expand_bridge_box`；向量化邻接更新 (B3) |
+| BoxNode | 每次访问重新计算 center | `__post_init__` 缓存 `_center`（B2 优化） |
 | Models | 单文件 529 行 | 分层拆分：forest/models.py（105 行）+ planner/models.py |
+| 类命名 | `BoxRRT` (`box_rrt.py`) | `BoxPlanner` (`box_planner.py`) |
 
 ---
 
@@ -294,6 +298,54 @@ Speedup (v2/v1) = 0.73×。v2 碰撞检测次数约为 v1 的 5.1×。
 2. 合并后 `dedup_boundary_boxes` 处理边界碎片
 3. `validate_invariants(strict=True)` 作为最终安全网检测任何遗留重叠
 4. ProcessPool 失败时自动回退到进程内串行分区执行
+
+---
+
+## 8. Panda 7-DOF 端到端管线耗时分解（2026-02-22 新增）
+
+**配置：** Panda 7-DOF，5 障碍物，max_boxes=500，seed=随机
+**管线：** grow → coarsen → adjacency → bridge → Dijkstra → waypoint
+
+### 8.1 典型成功案例（seed=1771593633）
+
+| 阶段 | 耗时 (ms) | 说明 |
+|------|-----------|------|
+| grow | 293 | 500 boxes 生成 |
+| coarsen | 37 | 12 merges, 500→486 boxes |
+| adjacency | 11 | loose-overlap 邻接构建 |
+| bridge | 97 | 孤岛桥接连接 |
+| Dijkstra | 61 | 图搜索 + waypoint 生成 |
+| **总计** | **~500** | 不含异步缓存写入 (3425ms) |
+
+**结果：** 7 waypoints, cost=7.9951, SUCCESS
+
+### 8.2 Coarsen 优化效果
+
+| 优化项 | 描述 | 影响 |
+|--------|------|------|
+| C1 跳过邻接 | 合并期间不更新邻接，最后一次 rebuild | 减少 O(N²D) 重复计算 |
+| C2 向量化分组 | NumPy structured array `np.unique` | 32ms vs 194ms（Python 循环） |
+| C3 批量 forest ID | Cython `NodeStore.forest_ids_array()` | 一次性获取全部映射 |
+| C4 去除线程池 | 移除 ThreadPoolExecutor | 消除 GIL 开销 |
+| C5 批量合并 | k boxes → 1 shot | 减少中间状态管理 |
+
+总效果：coarsen 耗时从 ~63ms 降至 ~37ms（~41% 加速）
+
+### 8.3 Bridge 优化效果
+
+| 优化项 | 描述 | 状态 |
+|--------|------|------|
+| B2 center 缓存 | `BoxNode.center` 在构造时缓存 | ✅ 已完成 |
+| B3 向量化邻接 | 使用 `_adjacent_existing_ids_from_cache` | ✅ 已完成 |
+| B1 复用 forest 邻接 | strict 仅 5 边 vs loose 的 157 边 | ❌ 已回滚 |
+| B5 消除双重 FFB | `clear_subtree_occupation` 污染其他 box | ❌ 已回滚 |
+
+### 8.4 两种邻接条件对比
+
+| 邻接类型 | 函数 | 边数（500 boxes） | 用途 |
+|----------|------|-------------------|------|
+| strict face-touching | `deoverlap.compute_adjacency` | ~5 | BoxForest 内部 |
+| loose overlap | `_build_adjacency_and_islands` | ~157 | bridge / Dijkstra |
 
 ---
 

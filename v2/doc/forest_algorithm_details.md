@@ -50,6 +50,16 @@ Forest 维护两个核心对象：
 
 该模式是在线扩展阶段主路径，复杂度接近 $O(ND)$ 而非全量 $O(N^2D)$。
 
+#### Mode B: batch without adjacency (`add_box_no_adjacency` / `remove_boxes_no_adjacency`)
+
+专为 coarsen 阶段设计的批量操作模式：
+
+- `add_box_no_adjacency(box)`: 添加 box 到字典和缓存，但跳过邻接图更新。
+- `remove_boxes_no_adjacency(box_ids)`: 移除 box 并清理缓存，但跳过邻接图更新。
+- `rebuild_adjacency()`: 在所有批量操作完成后，一次性重建全量邻接图。
+
+该模式避免了合并过程中每次增删都重新计算邻接的开销（C1 优化）。
+
 ### 2.3 Removal semantics (`remove_boxes`)
 
 - 删除节点并剔除双向边。
@@ -113,7 +123,7 @@ $$
 - 对每段连杆向量化求 AABB；
 - 按障碍批量分离轴测试。
 
-该接口是 `BoxRRT._sample_seed` 与高密度扫描场景的关键加速器。
+该接口是 `BoxPlanner._sample_seed` 与高密度扫描场景的关键加速器。
 
 ### 4.5 Spatial index gating
 
@@ -130,6 +140,7 @@ v6 使用 `NodeStore`（SoA + 固定 stride）替代 Python 对象树：
 - 拓扑字段：`left/right/parent/depth/split_val`
 - 几何字段：单 AABB `(n_links,6)`
 - 状态字段：`occupied/subtree_occ/forest_id`
+- 新增方法：`forest_ids_array()` —— 通过 Cython 一次性返回所有节点的 forest_id 的 numpy 数组（C3 优化，用于 coarsen 阶段快速构建 box→树节点映射）
 
 并支持 `HCACHE02` 二进制持久化与 `mmap r+` 增量写回。
 
@@ -210,7 +221,56 @@ mark occupied and return resulting intervals (+ absorbed ids)
 
 ---
 
-## 11. 分区并行合并管线（当前实现细节）
+## 11. Coarsen：维度扫描合并（`coarsen.py`）
+
+### 11.1 算法概述
+
+Coarsen 通过维度扫描检测可合并的相邻 box 并批量执行合并，以减少图节点数量。
+
+**合并条件**：两个 box 在某一维度上相邻接触，且在其余所有维度上边界完全一致（profile key 相同）。
+
+### 11.2 实现结构
+
+```text
+coarsen_forest(forest, store, collision_checker, max_rounds):
+    for round in range(max_rounds):
+        box_to_nodes = _build_box_to_nodes(store, n_nodes)  # C3: bulk forest_ids_array
+        merges = []
+        for dim in range(n_dims):
+            merges += _sweep_merge_dim(forest, dim, ...)     # C2: vectorized grouping
+        if no merges: break
+        _execute_merge_batch(forest, store, merges, ...)     # C5: batch merge
+    forest.rebuild_adjacency()                               # C1: rebuild once at end
+```
+
+### 11.3 关键实现细节
+
+1. **`_build_box_to_nodes`**：使用 `store.forest_ids_array()` 返回全部 `(n_nodes,)` 的 int32 数组，再用 `np.flatnonzero` 按 box_id 分组。
+
+2. **`_sweep_merge_dim`**：
+   - 按 profile key（其余维度边界）分组，使用 `np.unique` 对结构化数组分组
+   - 组内按活动维度 lo 值排序，扫描连续接触的运行
+   - 使用 `.copy()` 复制数组视图，防止 swap-on-delete 导致的 stale view
+   - 采用两阶段架构：检测阶段只读，执行阶段写入
+
+3. **`_execute_merge_batch`**：
+   - 对每个合并运行：移除旧 box (`remove_boxes_no_adjacency`) + 创建新 box (`add_box_no_adjacency`)
+   - 更新树节点的 forest_id 指向新 box
+   - 验证新 box 无碰撞
+
+### 11.4 复杂度
+
+- 分组：$O(N \cdot D \cdot \log N)$（各维度排序）
+- 扫描：$O(N \cdot D)$
+- 重建邻接：$O(N^2 D)$（仅执行一次）
+
+### 11.5 性能数据
+
+典型 Panda 7-DOF 场景：500 boxes → 486 boxes，12 merges/round，耗时 ~37ms。
+
+---
+
+## 12. 分区并行合并管线（当前实现细节）
 
 ### 11.1 局部结果输入规范
 

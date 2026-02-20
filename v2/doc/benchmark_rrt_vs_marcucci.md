@@ -1,4 +1,4 @@
-# Benchmark 说明：Box-RRT vs 常用 RRT 库 vs Marcucci-GCS
+# Benchmark 说明：BoxPlanner vs 常用 RRT 库 vs Marcucci-GCS
 
 本文档说明 `v2/benchmarks/planner/bench_rrt_vs_marcucci.py` 的对比目标、方法定义、指标与复现流程。
 
@@ -6,7 +6,7 @@
 
 统一场景与随机种子下，比较以下规划器：
 
-1. `box_rrt`：项目实现的 Box-RRT（区间 box 扩展 + 图搜索 + 后处理）。
+1. `box_planner`：项目实现的 BoxPlanner（区间 box 扩展 + 图搜索 + 后处理）。
 2. `ompl_rrt`：OMPL 的 RRT。
 3. `ompl_rrtconnect`：OMPL 的 RRTConnect。
 4. `ompl_rrtstar`：OMPL 的 RRTstar。
@@ -16,11 +16,13 @@
 
 ## 2. 当前方法定义
 
-### 2.1 Box-RRT
+### 2.1 BoxPlanner
 
 - 按 `PlannerConfig` 扩展 BoxForest。
 - 通过邻接图搜索得到 box 序列。
 - 共享面 waypoint 优化 + box-aware 路径平滑。
+
+> 在 Panda 7-DOF 场景中，还包含优化后的 coarsen + bridge 管线。
 
 ### 2.2 OMPL-RRT 系列
 
@@ -31,7 +33,7 @@
 
 ### 2.3 Marcucci-GCS（Drake）
 
-- 先用 Box-RRT 生成可用 forest 与 adjacency。
+- 先用 BoxPlanner 生成可用 forest 与 adjacency。
 - 构建 forest graph 后调用 `GCSOptimizer(fallback=False)`。
 - 严格禁用 fallback，保证该方法失败时显式暴露。
 
@@ -129,13 +131,13 @@ python -m v2.benchmarks.planner.bench_rrt_vs_marcucci --robot 2dof_planar --tria
 - 将来扩展 7-DoF（如 Panda）时，建议分离“同质量预算”与“同时延预算”两组实验。
 - OMPL 与 Drake 版本差异可能导致时间与成功率有偏移，建议在报告中记录版本信息。
 
-## 9. 并行模式实验补充（Box-RRT 内部对照）
+## 9. 并行模式实验补充（BoxPlanner 内部对照）
 
 为评估 v2 新增的 KD 子空间并行扩展路径，建议在同一场景追加两组内部对照：
 
-1. `box_rrt_serial`
+1. `box_planner_serial`
 	- `parallel_expand=False`
-2. `box_rrt_parallel`
+2. `box_planner_parallel`
 	- `parallel_expand=True`
 	- `parallel_workers=2/4`
 	- `parallel_partition_depth=2`

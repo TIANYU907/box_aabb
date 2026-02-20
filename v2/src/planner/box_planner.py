@@ -151,6 +151,7 @@ class BoxPlanner:
         scene: Scene,
         config: Optional[PlannerConfig] = None,
         joint_limits: Optional[List[Tuple[float, float]]] = None,
+        no_cache: bool = False,
     ) -> None:
         self.robot = robot
         self.scene = scene
@@ -173,11 +174,19 @@ class BoxPlanner:
             scene=scene,
         )
         # 使用 HierAABBTree 做 box 拓展（自顶向下切分 + 缓存精化）
-        self.hier_tree = HierAABBTree.auto_load(
-            robot,
-            self.joint_limits,
-            active_split_dims=self.config.parallel_partition_dims,
-        )
+        self._no_cache = no_cache
+        if no_cache:
+            self.hier_tree = HierAABBTree(
+                robot,
+                self.joint_limits,
+                active_split_dims=self.config.parallel_partition_dims,
+            )
+        else:
+            self.hier_tree = HierAABBTree.auto_load(
+                robot,
+                self.joint_limits,
+                active_split_dims=self.config.parallel_partition_dims,
+            )
         self.obstacles = scene.get_obstacles()
         self.tree_manager = BoxTreeManager()
         self.connector = TreeConnector(

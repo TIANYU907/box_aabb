@@ -900,15 +900,19 @@ def _greedy_shortcut(waypoints, collision_checker, resolution):
 # Pipeline: shared forest growth + per-method planning
 # ═══════════════════════════════════════════════════════════════════════════
 
-def grow_and_prepare(robot, scene, cfg, q_start, q_goal, ndim):
+def grow_and_prepare(robot, scene, cfg, q_start, q_goal, ndim, no_cache=False):
     """共享前半段: grow → cache (异步) → coarsen.
 
     cache save 在后台线程执行, 与 coarsen 及后续规划并行.
     返回的 dict 包含 _cache_thread, 调用方应在不再需要 hier_tree
     写入时 join.
+
+    Args:
+        no_cache: 如果为 True, 不加载也不保存磁盘缓存.
     """
     planner_cfg = make_planner_config(cfg)
-    planner = BoxPlanner(robot=robot, scene=scene, config=planner_cfg)
+    planner = BoxPlanner(robot=robot, scene=scene, config=planner_cfg,
+                         no_cache=no_cache)
 
     t0 = time.perf_counter()
     boxes, forest_obj, grow_detail = grow_forest(
@@ -924,17 +928,21 @@ def grow_and_prepare(robot, scene, cfg, q_start, q_goal, ndim):
 
     # ── AABB cache: 后台线程保存 ──
     cache_result = {}  # 存放线程结果
+    cache_thread = None
 
-    def _save_cache():
-        _t0 = time.perf_counter()
-        _path = planner.hier_tree.auto_save()
-        _ms = (time.perf_counter() - _t0) * 1000
-        cache_result['path'] = _path
-        cache_result['ms'] = _ms
+    if not no_cache:
+        def _save_cache():
+            _t0 = time.perf_counter()
+            _path = planner.hier_tree.auto_save()
+            _ms = (time.perf_counter() - _t0) * 1000
+            cache_result['path'] = _path
+            cache_result['ms'] = _ms
 
-    cache_thread = threading.Thread(target=_save_cache, daemon=True)
-    cache_thread.start()
-    print(f"    [cache] saving {n_nodes} nodes in background thread ...")
+        cache_thread = threading.Thread(target=_save_cache, daemon=True)
+        cache_thread.start()
+        print(f"    [cache] saving {n_nodes} nodes in background thread ...")
+    else:
+        print(f"    [cache] skipped (no_cache mode), {n_nodes} nodes")
 
     # ── coarsen (与 cache save 并行) ──
     n_before_coarsen = len(forest_obj.boxes)

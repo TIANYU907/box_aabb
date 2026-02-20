@@ -96,13 +96,17 @@
 
 | 名词 | 代码对象/函数 |
 |---|---|
-| 规划主流程 | `planner.box_rrt.BoxRRT.plan` |
-| seed 采样 | `BoxRRT._sample_seed` |
+| 规划主流程 | `planner.box_planner.BoxPlanner.plan` |
+| seed 采样 | `BoxPlanner._sample_seed` |
 | 层级扩展 | `forest.hier_aabb_tree.HierAABBTree.find_free_box` |
 | 邻接构建 | `forest.deoverlap.compute_adjacency` |
 | 端点接入 | `planner.connector.TreeConnector.connect_endpoints_to_forest` |
 | box 序列优化 | `planner.gcs_optimizer.GCSOptimizer.optimize_box_sequence` |
 | 路径平滑 | `planner.path_smoother.PathSmoother.smooth_in_boxes` |
+| box 粗化 | `forest.coarsen.coarsen_forest` |
+| 孤岛桥接 | `forest.connectivity.bridge_islands` |
+| 桥接扩展 | `forest.connectivity._try_expand_bridge_box` |
+| 批量 forest ID | `forest._hier_core.NodeStore.forest_ids_array` |
 | 区间 FK | `aabb.interval_fk.compute_interval_aabb` |
 
 ---
