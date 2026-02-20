@@ -287,9 +287,11 @@ class FindFreeBoxResult:
     Attributes:
         intervals: 无碰撞 box 的关节区间
         absorbed_box_ids: 被提升（promotion）吸收的旧 BoxNode ID 集合。
+        node_idx: 被标记占用 (或可标记) 的 tree 节点索引 (用于 rollback).
     """
     intervals: List[Tuple[float, float]]
     absorbed_box_ids: Set[int] = field(default_factory=set)
+    node_idx: int = -1
 
 
 # ─────────────────────────────────────────────────────
@@ -606,19 +608,18 @@ class HierAABBTree:
         right_ivs = list(intervals)
         right_ivs[dim] = (mid, hi)
 
-        # 增量 FK：复用父节点的前缀变换
+        # 增量 FK：复用父节点的前缀变换 (Cython accelerated)
         fk = self._fk_cache.get(idx)
         if fk is not None:
             p_plo, p_phi, p_jlo, p_jhi = fk
 
-            self.n_fk_calls += 1
+            self.n_fk_calls += 2
             l_plo, l_phi, l_jlo, l_jhi = compute_fk_incremental(
                 self.robot, left_ivs, p_plo, p_phi, p_jlo, p_jhi, dim)
             self._fk_cache[left_idx] = (l_plo, l_phi, l_jlo, l_jhi)
             aabb_l = self._extract_compact(l_plo, l_phi)
             store.set_aabb(left_idx, aabb_l)
 
-            self.n_fk_calls += 1
             r_plo, r_phi, r_jlo, r_jhi = compute_fk_incremental(
                 self.robot, right_ivs, p_plo, p_phi, p_jlo, p_jhi, dim)
             self._fk_cache[right_idx] = (r_plo, r_phi, r_jlo, r_jhi)
@@ -809,6 +810,55 @@ class HierAABBTree:
     #  核心 API：找无碰撞 box
     # ──────────────────────────────────────────────
 
+    def can_expand(self, seed: np.ndarray, obs_packed=None,
+                    obstacles: list = None, safety_margin: float = 0.0,
+                    max_probe_depth: int = 4) -> bool:
+        """轻量级浅层探测：检查 seed 方向是否还可能展开新 box。
+
+        沿 seed 方向下行最多 max_probe_depth 层，检查：
+        - 是否已占用 (occupied)
+        - 是否子树全占用 (subtree_occ 大且无空余)
+        - 是否 AABB 与障碍物完全无交集 (早停成功)
+        返回 True 表示值得尝试 find_free_box。
+        """
+        store = self._store
+        idx = 0
+        if obs_packed is None and obstacles is not None:
+            obs_packed = self._prepack_obstacles_c(obstacles, safety_margin)
+
+        for _ in range(max_probe_depth):
+            if store.is_occupied(idx):
+                return False  # 已占用
+
+            left = store.get_left(idx)
+            if left < 0:
+                # 叶节点：检查 AABB 是否无碰撞
+                if store.get_has_aabb(idx) and obs_packed is not None:
+                    if not store.link_aabbs_collide(idx, obs_packed):
+                        return True  # 无碰撞叶节点，可展开
+                return True  # 未展开叶节点，也值得尝试
+
+            # 内部节点：检查子树占用
+            if store.get_subtree_occ(idx) > 0:
+                # 子树有占用但还有空余 => 可能可以
+                pass
+
+            # 检查当前 AABB vs 障碍物
+            if (store.get_has_aabb(idx) and obs_packed is not None
+                    and not store.link_aabbs_collide(idx, obs_packed)
+                    and store.get_subtree_occ(idx) == 0):
+                return True  # 无碰撞且无占用 => 当前节点就是好的
+
+            # 继续下行
+            dim = self._split_dim_for_depth(store.get_depth(idx))
+            sv = store.get_split_val(idx)
+            if seed[dim] < sv:
+                idx = left
+            else:
+                idx = store.get_right(idx)
+
+        return True  # 探测深度用尽，还没排除 => 尝试
+
     def find_free_box(
         self,
         seed: np.ndarray,
@@ -820,6 +870,7 @@ class HierAABBTree:
         mark_occupied: bool = False,
         forest_box_id: Optional[int] = None,
         constrained_intervals: Optional[List[Tuple[float, float]]] = None,
+        obs_packed=None,
     ) -> Optional[FindFreeBoxResult]:
         """从顶向下切分，找到包含 seed 的最大无碰撞 box
 
@@ -827,15 +878,17 @@ class HierAABBTree:
         1. 下行：沿 seed 方向切分，running_ivs 原地更新（零拷贝）
         2. 上行：批量传播精化，回溯路径尝试 promotion
 
+        Args:
+            obs_packed: 预打包的障碍物 (可复用，避免重复构建)
+
         Returns:
             FindFreeBoxResult 或 None
         """
-        idx = 0
         store = self._store
-        self._ensure_aabb_at(idx)
-        path: list = []
+        self._ensure_aabb_at(0)
 
-        obs_packed = self._prepack_obstacles_c(obstacles, safety_margin)
+        if obs_packed is None:
+            obs_packed = self._prepack_obstacles_c(obstacles, safety_margin)
 
         # running_ivs: 原地更新，不做 list 拷贝
         if constrained_intervals is not None:
@@ -850,42 +903,80 @@ class HierAABBTree:
         else:
             base_ivs = list(self.joint_limits)
 
-        running_ivs = list(base_ivs)
+        # ── 尝试 Cython 加速下行 ──
+        _use_cy = getattr(self, '_use_cy_descent', None)
+        if _use_cy is None:
+            _use_cy = hasattr(store, 'descent_loop')
+            self._use_cy_descent = _use_cy
+            if _use_cy:
+                _sd = self.active_split_dims or list(range(self.n_dims))
+                self._split_dims_arr = np.array(_sd, dtype=np.int32)
 
-        # ── 下行 ──
-        while True:
-            if store.is_occupied(idx):
-                self._last_ffb_none_reason = "occupied"
+        if _use_cy:
+            # 确保根节点 FK 可用
+            root_fk = self._fk_cache.get(0)
+            if root_fk is None:
+                self._compute_aabb_for(0, list(self.joint_limits))
+                root_fk = self._fk_cache[0]
+
+            _r = self.robot
+            _sd = self._split_dims_arr
+            idx, path, fail_code, n_new, n_fk = store.descent_loop(
+                seed, obs_packed,
+                _r._dh_alpha, _r._dh_a, _r._dh_d,
+                _r._dh_theta, _r._dh_joint_type,
+                _r.tool_frame is not None,
+                _r._tool_alpha, _r._tool_a, _r._tool_d,
+                _sd, len(_sd),
+                base_ivs, max_depth, min_edge_length,
+                root_fk[0], root_fk[1], root_fk[2], root_fk[3],
+            )
+            self.n_fk_calls += n_fk
+            self.n_nodes += n_new
+
+            if fail_code != 0:
+                _reasons = {1: "occupied", 2: "max_depth", 3: "min_edge"}
+                self._last_ffb_none_reason = _reasons.get(fail_code, "unknown")
                 return None
+        else:
+            # ── Python 下行 (fallback) ──
+            idx = 0
+            path = []
+            running_ivs = list(base_ivs)
 
-            path.append(idx)
+            while True:
+                if store.is_occupied(idx):
+                    self._last_ffb_none_reason = "occupied"
+                    return None
 
-            if (store.get_has_aabb(idx)
-                    and not store.link_aabbs_collide(idx, obs_packed)
-                    and store.get_subtree_occ(idx) == 0):
-                break
+                path.append(idx)
 
-            depth = store.get_depth(idx)
-            if depth >= max_depth:
-                self._last_ffb_none_reason = "max_depth"
-                return None
+                if (store.get_has_aabb(idx)
+                        and not store.link_aabbs_collide(idx, obs_packed)
+                        and store.get_subtree_occ(idx) == 0):
+                    break
 
-            split_dim = self._split_dim_for_depth(depth)
-            edge = running_ivs[split_dim][1] - running_ivs[split_dim][0]
-            if min_edge_length > 0 and edge < min_edge_length * 2:
-                self._last_ffb_none_reason = "min_edge"
-                return None
+                depth = store.get_depth(idx)
+                if depth >= max_depth:
+                    self._last_ffb_none_reason = "max_depth"
+                    return None
 
-            # 惰性切分（传入 running_ivs 避免重推导）
-            self._split(idx, running_ivs)
+                split_dim = self._split_dim_for_depth(depth)
+                edge = running_ivs[split_dim][1] - running_ivs[split_dim][0]
+                if min_edge_length > 0 and edge < min_edge_length * 2:
+                    self._last_ffb_none_reason = "min_edge"
+                    return None
 
-            sv = store.get_split_val(idx)
-            if seed[split_dim] < sv:
-                running_ivs[split_dim] = (running_ivs[split_dim][0], sv)
-                idx = store.get_left(idx)
-            else:
-                running_ivs[split_dim] = (sv, running_ivs[split_dim][1])
-                idx = store.get_right(idx)
+                # 惰性切分（传入 running_ivs 避免重推导）
+                self._split(idx, running_ivs)
+
+                sv = store.get_split_val(idx)
+                if seed[split_dim] < sv:
+                    running_ivs[split_dim] = (running_ivs[split_dim][0], sv)
+                    idx = store.get_left(idx)
+                else:
+                    running_ivs[split_dim] = (sv, running_ivs[split_dim][1])
+                    idx = store.get_right(idx)
 
         # ── 上行前：批量传播精化 ──
         parent_idx = store.get_parent(idx)
@@ -928,6 +1019,7 @@ class HierAABBTree:
         return FindFreeBoxResult(
             intervals=result_intervals,
             absorbed_box_ids=absorbed_ids,
+            node_idx=result_idx,
         )
 
     # ──────────────────────────────────────────────
@@ -1170,6 +1262,51 @@ class HierAABBTree:
             filepath, tree.n_nodes, tree.n_fk_calls,
         )
         return tree
+
+    def warmup_fk_cache(self, max_depth: int = 6) -> int:
+        """预热 FK 缓存: 对树的前 max_depth 层计算 FK 并缓存.
+
+        cache 加载后 _fk_cache 为空, 导致首次 _split 回退全量 FK.
+        此方法从根节点 BFS 遍历前几层, 为每个已有子节点的内部节点
+        计算并缓存 FK, 使后续 _split 可直接使用增量 FK.
+
+        Returns:
+            预热的节点数
+        """
+        store = self._store
+        warmed = 0
+        # BFS: (node_idx, intervals)
+        queue = [(0, list(self.joint_limits))]
+        while queue:
+            idx, ivs = queue.pop(0)
+            depth = store.get_depth(idx)
+            if depth >= max_depth:
+                continue
+
+            # 计算 FK 并缓存 (如果尚无缓存)
+            if idx not in self._fk_cache:
+                if not store.get_has_aabb(idx):
+                    # 仅对有 AABB 的节点做 (cache 加载的都有)
+                    continue
+                self._compute_aabb_for(idx, ivs)
+                warmed += 1
+
+            # 如有子节点则继续遍历
+            left = store.get_left(idx)
+            if left < 0:
+                continue
+            dim = self._split_dim_for_depth(depth)
+            sv = store.get_split_val(idx)
+            left_ivs = list(ivs)
+            left_ivs[dim] = (ivs[dim][0], sv)
+            right_idx = store.get_right(idx)
+            right_ivs = list(ivs)
+            right_ivs[dim] = (sv, ivs[dim][1])
+            queue.append((left, left_ivs))
+            queue.append((right_idx, right_ivs))
+
+        logger.info("warmup_fk_cache: %d nodes warmed (max_depth=%d)", warmed, max_depth)
+        return warmed
 
     # ──────────────────────────────────────────────
     #  全局缓存

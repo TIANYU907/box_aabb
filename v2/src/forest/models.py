@@ -57,6 +57,11 @@ class BoxNode:
             self.seed_config = np.array(self.seed_config, dtype=np.float64)
         if self.volume == 0.0:
             self.volume = self._compute_volume()
+        # 缓存 center, 避免每次 property 访问都重新分配 np.array
+        self._center: np.ndarray = np.array(
+            [(lo + hi) / 2.0 for lo, hi in self.joint_intervals],
+            dtype=np.float64,
+        )
 
     @property
     def n_dims(self) -> int:
@@ -64,7 +69,7 @@ class BoxNode:
 
     @property
     def center(self) -> np.ndarray:
-        return np.array([(lo + hi) / 2.0 for lo, hi in self.joint_intervals], dtype=np.float64)
+        return self._center
 
     def _compute_volume(self) -> float:
         vol = 1.0

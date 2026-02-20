@@ -8,6 +8,7 @@ from .box_forest import BoxForest
 from .deoverlap import compute_adjacency, compute_adjacency_incremental
 from .connectivity import UnionFind, find_islands, bridge_islands
 from .parallel_collision import ParallelCollisionChecker, SpatialIndex
+from .coarsen import coarsen_forest, CoarsenStats
 
 __all__ = [
 	"Obstacle",
@@ -24,4 +25,6 @@ __all__ = [
 	"bridge_islands",
 	"ParallelCollisionChecker",
 	"SpatialIndex",
+	"coarsen_forest",
+	"CoarsenStats",
 ]

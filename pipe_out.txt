@@ -1,0 +1,7 @@
+---STDERR---
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\TIAN\Documents\box_aabb\v2\examples\panda_planner.py", line 29, in <module>
+    import cvxpy as cp
+ModuleNotFoundError: No module named 'cvxpy'

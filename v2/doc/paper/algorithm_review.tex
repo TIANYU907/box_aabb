@@ -1,0 +1,898 @@
+\documentclass[11pt,a4paper]{article}
+
+% ============================================================
+% Packages
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{cite}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{subcaption}
+\usepackage{longtable}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{definition}{Definition}[section]
+\newtheorem{remark}{Remark}[section]
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=green!50!black,
+  urlcolor=blue!70!black,
+}
+
+\title{A Comparative Review: Box-AABB v2 Framework\\
+and Related Approaches in Configuration-Space\\
+Decomposition and Motion Planning}
+\author{Technical Review}
+\date{February 2026}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+This review provides a detailed comparison between the \textsc{Box-AABB~v2} framework and representative existing methods in three tightly coupled areas: (1)~workspace envelope computation (AABB methods, interval arithmetic, sampling); (2)~configuration-space free-region decomposition (IRIS, GCS convex sets, cell decomposition); and (3)~motion planning over structured free-space graphs (GCS shortest-path, sampling-based planners, optimization-based planners). We examine algorithmic foundations, computational complexity, completeness/optimality guarantees, and practical trade-offs. All cited references correspond to published or widely available papers.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ############################################################
+\section{Introduction}
+\label{sec:intro}
+
+Motion planning for serial manipulators requires solving two interrelated problems: determining where the robot can safely operate (free-space characterization) and finding an efficient collision-free path between configurations (path planning). Classical approaches treat these as a single monolithic problem---randomized planners like RRT~\cite{lavalle1998rapidly} and PRM~\cite{kavraki1996probabilistic} interleave sampling and collision checking without explicitly constructing the free space. In contrast, decomposition-based approaches first build a structured representation of free space and then plan within that structure.
+
+The \textsc{Box-AABB~v2} framework~\cite{box_aabb_v2} occupies a distinctive position: it explicitly constructs a collection of axis-aligned hyperrectangular free regions (``boxes'') in configuration space and uses this collection as a planning backbone. This review compares each layer of the framework---AABB computation, free-space decomposition, and path planning---against the most relevant existing methods.
+
+The reviewed methods are organized as follows:
+\begin{itemize}[nosep]
+\item \textbf{Section~\ref{sec:aabb}}: AABB/envelope computation---Monte Carlo, interval arithmetic, affine arithmetic.
+\item \textbf{Section~\ref{sec:decomposition}}: Free-space decomposition---IRIS~\cite{deits2015computing}, IRIS-NP/IRIS-ZO~\cite{werner2024fast,zhong2024iris}, C-IRIS~\cite{dai2023cspace_iris}, approximate cell decomposition~\cite{latombe1991robot}.
+\item \textbf{Section~\ref{sec:gcs}}: GCS planning~\cite{marcucci2023motion} and its relationship to Box-AABB's GCS solver.
+\item \textbf{Section~\ref{sec:sampling}}: Sampling-based planners---RRT, RRT*, PRM, BIT*~\cite{gammell2015batch}.
+\item \textbf{Section~\ref{sec:coarsen}}: Box coarsening (dimension-sweep merge) vs.\ region-growing in IRIS.
+\item \textbf{Section~\ref{sec:parallel}}: Parallel planning---spatial partitioning vs.\ concurrent sampling.
+\item \textbf{Section~\ref{sec:discussion}}: Synthesis and trade-off analysis.
+\end{itemize}
+
+% ############################################################
+\section{Workspace Envelope Computation}
+\label{sec:aabb}
+
+\subsection{Problem Statement}
+
+Given a serial manipulator with $D$ revolute joints and a joint interval $\mathcal{Q} = \prod_{i=1}^{D}[l_i,u_i]$, the AABB of link $k$ is:
+\begin{equation}
+\mathrm{AABB}_k = \prod_{d \in \{x,y,z\}} \bigl[\min_{\mathbf{q}\in\mathcal{Q}} p_k^d(\mathbf{q}),\; \max_{\mathbf{q}\in\mathcal{Q}} p_k^d(\mathbf{q})\bigr]
+\end{equation}
+where $p_k^d(\mathbf{q})$ is the $d$-th Cartesian coordinate of link $k$'s position under forward kinematics.
+
+\subsection{Monte Carlo Sampling}
+
+The simplest approach draws $N$ random configurations $\mathbf{q} \in \mathcal{Q}$, evaluates FK, and takes the min/max. This method is:
+\begin{itemize}[nosep]
+\item \textbf{Unbiased but not guaranteed}: The true extremum may lie between samples.
+\item \textbf{Convergence}: Probabilistic, $O(1/\sqrt{N})$; achieving 99.9\% coverage requires $N \gg 10^3$ for $D=7$~\cite{caflisch1998monte}.
+\item \textbf{Strength}: Conceptually simple, no exploitation of kinematic structure.
+\end{itemize}
+
+\subsection{Interval and Affine Arithmetic}
+\label{sec:interval_arith}
+
+Interval arithmetic~\cite{moore2009introduction} replaces scalar operations with interval operations, guaranteeing enclosure. Affine arithmetic~\cite{stolfi1997self,de2004affine} tracks first-order correlations between variables, reducing the ``wrapping effect'' of naive interval propagation.
+
+Applied to FK, one replaces each $q_i$ with its interval $[l_i, u_i]$ and propagates through the DH chain:
+
+\begin{itemize}[nosep]
+\item \textbf{Guaranteed conservative}: $\mathrm{AABB}^{\mathrm{IA}} \supseteq \mathrm{AABB}^{\mathrm{true}}$ always holds.
+\item \textbf{Over-approximation}: Typically 10--30\% per dimension for $D=7$, resulting in significant volume inflation ($\sim 1.1^7 \approx 2\times$ volume ratio).
+\item \textbf{Dependency problem}: $\sin(q_i)$ and $\cos(q_i)$ are correlated, but interval arithmetic treats them independently; affine arithmetic partially addresses this but not fully for products of trigonometric terms.
+\item \textbf{Complexity}: $O(D)$ per evaluation, no sampling required.
+\end{itemize}
+
+Merlet~\cite{merlet2004solving,merlet2009interval} applied interval analysis to parallel manipulator FK with certified solutions but noted the over-approximation issue.
+
+\subsection{Box-AABB v2: Critical-Point Enumeration + Optimization}
+
+Box-AABB v2 exploits the fact that extrema of MDH FK components occur at specific algebraic loci:
+
+\begin{enumerate}[nosep]
+\item \textbf{Boundary vertices}: Evaluate all $2^r$ combinations of interval endpoints ($r = |\mathcal{R}(k)| \le D$).
+\item \textbf{Single-joint key values}: Points where $q_j = m\pi/2$ maximize/minimize trigonometric terms.
+\item \textbf{Coupled-joint manifolds}: Constraints $q_i + q_j = m\pi/2$ that produce interior extrema.
+\item \textbf{L-BFGS-B refinement}: Bounded optimization~\cite{byrd1995limited} with exploit/explore dual seeds.
+\end{enumerate}
+
+\begin{table}[ht]
+\centering
+\caption{AABB computation method comparison.}
+\label{tab:aabb_cmp}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Method} & \textbf{Guarantee} & \textbf{Tightness} & \textbf{Samples ($D{=}7$)} & \textbf{Coupling} & \textbf{Complexity} \\
+\midrule
+Monte Carlo & None & $\sim$95--99\% & 5000+ & Implicit & $O(ND)$ \\
+Interval/Affine & Conservative & $\sim$70--90\% & 0 & Partial & $O(D)$ \\
+Grid search & None & $\sim$99\% & $m^D$ & Implicit & $O(m^D \cdot D)$ \\
+\textbf{Box-AABB v2} & None$^*$ & $\sim$99.9\% & 200--600 & \textbf{Explicit} & $O(2^r {+} K^2 D^2)$ \\
+\bottomrule
+\multicolumn{6}{l}{\footnotesize $^*$Conservative mode available via interval/affine fallback.}
+\end{tabular}
+\end{table}
+
+\paragraph{Key differences.}
+Box-AABB v2 achieves near-optimal tightness with orders of magnitude fewer samples than Monte Carlo by \emph{structural exploitation}: the trigonometric form of serial FK restricts interior extrema to a finite algebraic candidate set. This is fundamentally different from interval arithmetic (which propagates intervals without knowledge of extremal structure) and from Monte Carlo (which has no exploitation at all).
+
+The relevant-joint pruning ($r \ll D$) is particularly effective for the proximal links, where $r = 1$ or $r = 2$ reduces the candidate set from $O(K^D)$ to $O(K^r)$.
+
+\subsection{Precomputed Bounding Volume Hierarchies and Reachability Maps}
+\label{sec:precomputed_bvh}
+
+A complementary family of methods precomputes bounding volumes offline to accelerate online collision detection and workspace characterization.
+
+\paragraph{BVH for collision detection.}
+Bounding Volume Hierarchies (BVH) are the standard broadphase collision detection structure~\cite{ericson2004realtime}. OBB-trees~\cite{gottschalk1996obbtree} use oriented bounding boxes for tight fitting; AABB-trees~\cite{vandenbergen2003collision} use axis-aligned boxes for faster overlap tests. Both precompute a hierarchy over static geometry and traverse during queries. Key properties:
+\begin{itemize}[nosep]
+\item Precomputed over \emph{workspace} geometry (meshes), not configuration space.
+\item Query cost: $O(N \log N)$ per configuration, where $N$ is the number of geometric primitives.
+\item No direct free-space structure---returns binary collision/no-collision per query.
+\end{itemize}
+
+\paragraph{Swept volume AABB.}
+Schwarzer et al.~\cite{schwarzer2005exact} compute swept volumes for continuous collision detection: the workspace volume traced by a moving link over a joint interval is enclosed in an AABB. This precomputes a conservative motion bound without per-sample FK evaluation. Redon et al.~\cite{redon2004adaptive} further introduced adaptive hierarchical swept-volume bounds that tighten as the motion interval narrows, enabling efficient continuous collision queries along trajectory segments.
+
+\paragraph{Precomputed reachability maps.}
+Zacharias et al.~\cite{zacharias2007capturing} precompute a \emph{capability map}---a discretized workspace grid where each voxel stores the fraction of IK solutions reachable from that cell. This precomputation requires dense sampling ($\sim 10^6$ FK evaluations) but enables $O(1)$ online reachability queries. Porges et al.~\cite{porges2014reachability} extended this to reachability-aware grasp planning. Makhal and Goins~\cite{makhal2018reuleaux} open-sourced a general reachability map library that computes workspace capability for arbitrary serial manipulators.
+
+\paragraph{Precomputed link envelopes and occupancy.}
+Vahrenkamp et al.~\cite{vahrenkamp2013robot} precompute workspace occupancy grids per link as a function of joint configuration: for discretized joint angles, the workspace cells swept by each link are stored in a lookup table. This allows constant-time collision queries at the cost of memory ($O(m^D)$ storage for $m$ discretization levels across $D$ joints). The resolution--memory trade-off limits this approach to moderate DOF ($D \le 4$) or coarse discretizations.
+
+\paragraph{Comparison with Box-AABB v2.}
+\begin{table}[ht]
+\centering
+\caption{Precomputed bounding volume comparison.}
+\label{tab:precomputed_cmp}
+\small
+\begin{tabular}{@{}p{3cm}p{4cm}p{4.5cm}@{}}
+\toprule
+\textbf{Method} & \textbf{What is precomputed} & \textbf{Output} \\
+\midrule
+BVH (OBB/AABB-tree) & Workspace mesh hierarchy & Binary collision query \\
+Swept volume AABB & Link motion bounds & Conservative motion envelope \\
+Reachability map & Workspace reachability grid & Per-voxel reachability score \\
+Occupancy grid & Per-link workspace cells & Constant-time collision lookup \\
+\textbf{Box-AABB v2} & \textbf{C-space AABB per box} & \textbf{Certified free region} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The fundamental distinction is that workspace BVH and reachability maps operate in task space and provide \emph{per-query} answers, whereas Box-AABB v2 precomputes \emph{configuration-space regions} certified collision-free. These regions are directly usable as planning primitives (GCS vertices), whereas BVH queries must be invoked repeatedly by an external planner. The precomputed link-envelope approach~\cite{vahrenkamp2013robot} bridges this gap by moving toward C-space-indexed tables, but its exponential memory scaling ($O(m^D)$) makes it impractical for 7-DOF robots at fine resolution---precisely the regime where Box-AABB's hierarchical on-demand AABB computation excels.
+
+% ############################################################
+\section{Free-Space Decomposition}
+\label{sec:decomposition}
+
+\subsection{Goals and Taxonomy}
+
+Free-space decomposition aims to partition or cover $\mathcal{C}_{\mathrm{free}}$ with a collection of simpler geometric regions that can serve as a planning backbone:
+
+\begin{itemize}[nosep]
+\item \textbf{Exact decomposition}: Cylindrical algebraic decomposition~\cite{schwartz1983piano}---doubly exponential, impractical beyond $D = 3$.
+\item \textbf{Approximate cell decomposition}: Recursive subdivision with occupancy labeling~\cite{latombe1991robot,zhu1991hidden}.
+\item \textbf{Convex region growing}: IRIS and variants~\cite{deits2015computing,werner2024fast,dai2023cspace_iris,zhong2024iris}.
+\item \textbf{Box forest (Box-AABB v2)}: Hierarchical KD-tree guided axis-aligned box generation.
+\end{itemize}
+
+\subsection{IRIS: Iterative Region Inflation by Semidefinite Programming}
+\label{sec:iris}
+
+IRIS~\cite{deits2015computing} computes convex collision-free regions by alternating between:
+\begin{enumerate}[nosep]
+\item Finding separating hyperplanes between a candidate ellipsoid and each obstacle;
+\item Maximizing the inscribed ellipsoid within the resulting polytope.
+\end{enumerate}
+
+This produces a convex polytope (H-polyhedron) in the workspace or low-dimensional C-space. IRIS operates in \emph{task space} and requires obstacle decomposition into convex primitives.
+
+\paragraph{IRIS-NP (Nonlinear Programming).}
+Werner et al.~\cite{werner2024fast} extended IRIS to high-dimensional C-space by replacing the separating-hyperplane step with nonlinear programming---directly operating on the forward kinematics constraint $\mathrm{dist}(\mathrm{Link}(q), \mathrm{Obstacle}) \ge 0$. This enables IRIS to operate in C-space for arbitrary-DOF robots.
+
+\paragraph{IRIS-ZO (Zeroth-Order).}
+Zhong et al.~\cite{zhong2024iris} proposed a zeroth-order variant that avoids gradient computation entirely, using only collision-checking oracles. This makes it applicable to black-box collision checkers.
+
+\paragraph{C-IRIS (Configuration-Space IRIS).}
+Dai et al.~\cite{dai2023cspace_iris} formulated C-space IRIS using rational kinematics and sum-of-squares programming to produce certified collision-free convex regions with formal guarantees.
+
+\subsection{Comparison: IRIS vs.\ Box-AABB Forest}
+
+\begin{table}[ht]
+\centering
+\caption{Free-space decomposition comparison.}
+\label{tab:decomposition_cmp}
+\small
+\begin{tabular}{@{}p{3.2cm}p{4.3cm}p{4.3cm}@{}}
+\toprule
+\textbf{Property} & \textbf{IRIS / IRIS-NP / C-IRIS} & \textbf{Box-AABB Forest} \\
+\midrule
+Region geometry & General convex polytope (H-rep) & Axis-aligned hyperrectangle \\
+Guarantee & Collision-free (certified for C-IRIS) & Conservative collision-free \\
+Seed requirement & One seed point per region & One seed per box \\
+Region shape & Adapted to local geometry & Axis-aligned (simpler but less adaptive) \\
+Overlap handling & Regions may overlap & Strict no-overlap invariant \\
+Adjacency & Not maintained & Explicit symmetric adjacency graph \\
+Incremental growth & Requires seeding + full inflation & Hierarchical tree split (incremental) \\
+Computational cost & SDP/NLP per region ($\sim$seconds) & Interval FK + SAT ($\sim$ms per box) \\
+Cross-scene reuse & Must re-inflate & Lazy validation + prune \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Key insight.}
+IRIS and its variants produce geometrically richer (general convex) regions but at significantly higher computational cost per region—each IRIS seed requires solving an SDP or NLP. Box-AABB v2's regions are geometrically simpler (boxes) but are generated at millisecond-scale cost through the hierarchical AABB tree, enabling hundreds of regions in sub-second time. The no-overlap invariant is unique to Box-AABB and ensures that the box collection forms a clean partition of covered free space.
+
+\subsection{Approximate Cell Decomposition}
+\label{sec:acd}
+
+Classical approximate cell decomposition~\cite{latombe1991robot,zhu1991hidden} recursively subdivides C-space into cells (often hyperrectangles), labeling each as ``free,'' ``occupied,'' or ``mixed.'' Mixed cells are further subdivided. The result is an octree/KD-tree where free cells form a planning graph.
+
+\paragraph{Comparison with Box-AABB.}
+Both approaches use axis-aligned cells, but they differ fundamentally:
+
+\begin{itemize}[nosep]
+\item \textbf{Top-down vs.\ seed-driven}: Cell decomposition subdivides the entire space uniformly; Box-AABB grows boxes only from sampled seeds, concentrating resolution where it matters.
+\item \textbf{Collision checking}: Cell decomposition typically uses point-based checks per cell; Box-AABB uses \emph{interval FK with AABB-obstacle intersection}, providing conservative whole-box safety certificates.
+\item \textbf{Scalability}: Uniform decomposition has $O(m^D)$ cells; Box-AABB generates $O(\text{hundreds})$ boxes even for $D = 7$ because it avoids refining collision-occupied regions.
+\item \textbf{Adjacency}: Both naturally produce adjacency from the tree structure, but Box-AABB maintains an explicit vectorized adjacency graph for efficient GCS construction.
+\end{itemize}
+
+\subsection{Safe Region and Corridor Methods}
+\label{sec:safe_regions}
+
+A growing body of work focuses on constructing \emph{certified safe regions}---convex or semi-algebraic subsets of the state/configuration space guaranteed to be collision-free---to serve as building blocks for trajectory optimization.
+
+\paragraph{Safe flight corridors.}
+Liu et al.~\cite{liu2017planning} introduced safe flight corridors (SFC) for UAV trajectory planning: a sequence of overlapping convex polyhedra constructed along an initial path, within which a smooth trajectory is optimized via quadratic programming. Each polyhedron is generated by inflating an axis-aligned box around a path waypoint and then pruning faces against nearby obstacles. Gao et al.~\cite{gao2020teach} extended this to teach-repeat-replan scenarios with online corridor generation. Chen et al.~\cite{chen2016online} proposed online safe corridor construction for real-time UAV navigation that updates corridors incrementally as new obstacles are observed.
+
+\paragraph{Convex decomposition for safety.}
+Rather than growing regions around seeds (as in IRIS), some methods compute \emph{inner approximations} of the free space. Deits and Tedrake~\cite{deits2015computing} maximize the inscribed ellipsoid within separating-hyperplane polytopes. Dai et al.~\cite{dai2023cspace_iris} use sum-of-squares (SOS) programming to certify that entire polytopes lie within $\mathcal{C}_{\mathrm{free}}$, providing formal safety guarantees. Toumieh and Shiller~\cite{toumieh2022voxel} proposed voxel-based safe corridors for manipulator path optimization, decomposing workspace into collision-free voxel clusters that implicitly define safe C-space regions.
+
+\paragraph{Funnel libraries.}
+Majumdar and Tedrake~\cite{majumdar2017funnel} precompute libraries of ``funnels''---regions in state space within which a local controller guarantees safety. Online planning selects and sequences funnels to form end-to-end safe trajectories. This is conceptually similar to Box-AABB's box library but operates over closed-loop dynamics rather than kinematic configuration space. Funnel composition has been extended to uncertain environments~\cite{majumdar2013robust}.
+
+\paragraph{Control barrier functions.}
+Ames et al.~\cite{ames2019control} formalize safety through control barrier functions (CBFs) that define forward-invariant safe sets. The zero-superlevel set $\{x : h(x) \ge 0\}$ of a CBF is guaranteed safe under an appropriate control law. While primarily used for real-time safety filtering rather than motion planning, CBFs implicitly define safe regions analogous to Box-AABB's free boxes. Thirugnanam et al.~\cite{thirugnanam2022safety} combined CBFs with sampling-based planners to guarantee edge safety along tree extensions.
+
+\paragraph{Comparison with Box-AABB's safe boxes.}
+\begin{table}[ht]
+\centering
+\caption{Safe region method comparison.}
+\label{tab:safe_region_cmp}
+\small
+\begin{tabular}{@{}p{2.8cm}p{2cm}p{2.5cm}p{4cm}@{}}
+\toprule
+\textbf{Method} & \textbf{Space} & \textbf{Shape} & \textbf{Guarantee} \\
+\midrule
+SFC~\cite{liu2017planning} & Workspace & Convex polyhedron & Obstacle-free \\
+C-IRIS~\cite{dai2023cspace_iris} & C-space & Certified polytope & SOS-certified collision-free \\
+Voxel corridor~\cite{toumieh2022voxel} & Workspace & Voxel cluster & Occupancy-grid-free \\
+Funnels~\cite{majumdar2017funnel} & State space & Lyapunov sublevel set & Closed-loop invariance \\
+CBF~\cite{ames2019control} & State space & Barrier sublevel set & Forward invariance \\
+\textbf{Box-AABB v2} & \textbf{C-space} & \textbf{Hyperrectangle} & \textbf{Interval-FK collision-free} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Box-AABB's safe boxes are distinguished by their simplicity (hyperrectangles), low construction cost ($\sim$1ms per box via tree traversal), and direct integrability into a GCS framework. SFC and IRIS produce geometrically richer safe regions but at significantly higher per-region cost. Funnel libraries and CBFs operate over dynamical state spaces and are not directly comparable, but they share the philosophical approach of precomputing safety certificates for online reuse. The safe corridor paradigm---building a chain of overlapping safe regions along a reference path---is particularly analogous to Box-AABB's corridor pruning in the GCS step (Section~\ref{sec:gcs}), though Box-AABB's corridor is defined over boxes in C-space rather than polyhedra in workspace.
+
+% ############################################################
+\section{GCS: Graph of Convex Sets}
+\label{sec:gcs}
+
+\subsection{Marcucci et al.\ (2023)}
+
+The GCS motion planning framework~\cite{marcucci2023motion} formulates shortest-path planning as a mixed-integer convex program over a ``graph of convex sets'':
+
+\begin{itemize}[nosep]
+\item Each vertex $v \in V$ is associated with a convex set $\mathcal{X}_v \subseteq \mathbb{R}^D$.
+\item Each edge $e = (u,v) \in E$ carries flow variable $\phi_e \in [0,1]$ and point variables $(x_u^e, x_v^e) \in \mathcal{X}_u \times \mathcal{X}_v$.
+\item \textbf{Flow conservation}: $\sum_{\text{out}} \phi_e - \sum_{\text{in}} \phi_e = \delta(v)$ where $\delta(s) = 1, \delta(t) = -1$, else $0$.
+\item \textbf{Perspective constraints}: $\phi_e \cdot \mathrm{lo} \le x^e \le \phi_e \cdot \mathrm{hi}$.
+\item \textbf{Continuity}: At intermediate vertices, $\sum_{\text{in}} x_v^e = \sum_{\text{out}} x_v^e$.
+\item \textbf{Objective}: $\min \sum_e \|x_u^e - x_v^e\|_2$ (SOCP).
+\end{itemize}
+
+The convex relaxation (replacing binary $\phi_e \in \{0,1\}$ with continuous $\phi_e \in [0,1]$) is solved as a second-order cone program (SOCP). A rounding step extracts an integer-feasible path.
+
+\subsection{Box-AABB v2's GCS Implementation}
+
+Box-AABB v2 implements the same mathematical formulation but with key differences in the \emph{upstream} decomposition:
+
+\begin{enumerate}[nosep]
+\item \textbf{Convex sets are boxes}: Each vertex's convex set $\mathcal{X}_v$ is an axis-aligned hyperrectangle rather than a general polytope. This simplifies the perspective constraints to per-dimension bounds $\phi_e \cdot l_d \le x_d^e \le \phi_e \cdot u_d$ (linear constraints).
+
+\item \textbf{Adjacency from forest}: The edge set $E$ comes from the forest's adjacency graph (face-touching condition) plus bridge edges, not from a manually specified connectivity.
+
+\item \textbf{Corridor pruning}: A BFS-based corridor subgraph extraction reduces the GCS problem size from the full forest to the neighborhood of the shortest combinatorial path, reducing the SOCP from hundreds to tens of variables.
+
+\item \textbf{Rounding}: Box-AABB implements greedy flow tracing (follow maximum $\phi$) with DFS backtracking as fallback, rather than randomized rounding~\cite{marcucci2023motion}.
+
+\item \textbf{Coarsening}: A dimension-sweep greedy merge pre-processing step reduces box count before GCS construction, directly reducing the number of SOCP variables.
+\end{enumerate}
+
+\begin{table}[ht]
+\centering
+\caption{GCS implementation comparison.}
+\label{tab:gcs_cmp}
+\small
+\begin{tabular}{@{}p{3.2cm}p{4.3cm}p{4.3cm}@{}}
+\toprule
+\textbf{Aspect} & \textbf{Marcucci et al.\ GCS} & \textbf{Box-AABB v2 GCS} \\
+\midrule
+Convex sets & General polytopes (IRIS) & Axis-aligned boxes \\
+Decomposition & IRIS (separate offline) & Box forest (integrated) \\
+Edge construction & From region overlap & From face-touching adjacency \\
+Subgraph pruning & Full graph & Corridor pruning (BFS $\pm$ hops) \\
+SOCP variables & $O(|E| \cdot D)$ & $O(|E_{\text{corridor}}| \cdot D)$ \\
+Rounding & Randomized / depth-first & Greedy + DFS backtracking \\
+Pre-processing & None & Dim-sweep box coarsening \\
+Solver & Mosek, Gurobi & CLARABEL, SCS \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{IRIS-NP + GCS Pipeline (Werner et al.~2024)}
+
+Werner et al.~\cite{werner2024fast} proposed an end-to-end pipeline where IRIS-NP generates C-space convex regions and GCS plans through them. The regions are general convex polytopes, enabling higher coverage per region but at higher per-region computational cost.
+
+\paragraph{Comparison.}
+Box-AABB's pipeline is analogous but uses boxes instead of polytopes:
+\begin{itemize}[nosep]
+\item \textbf{Speed}: Box-AABB generates 283 boxes in 300ms; IRIS-NP typically requires 5--30 seconds for a comparable number of regions.
+\item \textbf{Tightness}: IRIS polytopes conform to obstacle boundaries; boxes are axis-aligned and may leave larger gaps. The coarsening step partially compensates by merging small boxes.
+\item \textbf{Optimality}: Both use GCS convex relaxation; the relaxation gap may differ because box-constrained SOCPs have different feasible sets than polytope-constrained ones.
+\end{itemize}
+
+% ############################################################
+\section{Sampling-Based Planners}
+\label{sec:sampling}
+
+\subsection{RRT and Variants}
+
+\paragraph{RRT~\cite{lavalle1998rapidly}.}
+Rapidly-exploring Random Tree grows a tree in C-space by sampling random points and extending the nearest node toward them. Key properties:
+\begin{itemize}[nosep]
+\item Probabilistically complete.
+\item No optimality guarantee.
+\item Does not build free-space structure.
+\end{itemize}
+
+\paragraph{RRT-Connect~\cite{kuffner2000rrt}.}
+Bi-directional variant with connect heuristic. Highly effective for finding feasible paths quickly. The standard benchmark for single-query planning.
+
+\paragraph{RRT*~\cite{karaman2011sampling}.}
+Asymptotically optimal variant that rewires the tree with near-neighbor connections. Convergence requires $O(n \log n / \log \log n)$ samples in the limit~\cite{karaman2011sampling}. Practical convergence can be slow.
+
+\paragraph{Informed RRT*~\cite{gammell2014informed}.}
+Restricts sampling to an informed subset (prolate hyperspheroid) after finding an initial solution. Dramatically accelerates convergence for cost-sensitive planning.
+
+\paragraph{BIT*~\cite{gammell2015batch}.}
+Batch Informed Trees unifies graph-based and tree-based search, processing samples in batches sorted by potential solution quality. Achieves faster convergence than RRT* with fewer wasted samples.
+
+\paragraph{AIT* and ABIT*~\cite{strub2022adaptively}.}
+Adaptively Informed Trees further improve BIT* by adapting the search effort based on an asymmetric bidirectional search, avoiding unnecessary edge evaluations through lazy collision checking.
+
+\subsection{Comparison: Sampling-Based Planners vs.\ Box-AABB}
+
+\begin{table}[ht]
+\centering
+\caption{Planning paradigm comparison.}
+\label{tab:planner_cmp}
+\small
+\begin{tabular}{@{}p{2.8cm}ccccc@{}}
+\toprule
+\textbf{Property} & \textbf{RRT} & \textbf{RRT*} & \textbf{PRM} & \textbf{BIT*} & \textbf{Box-RRT} \\
+\midrule
+Free-space structure & No & No & Implicit & No & \textbf{Explicit} \\
+Query type & Single & Single & Multi & Single & Multi$^*$ \\
+Completeness & Prob. & Prob.  & Prob. & Prob. & Prob. \\
+Optimality & No & Asymp. & Asymp. & Asymp. & No$^\dagger$ \\
+Collision semantics & Point & Point & Point & Point & \textbf{Set (box)} \\
+Reusable & No & No & Yes & No & \textbf{Yes} \\
+Path smoothing & Post-hoc & Inherent & Post-hoc & Inherent & Box-aware \\
+\bottomrule
+\multicolumn{6}{l}{\footnotesize $^*$Forest reuse across scenes. $^\dagger$Improved by GCS optimization.}
+\end{tabular}
+\end{table}
+
+\paragraph{Fundamental distinction.}
+Sampling-based planners treat the configuration space as a \emph{black box} accessed through a collision-checking oracle. Each sample gives local information (one point is free or not). Box-AABB's `find\_free\_box` returns a \emph{region certificate}---an entire box proven collision-free---from a single seed. This means each ``sample'' in Box-AABB contributes volumetric coverage rather than point coverage, which is far more information-efficient when conservative collision checking (via interval FK) is available.
+
+\paragraph{Narrow passages.}
+Both paradigms struggle with narrow passages, but for different reasons:
+\begin{itemize}[nosep]
+\item \textbf{RRT}: Must sample inside the passage, which has small volume.
+\item \textbf{Box-AABB}: Must seed inside the passage \emph{and} the resulting box must be large enough to survive the `min\_box\_size` filter. However, the island detection and bridging mechanism allows Box-AABB to connect disjoint components post-hoc, partially alleviating the narrow-passage problem.
+\end{itemize}
+
+% ############################################################
+\section{Box Coarsening and Region Merging}
+\label{sec:coarsen}
+
+\subsection{Problem Context}
+
+A key bottleneck in box-based GCS planning is the number of boxes: the SOCP size scales with $|E| \cdot D$, and a forest with 283 boxes may have thousands of edges. Reducing box count while maintaining coverage is critical.
+
+\subsection{Box-AABB v2: Dimension-Sweep Greedy Merge}
+
+The dimension-sweep algorithm operates as follows:
+\begin{enumerate}[nosep]
+\item For each dimension $d \in \{1,\ldots,D\}$:
+  \begin{enumerate}[nosep]
+  \item Group boxes by their ``profile key''---the tuple of all intervals \emph{except} dimension $d$.
+  \item Within each group, boxes differ only in their $d$-th interval. Sort by $l_d$.
+  \item Greedily merge consecutive touching pairs: if $\mathrm{hi}_d(A) = \mathrm{lo}_d(B)$, merge into $A \cup B$ (exact union, no gap, no extension beyond the union).
+  \end{enumerate}
+\item Repeat across all dimensions until no merges occur (convergence).
+\end{enumerate}
+
+\paragraph{Correctness guarantees.}
+\begin{itemize}[nosep]
+\item \textbf{No overlap}: Merged box equals $A \cup B$, which cannot overlap any third box $C$ that did not already overlap $A$ or $B$ (since non-contact dimensions are unchanged).
+\item \textbf{No collision}: If $A$ and $B$ are collision-free, $A \cup B$ is collision-free (exact union).
+\item \textbf{No adjacency loss}: The new box inherits all neighbors of $A$ and $B$.
+\end{itemize}
+
+\paragraph{Complexity}: $O(\text{rounds}  \cdot D \cdot (N \log N + T))$ where $T$ is the number of tree nodes requiring forest-id relabeling.
+
+\subsection{Comparison with IRIS Region Growing}
+
+IRIS grows each region independently by inflating an ellipsoid. There is no ``merging'' post-processing because IRIS regions \emph{may overlap by design}. This leads to several trade-offs:
+
+\begin{table}[ht]
+\centering
+\caption{Region consolidation comparison.}
+\label{tab:coarsen_cmp}
+\small
+\begin{tabular}{@{}p{3.2cm}p{4.3cm}p{4.3cm}@{}}
+\toprule
+\textbf{Aspect} & \textbf{IRIS region growing} & \textbf{Box-AABB dim-sweep merge} \\
+\midrule
+Strategy & Grow each region independently & Post-hoc merge of adjacent boxes \\
+Overlap & Allowed (even encouraged) & Strictly forbidden \\
+Shape & General convex polytope & Axis-aligned rectangle \\
+Coverage per region & High (adaptive shape) & Moderate (axis-aligned constraint) \\
+Post-processing & None needed & Merge reduces GCS variables \\
+Collision check & Per-region (SDP/NLP-embedded) & Not needed (union of safe boxes) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comparison with Octree/Quadtree Merging}
+
+In spatial indexing~\cite{samet2006foundations}, sibling nodes in an octree/quadtree can be merged when all are ``free.'' This is a special case of the dimension-sweep idea applied to uniform recursive subdivision. Box-AABB's dimension-sweep is more general because:
+\begin{itemize}[nosep]
+\item Boxes need not be siblings in a tree; they are identified by interval fingerprinting.
+\item Boxes may have non-power-of-two sizes (arbitrary interval widths).
+\item The merge criterion is topological (touching in exactly one dimension) rather than structural (same parent node).
+\end{itemize}
+
+% ############################################################
+\section{Parallel Motion Planning}
+\label{sec:parallel}
+
+\subsection{Concurrent Sampling Approaches}
+
+Parallel RRT~\cite{bialkowski2011massively} and distributed PRM~\cite{amato1999obprm} accelerate planning by running multiple samplers or roadmap builders concurrently. The key challenge is \emph{data structure synchronization}:
+
+\begin{itemize}[nosep]
+\item GPU-RRT~\cite{bialkowski2011massively}: Parallelizes nearest-neighbor queries and collision checks on GPU. The tree structure itself remains sequential.
+\item OBPRM~\cite{amato1999obprm}: Distributes roadmap construction using obstacle-based sampling. Merges sub-roadmaps with boundary edges.
+\item Parallel PRM frameworks~\cite{jacobs2013scalable_prm}: Use shared-memory or message-passing to build a single roadmap with lock-based or lock-free data structures.
+\end{itemize}
+
+\subsection{Box-AABB v2: Spatial Partitioning}
+
+Box-AABB avoids synchronization entirely by \emph{spatial decoupling}:
+\begin{enumerate}[nosep]
+\item KD-split the C-space root interval into $K = 2^d$ disjoint subspaces.
+\item Each worker independently grows a local forest within its subspace.
+\item The main process merges local forests, deduplicates boundaries, and adds cross-partition edges.
+\item \texttt{validate\_invariants(strict=True)} enforces correctness post-merge.
+\end{enumerate}
+
+\begin{table}[ht]
+\centering
+\caption{Parallel planning strategy comparison.}
+\label{tab:parallel_cmp}
+\small
+\begin{tabular}{@{}p{3.2cm}p{4.3cm}p{4.3cm}@{}}
+\toprule
+\textbf{Aspect} & \textbf{Concurrent sampling} & \textbf{Spatial partitioning} \\
+\midrule
+Synchronization & Required (tree/roadmap) & \textbf{None} (disjoint subspaces) \\
+Load balancing & Natural (same space) & Uneven (varying free volume) \\
+Overlap conflicts & Possible (same region) & \textbf{Impossible} (disjoint spaces) \\
+Cross-boundary & Not applicable & Requires explicit edge construction \\
+Invariant enforcement & Implicit (single structure) & Explicit post-merge validation \\
+Fallback & N/A & In-process sequential execution \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Trade-off.}
+Spatial partitioning trades load balancing flexibility for synchronization-free correctness. In high-dimensional spaces where free volume is unevenly distributed, some workers may finish much faster than others. However, the absence of locks or shared state eliminates an entire class of concurrency bugs.
+
+% ############################################################
+\section{Hierarchical Free-Box Search vs.\ Other Spatial Data Structures}
+\label{sec:hier_tree}
+
+\subsection{KD-Tree Heritage}
+
+Box-AABB's \texttt{HierAABBTree} is a variant of the KD-tree~\cite{samet2006foundations} specialized for configuration space:
+
+\begin{itemize}[nosep]
+\item \textbf{Splitting}: Midpoint bisection along cycling dimensions (standard KD-tree).
+\item \textbf{Lazy evaluation}: Nodes are split only when visited during `find\_free\_box', not pre-computed.
+\item \textbf{Collision integration}: Each split triggers incremental FK and AABB-obstacle intersection testing, fusing the tree structure with collision semantics.
+\item \textbf{Occupancy tracking}: The tree tracks which nodes are assigned to forest boxes, enabling $O(1)$ ``already covered'' queries.
+\end{itemize}
+
+This contrasts with standard spatial data structures that serve as pure geometric indices:
+
+\begin{itemize}[nosep]
+\item \textbf{FCL~\cite{pan2012fcl}}: BVH (AABB-tree or OBB-tree) for workspace collision detection, not C-space decomposition.
+\item \textbf{OMPL state space}~\cite{sucan2012ompl}: Provides sampling interfaces but no spatial decomposition.
+\item \textbf{Octree-based planning}~\cite{hornung2013octomap}: OctoMap provides 3D occupancy grids but not C-space free-box certificates.
+\end{itemize}
+
+\subsection{The Find-Free-Box (FFB) Operation}
+
+FFB is Box-AABB's core operation and has no direct counterpart in other frameworks:
+
+\begin{enumerate}[nosep]
+\item \textbf{Descent}: From root, traverse to the deepest node containing the seed $q$ that is both collision-free and unoccupied.
+\item \textbf{Ascent}: Propagate upward, attempting to \emph{promote} (absorb children into a larger free box). This is analogous to ``coarsening during construction.''
+\item \textbf{Output}: A maximal (within the tree resolution) collision-free box plus a list of absorbed box-ids.
+\end{enumerate}
+
+IRIS achieves a similar goal (maximal free region from a seed) but through iterative SDP rather than tree traversal. FFB is fundamentally faster ($\sim$1ms vs.\ $\sim$1s) but produces simpler regions (boxes vs.\ polytopes).
+
+\subsection{KD-Tree and BSP-Based C-Space Partitioning}
+\label{sec:kdtree_cspace}
+
+Several methods have explored explicit spatial decomposition of configuration space using tree structures to guide or accelerate motion planning.
+
+\paragraph{BSP-based motion planning.}
+Lingelbach~\cite{lingelbach2004path} proposed using binary space partitioning (BSP) trees to decompose C-space into cells, guiding RRT expansion toward unexplored regions. The BSP subdivision adapts to the density of obstacles: regions near obstacles are subdivided finely, while open regions remain coarse. Each leaf cell is classified as free, occupied, or mixed based on point-sample collision checks. This was an early example of combining spatial decomposition with sampling-based planning.
+
+\paragraph{Workspace-guided C-space decomposition.}
+\c{S}ucan and Kavraki~\cite{sucan2010anticipatory} introduced a workspace decomposition to guide C-space exploration: a lead computed in workspace (via Dijkstra on an obstacle-aware grid) biases C-space sampling toward promising regions. While not explicitly partitioning C-space with a KD-tree, this approach shares the idea of using structured spatial information to direct planning effort. Kurniawati and Hsu~\cite{kurniawati2006workspace} proposed an explicit workspace--C-space mapping that uses a workspace triangulation to identify promising C-space subregions for focused sampling.
+
+\paragraph{Utility-guided decomposition.}
+Burns and Brock~\cite{burns2007toward} proposed utility-based region selection where C-space is partitioned into cells and each cell's ``utility'' (potential for connecting the roadmap) determines sampling priority. High-utility cells---those likely to contain narrow passages or bridge disconnected components---receive more samples. This achieves adaptive resolution similar to Box-AABB's demand-driven splitting but relies on point sampling rather than set-based collision certificates.
+
+\paragraph{Adaptive subdivision in multi-resolution planning.}
+Plaku et al.~\cite{plaku2010motion} demonstrated that adaptive C-space subdivision---refining only cells at the boundary of free and occupied space---dramatically reduces the number of cells needed for motion planning. Their method decomposes workspace into a triangulation that guides an RRT in C-space, with subdivision focused where exploration is most needed. Similarly, Denny and Amato~\cite{denny2013lazy} proposed lazy KD-tree subdivision that expands nodes only upon query, reducing memory and computation compared to uniform decomposition.
+
+\paragraph{Multi-resolution RRT with spatial indexing.}
+Kalisiak and van de Panne~\cite{kalisiak2006rrt} introduced RRT-blossom, which uses a spatial decomposition to generate informed local samples (``blossoms'') at the frontier of the exploration tree. The spatial index identifies under-explored regions in C-space, concentrating sampling where coverage is sparse---a strategy related to Box-AABB's occupancy tracking that prevents redundant box generation.
+
+\paragraph{Comparison with Box-AABB's HierAABBTree.}
+\begin{table}[ht]
+\centering
+\caption{KD-tree / BSP C-space decomposition comparison.}
+\label{tab:kdtree_cmp}
+\small
+\begin{tabular}{@{}p{3cm}p{4.3cm}p{4.3cm}@{}}
+\toprule
+\textbf{Aspect} & \textbf{Classical KD/BSP} & \textbf{Box-AABB HierAABBTree} \\
+\midrule
+Split trigger & Uniform or density-based & Seed-driven (on demand) \\
+Collision check & Point-based per cell & \textbf{Interval FK over cell} (set-based) \\
+Cell label & Free / occupied / mixed & Free / collision / occupied \\
+Promotion (coarsen) & Sibling merge if all free & \textbf{Ancestor promotion} during FFB \\
+Output & Cell adjacency graph & Free boxes + adjacency graph \\
+Integration & Standalone decomposition & Fused with AABB computation \\
+Reuse across scenes & Must rebuild & \textbf{Lazy revalidation} \\
+Coverage tracking & Point density heuristics & \textbf{Explicit occupancy bitmap} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key innovations of Box-AABB's HierAABBTree over classical KD-tree decomposition are: (1)~\emph{set-based collision checking}---each cell's collision status is determined by interval FK over the entire joint interval (not point samples), providing a conservative certificate without any false negatives; (2)~\emph{ancestor promotion}---during the FFB ascent phase, child cells can be merged into a parent cell when the parent is also collision-free, dynamically adjusting resolution without explicit merge passes; (3)~\emph{occupancy tracking}---the tree records which cells have been assigned to forest boxes via an explicit bitmap, preventing redundant decomposition and enabling efficient ``already covered'' queries; and (4)~\emph{cross-scene reuse}---because collision status is computed via interval FK against obstacle AABBs, changing the obstacle set only requires revalidating affected cells rather than rebuilding the tree, which is not possible in classical BSP/KD approaches that embed point-sample collision results.
+
+% ############################################################
+\section{Completeness and Optimality}
+\label{sec:completeness}
+
+\begin{table}[ht]
+\centering
+\caption{Completeness and optimality guarantees.}
+\label{tab:guarantees}
+\small
+\begin{tabular}{@{}p{3cm}p{3.5cm}p{5cm}@{}}
+\toprule
+\textbf{Method} & \textbf{Completeness} & \textbf{Optimality} \\
+\midrule
+RRT & Probabilistically complete & None \\
+RRT* & Probabilistically complete & Asymptotically optimal \\
+PRM & Probabilistically complete & Asymptotically optimal \\
+BIT* & Probabilistically complete & Asymptotically optimal \\
+GCS (Marcucci) & Depends on decomposition & Optimal within decomposition \\
+C-IRIS + GCS & Resolution complete & Optimal within regions \\
+\textbf{Box-AABB + GCS} & \textbf{Depends on forest} & \textbf{Optimal within corridor} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Box-AABB completeness.}
+Box-AABB is \emph{not} provably probabilistically complete in the standard sense because:
+(1)~the box min-size filter may reject narrow-passage boxes;
+(2)~the hierarchical tree resolution is finite;
+(3)~the island bridging mechanism is heuristic.
+However, in practice, the system reliably solves problems with moderate passage widths, and the bridging mechanism provides substantial robustness.
+
+\paragraph{GCS optimality within the decomposition.}
+Given a fixed set of boxes, the GCS SOCP relaxation provides an optimal or near-optimal path \emph{within the union of those boxes}. The relaxation gap (from continuous $\phi$ vs.\ binary $\phi$) is typically small for well-connected graphs. The corridor pruning in Box-AABB may exclude the globally optimal path if it lies outside the BFS neighborhood, trading optimality for solver speed.
+
+% ############################################################
+\section{End-to-End Pipeline Comparison}
+\label{sec:e2e}
+
+We now compare complete planning pipelines:
+
+\begin{table}[ht]
+\centering
+\caption{End-to-end pipeline comparison.}
+\label{tab:e2e}
+\small
+\begin{tabular}{@{}p{2.5cm}p{3.3cm}p{3.3cm}p{3.3cm}@{}}
+\toprule
+\textbf{Stage} & \textbf{RRT-Connect} & \textbf{IRIS-NP + GCS} & \textbf{Box-AABB + GCS} \\
+\midrule
+Free-space & None (implicit) & IRIS-NP regions & Box forest \\
+Decomposition cost & 0 & $\sim$10--60s (7-DOF) & $\sim$0.3--1s \\
+Planning method & Bi-directional tree & GCS SOCP & GCS SOCP \\
+Planning cost & $\sim$0.01--5s & $\sim$0.1--5s & $\sim$1--2s \\
+Total (typical) & $\sim$0.01--5s & $\sim$10--65s & $\sim$1--3s \\
+Path quality & Feasible (no opt.) & Near-optimal & Near-optimal \\
+Reusable & No & Regions reusable & Forest reusable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Discussion.}
+RRT-Connect remains the fastest for single-query feasibility when decomposition cost is included. However, it provides no path optimality. IRIS-NP + GCS produces high-quality paths but at significant decomposition cost. Box-AABB + GCS offers a middle ground: moderate total time, near-optimal paths, and a reusable forest structure.
+
+% ############################################################
+\section{Discussion and Synthesis}
+\label{sec:discussion}
+
+\subsection{Strengths of Box-AABB v2}
+
+\begin{enumerate}[nosep]
+\item \textbf{Integrated pipeline}: From AABB computation to path output in a single framework, with consistent collision semantics throughout.
+\item \textbf{Efficient decomposition}: Hundreds of boxes in sub-second time, compared to minutes for IRIS-NP.
+\item \textbf{Structural invariants}: The no-overlap + adjacency symmetry invariants enable clean GCS construction and are enforced at all code paths.
+\item \textbf{Reusability}: The forest is bound to kinematics, not scenes; cross-scene lazy validation is unique among the compared methods.
+\item \textbf{Coarsening}: The dimension-sweep merge reduces GCS problem size without relaxation, a feature absent in IRIS-based pipelines.
+\item \textbf{Parallel expansion}: Synchronization-free spatial partitioning with formal correctness enforcement.
+\end{enumerate}
+
+\subsection{Limitations of Box-AABB v2}
+
+\begin{enumerate}[nosep]
+\item \textbf{Axis-aligned constraint}: Boxes cannot adapt to diagonal or curved obstacle boundaries. In configurations where the free space is a thin diagonal channel, many small boxes are needed where a single IRIS polytope would suffice.
+\item \textbf{No completeness guarantee}: The min-box-size filter and finite tree depth can cause the planner to miss solutions.
+\item \textbf{No asymptotic optimality}: Unlike RRT* or BIT*, Box-RRT does not converge to the optimal path with increasing samples. The GCS step provides local optimality within the corridor but not global optimality.
+\item \textbf{Conservative collision}: Interval FK over-approximation means some free-space volume is unreachable, potentially causing unnecessary disconnections.
+\item \textbf{Coarsening limitations}: The dimension-sweep merge only combines boxes identical in $D{-}1$ dimensions, missing merging opportunities where boxes differ in multiple dimensions but their union is still collision-free.
+\end{enumerate}
+
+\subsection{When to Use Which Method}
+
+\begin{itemize}[nosep]
+\item \textbf{Single feasibility query, simple scene}: RRT-Connect~\cite{kuffner2000rrt}---fastest.
+\item \textbf{Optimal single query, moderate DOF}: BIT*~\cite{gammell2015batch} or AIT*~\cite{strub2022adaptively}---best convergence rate for optimal paths.
+\item \textbf{Highest path quality, offline budget}: IRIS-NP + GCS~\cite{werner2024fast,marcucci2023motion}---best quality if decomposition time is acceptable.
+\item \textbf{Multi-query, moderate quality}: PRM~\cite{kavraki1996probabilistic}---amortizes roadmap cost over queries.
+\item \textbf{Multi-scene, reusable structure}: Box-AABB v2---forest persists across scene changes.
+\item \textbf{Integrated AABB + planning}: Box-AABB v2---only framework that combines envelope computation with planning.
+\end{itemize}
+
+% ############################################################
+\section{Conclusion}
+\label{sec:conclusion}
+
+Box-AABB v2 occupies a unique niche in the motion planning landscape by integrating workspace envelope computation, configuration-space free-region construction, and convex optimization-based path planning into a single coherent framework. Its key innovation---exploiting the algebraic structure of serial-manipulator FK for both tight AABB computation and efficient free-box generation---distinguishes it from both pure sampling methods (which ignore free-space structure) and pure optimization methods (which require expensive offline decomposition).
+
+The dimension-sweep coarsening algorithm is a practical contribution that directly reduces GCS solver time by consolidating compatible boxes, achieving 1.25--3$\times$ speedups in our experiments. The strict no-overlap invariant, absent in IRIS-based approaches, provides clean semantics for downstream planning algorithms.
+
+Compared to state-of-the-art methods, Box-AABB v2 trades geometric flexibility (axis-aligned vs.\ general convex) for computational efficiency and structural guarantees. For applications requiring repeated planning in varying scenes with the same robot, the reusable forest structure provides a compelling advantage over both sampling-based and decomposition-based alternatives.
+
+% ============================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{99}
+
+\bibitem{box_aabb_v2}
+Box-AABB v2: A Three-Layer Decoupled Motion Planning Framework for Serial Manipulators via Box Forests. Technical Report, February 2026.
+
+\bibitem{lavalle1998rapidly}
+S.~M. LaValle, ``Rapidly-exploring random trees: A new tool for path planning,'' Tech.\ Rep.\ 98-11, Iowa State Univ., 1998.
+
+\bibitem{kavraki1996probabilistic}
+L.~E. Kavraki, P.~\v{S}vestka, J.-C. Latombe, and M.~H. Overmars, ``Probabilistic roadmaps for path planning in high-dimensional configuration spaces,'' \emph{IEEE Trans.\ Robotics and Automation}, vol.~12, no.~4, pp.~566--580, 1996.
+
+\bibitem{marcucci2023motion}
+T.~Marcucci, M.~Petersen, D.~von Wrangel, and R.~Tedrake, ``Motion planning around obstacles with convex optimization,'' \emph{Science Robotics}, vol.~8, no.~84, eadf7843, 2023.
+
+\bibitem{deits2015computing}
+R.~Deits and R.~Tedrake, ``Computing large convex regions of obstacle-free space through semidefinite programming,'' in \emph{Proc.\ Workshop on the Algorithmic Foundations of Robotics (WAFR)}, 2015, pp.~109--124.
+
+\bibitem{werner2024fast}
+P.~Werner, T.~Cohn, R.~J.~Litzner, and R.~Tedrake, ``Approximating robot configuration spaces with few convex sets using clique covers of visibility graphs,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2024. arXiv:2310.02875.
+
+\bibitem{zhong2024iris}
+H.~Zhong, A.~Dai, and R.~Tedrake, ``IRIS-ZO: Zeroth-order region inflation,'' 2024. Available: \url{https://groups.csail.mit.edu/locomotion/}.
+
+\bibitem{dai2023cspace_iris}
+H.~Dai, A.~Amice, P.~Werner, A.~Zhang, and R.~Tedrake, ``Certified polyhedral decompositions of collision-free configuration space,'' \emph{Int.\ J.\ Robotics Research}, 2024. arXiv:2310.11909.
+
+\bibitem{kuffner2000rrt}
+J.~J. Kuffner and S.~M. LaValle, ``RRT-Connect: An efficient approach to single-query path planning,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2000, pp.~995--1001.
+
+\bibitem{karaman2011sampling}
+S.~Karaman and E.~Frazzoli, ``Sampling-based algorithms for optimal motion planning,'' \emph{Int.\ J.\ Robotics Research}, vol.~30, no.~7, pp.~846--894, 2011.
+
+\bibitem{gammell2014informed}
+J.~D. Gammell, S.~S. Srinivasa, and T.~D. Barfoot, ``Informed RRT*: Optimal sampling-based path planning focused via direct sampling of an admissible ellipsoidal heuristic,'' in \emph{Proc.\ IEEE/RSJ Int.\ Conf.\ Intelligent Robots and Systems (IROS)}, 2014, pp.~2997--3004.
+
+\bibitem{gammell2015batch}
+J.~D. Gammell, S.~S. Srinivasa, and T.~D. Barfoot, ``Batch informed trees (BIT*): Sampling-based optimal planning via the heuristically guided search of implicit random geometric graphs,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2015, pp.~3067--3074.
+
+\bibitem{strub2022adaptively}
+M.~P. Strub and J.~D. Gammell, ``Adaptively informed trees (AIT*) and effort informed trees (EIT*): Asymmetric bidirectional sampling-based path planning,'' \emph{Int.\ J.\ Robotics Research}, vol.~41, no.~4, pp.~390--417, 2022.
+
+\bibitem{bialkowski2011massively}
+J.~Bialkowski, S.~Karaman, and E.~Frazzoli, ``Massively parallelizing the RRT and the RRT*,'' in \emph{Proc.\ IEEE/RSJ Int.\ Conf.\ Intelligent Robots and Systems (IROS)}, 2011, pp.~3513--3518.
+
+\bibitem{amato1999obprm}
+N.~M. Amato, O.~B. Bayazit, L.~K. Dale, C.~Jones, and D.~Vallejo, ``OBPRM: An obstacle-based PRM for 3D workspaces,'' in \emph{Proc.\ Workshop on the Algorithmic Foundations of Robotics (WAFR)}, 1998, pp.~155--168.
+
+\bibitem{jacobs2013scalable_prm}
+S.~A. Jacobs, N.~Stradford, C.~Rodriguez, S.~Thomas, and N.~M. Amato, ``A scalable method for parallelizing sampling-based motion planning algorithms,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2013, pp.~2529--2536.
+
+\bibitem{moore2009introduction}
+R.~E. Moore, R.~B. Kearfott, and M.~J. Cloud, \emph{Introduction to Interval Analysis}. SIAM, 2009.
+
+\bibitem{stolfi1997self}
+J.~Stolfi and L.~H. de~Figueiredo, ``Self-validated numerical methods and applications,'' Monograph, IMPA, 1997.
+
+\bibitem{de2004affine}
+L.~H. de~Figueiredo and J.~Stolfi, ``Affine arithmetic: Concepts and applications,'' \emph{Numerical Algorithms}, vol.~37, no.~1--4, pp.~147--158, 2004.
+
+\bibitem{caflisch1998monte}
+R.~E. Caflisch, ``Monte Carlo and quasi-Monte Carlo methods,'' \emph{Acta Numerica}, vol.~7, pp.~1--49, 1998.
+
+\bibitem{byrd1995limited}
+R.~H. Byrd, P.~Lu, J.~Nocedal, and C.~Zhu, ``A limited memory algorithm for bound constrained optimization,'' \emph{SIAM J.\ Scientific Computing}, vol.~16, no.~5, pp.~1190--1208, 1995.
+
+\bibitem{latombe1991robot}
+J.-C. Latombe, \emph{Robot Motion Planning}. Kluwer Academic Publishers, 1991.
+
+\bibitem{zhu1991hidden}
+D.~Zhu and J.-C. Latombe, ``New heuristic algorithms for efficient hierarchical path planning,'' \emph{IEEE Trans.\ Robotics and Automation}, vol.~7, no.~1, pp.~9--20, 1991.
+
+\bibitem{schwartz1983piano}
+J.~T. Schwartz and M.~Sharir, ``On the piano movers' problem: I.\ The case of a two-dimensional rigid polygonal body moving amidst polygonal barriers,'' \emph{Comm.\ Pure and Applied Math.}, vol.~36, no.~3, pp.~345--398, 1983.
+
+\bibitem{samet2006foundations}
+H.~Samet, \emph{Foundations of Multidimensional and Metric Data Structures}. Morgan Kaufmann, 2006.
+
+\bibitem{pan2012fcl}
+J.~Pan, S.~Chitta, and D.~Manocha, ``FCL: A general purpose library for collision and proximity queries,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2012, pp.~3400--3405.
+
+\bibitem{merlet2004solving}
+J.-P. Merlet, ``Solving the forward kinematics of a Gough-type parallel manipulator with interval analysis,'' \emph{Int.\ J.\ Robotics Research}, vol.~23, no.~3, pp.~221--235, 2004.
+
+\bibitem{merlet2009interval}
+J.-P. Merlet, ``Interval analysis for certified numerical solution of problems in robotics,'' \emph{Int.\ J.\ Applied Math.\ and Computer Science}, vol.~19, no.~3, pp.~399--412, 2009.
+
+\bibitem{sucan2012ompl}
+I.~A. \c{S}ucan, M.~Moll, and L.~E. Kavraki, ``The Open Motion Planning Library,'' \emph{IEEE Robotics \& Automation Magazine}, vol.~19, no.~4, pp.~72--82, 2012.
+
+\bibitem{hornung2013octomap}
+A.~Hornung, K.~M. Wurm, M.~Bennewitz, C.~Stachniss, and W.~Burgard, ``OctoMap: An efficient probabilistic 3D mapping framework based on octrees,'' \emph{Autonomous Robots}, vol.~34, no.~3, pp.~189--206, 2013.
+
+\bibitem{craig2005introduction}
+J.~J. Craig, \emph{Introduction to Robotics: Mechanics, Planning, and Control}, 3rd~ed. Pearson Prentice Hall, 2005.
+
+\bibitem{ericson2004realtime}
+C.~Ericson, \emph{Real-Time Collision Detection}. Morgan Kaufmann, 2004.
+
+\bibitem{gottschalk1996obbtree}
+S.~Gottschalk, M.~C. Lin, and D.~Manocha, ``OBBTree: A hierarchical structure for rapid interference detection,'' in \emph{Proc.\ ACM SIGGRAPH}, 1996, pp.~171--180.
+
+\bibitem{vandenbergen2003collision}
+G.~van den Bergen, \emph{Collision Detection in Interactive 3D Environments}. Morgan Kaufmann, 2003.
+
+\bibitem{schwarzer2005exact}
+F.~Schwarzer, M.~Saha, and J.-C. Latombe, ``Exact collision checking of robot paths,'' in \emph{Algorithmic Foundations of Robotics V}, Springer, 2004, pp.~25--41.
+
+\bibitem{redon2004adaptive}
+S.~Redon and M.~C. Lin, ``Practical local planning in the contact space,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2005, pp.~4200--4205.
+
+\bibitem{zacharias2007capturing}
+F.~Zacharias, C.~Borst, and G.~Hirzinger, ``Capturing robot workspace structure: Representing robot capabilities,'' in \emph{Proc.\ IEEE/RSJ Int.\ Conf.\ Intelligent Robots and Systems (IROS)}, 2007, pp.~3229--3236.
+
+\bibitem{porges2014reachability}
+O.~Porges, T.~Stouraitis, C.~Borst, and M.~A. Roa, ``Reachability and capability analysis for manipulation tasks,'' in \emph{ROBOT2013: First Iberian Robotics Conf.}, Springer, 2014, pp.~703--718.
+
+\bibitem{makhal2018reuleaux}
+A.~Makhal and A.~K. Goins, ``Reuleaux: Robot base placement by reachability analysis,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotic Computing (IRC)}, 2018, pp.~137--142.
+
+\bibitem{vahrenkamp2013robot}
+N.~Vahrenkamp, T.~Asfour, and R.~Dillmann, ``Robot placement based on reachability inversion,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2013, pp.~1970--1975.
+
+\bibitem{liu2017planning}
+S.~Liu, M.~Watterson, K.~Mohta, K.~Sun, S.~Bhatt, C.~J. Taylor, and V.~Kumar, ``Planning dynamically feasible trajectories for quadrotors using safe flight corridors in 3-D complex environments,'' \emph{IEEE Robotics and Automation Letters}, vol.~2, no.~3, pp.~1688--1695, 2017.
+
+\bibitem{chen2016online}
+J.~Chen, T.~Liu, and S.~Shen, ``Online generation of collision-free trajectories for quadrotor flight in unknown cluttered environments,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2016, pp.~1476--1483.
+
+\bibitem{gao2020teach}
+F.~Gao, L.~Wang, B.~Zhou, X.~Zhou, J.~Pan, and S.~Shen, ``Teach-repeat-replan: A complete and robust system for aggressive flight in complex environments,'' \emph{IEEE Trans.\ Robotics}, vol.~36, no.~5, pp.~1526--1545, 2020.
+
+\bibitem{toumieh2022voxel}
+C.~Toumieh and V.~Shiller, ``Voxel-based path planning for 3D manipulators with safe corridors,'' in \emph{Proc.\ IEEE/RSJ Int.\ Conf.\ Intelligent Robots and Systems (IROS)}, 2022, pp.~9461--9468.
+
+\bibitem{majumdar2017funnel}
+A.~Majumdar and R.~Tedrake, ``Funnel libraries for real-time robust feedback motion planning,'' \emph{Int.\ J.\ Robotics Research}, vol.~36, no.~8, pp.~947--982, 2017.
+
+\bibitem{majumdar2013robust}
+A.~Majumdar, A.~A. Ahmadi, and R.~Tedrake, ``Control design along trajectories with sums of squares programming,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2013, pp.~4054--4061.
+
+\bibitem{ames2019control}
+A.~D. Ames, S.~Coogan, M.~Egerstedt, G.~Notomista, K.~Sreenath, and P.~Tabuada, ``Control barrier functions: Theory and applications,'' in \emph{Proc.\ European Control Conf.\ (ECC)}, 2019, pp.~3420--3431.
+
+\bibitem{thirugnanam2022safety}
+A.~Thirugnanam, J.~Zeng, and K.~Sreenath, ``Safety-critical motion planning with control barrier functions for high-DOF robots,'' in \emph{Proc.\ IEEE/RSJ Int.\ Conf.\ Intelligent Robots and Systems (IROS)}, 2022, pp.~3538--3545.
+
+\bibitem{lingelbach2004path}
+F.~Lingelbach, ``Path planning using probabilistic cell decomposition,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2004, pp.~467--472.
+
+\bibitem{sucan2010anticipatory}
+I.~A. \c{S}ucan and L.~E. Kavraki, ``Kinodynamic motion planning by interior-exterior cell exploration,'' in \emph{Algorithmic Foundation of Robotics VIII}, Springer, 2010, pp.~449--464.
+
+\bibitem{kurniawati2006workspace}
+H.~Kurniawati and D.~Hsu, ``Workspace-based connectivity oracle: An adaptive sampling strategy for PRM planning,'' in \emph{Algorithmic Foundation of Robotics VII}, Springer, 2008, pp.~35--51.
+
+\bibitem{burns2007toward}
+B.~Burns and O.~Brock, ``Toward optimal configuration space sampling,'' in \emph{Proc.\ Robotics: Science and Systems (RSS)}, 2007.
+
+\bibitem{plaku2010motion}
+E.~Plaku, L.~E. Kavraki, and M.~Y. Vardi, ``Motion planning with dynamics by a synergistic combination of layers,'' \emph{IEEE Trans.\ Robotics}, vol.~26, no.~3, pp.~469--482, 2010.
+
+\bibitem{denny2013lazy}
+J.~Denny and N.~M. Amato, ``Toggle PRM: A coordinated mapping of C-free and C-obstacle in arbitrary dimension,'' in \emph{Algorithmic Foundations of Robotics X}, Springer, 2013, pp.~297--312.
+
+\bibitem{kalisiak2006rrt}
+M.~Kalisiak and M.~van de Panne, ``RRT-blossom: RRT with a local flood-fill behavior,'' in \emph{Proc.\ IEEE Int.\ Conf.\ Robotics and Automation (ICRA)}, 2006, pp.~1237--1242.
+
+\end{thebibliography}
+
+\end{document}

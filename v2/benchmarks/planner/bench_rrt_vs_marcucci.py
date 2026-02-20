@@ -47,7 +47,7 @@ from aabb.robot import load_robot
 from common.output import make_output_dir
 from forest.collision import CollisionChecker
 from forest.scene import Scene
-from planner.box_rrt import BoxRRT
+from planner.box_planner import BoxPlanner
 from planner.gcs_optimizer import GCSOptimizer
 from planner.models import PlannerConfig
 
@@ -122,7 +122,7 @@ def _validate_path(path: Sequence[np.ndarray], checker: CollisionChecker, resolu
 def _run_box_rrt(robot_name: str, case: BenchmarkCase, seed: int) -> Dict:
     robot = load_robot(robot_name)
     scene = _make_scene(case)
-    planner = BoxRRT(robot, scene, _make_box_rrt_config())
+    planner = BoxPlanner(robot, scene, _make_box_rrt_config())
 
     t0 = time.perf_counter()
     result = planner.plan(case.q_start, case.q_goal, seed=seed)
@@ -139,7 +139,7 @@ def _run_box_rrt(robot_name: str, case: BenchmarkCase, seed: int) -> Dict:
 def _run_marcucci_gcs(robot_name: str, case: BenchmarkCase, seed: int) -> Dict:
     robot = load_robot(robot_name)
     scene = _make_scene(case)
-    planner = BoxRRT(robot, scene, _make_box_rrt_config())
+    planner = BoxPlanner(robot, scene, _make_box_rrt_config())
 
     t0 = time.perf_counter()
     result = planner.plan(case.q_start, case.q_goal, seed=seed)

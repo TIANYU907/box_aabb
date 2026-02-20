@@ -16,7 +16,7 @@ add_v2_paths()
 from aabb.robot import load_robot
 from forest.scene import Scene
 from forest.collision import CollisionChecker
-from planner.box_rrt import BoxRRT
+from planner.box_planner import BoxPlanner
 from planner.models import PlannerConfig, gmean_edge_length
 from forest.models import BoxNode
 from forest.connectivity import find_islands, bridge_islands
@@ -342,7 +342,7 @@ Snapshot = Tuple[int, Dict[int, BoxNode], Dict[int, Set[int]], int]  # (n_boxes,
 
 
 def _try_add_seed(
-    planner: BoxRRT,
+    planner: BoxPlanner,
     forest,
     q_seed: np.ndarray,
 ) -> int:
@@ -400,7 +400,7 @@ def _snapshot(forest, new_id: int) -> Snapshot:
 
 
 def grow_forest_with_snapshots(
-    planner: BoxRRT,
+    planner: BoxPlanner,
     q_start: np.ndarray,
     q_goal: np.ndarray,
     seed: int,
@@ -499,7 +499,7 @@ def main() -> None:
     # ---------- 单次 episode 拓展 ----------
     print(f"expanding forest (max_consecutive_miss={cfg.max_consecutive_miss}) ...")
     planner_cfg = make_planner_config(cfg)
-    planner = BoxRRT(robot=robot, scene=scene, config=planner_cfg)
+    planner = BoxPlanner(robot=robot, scene=scene, config=planner_cfg)
     snapshots, total_attempts, exit_reason, forest_obj = grow_forest_with_snapshots(
         planner=planner,
         q_start=q_start,

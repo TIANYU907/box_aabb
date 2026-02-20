@@ -5,7 +5,7 @@ from .models import AABBEnvelopeResult, LinkAABBInfo, BoundaryConfig
 from .calculator import AABBCalculator
 from .report import ReportGenerator
 from .visualizer import Visualizer, visualize_envelope_result
-from .interval_fk import compute_interval_aabb, compute_fk_full, compute_fk_incremental
+from .interval_fk import compute_interval_aabb, compute_fk_full, compute_fk_incremental, _split_fk_pair
 
 __all__ = [
     "Robot",

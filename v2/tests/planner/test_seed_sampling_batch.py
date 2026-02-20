@@ -1,6 +1,6 @@
 import numpy as np
 
-from planner.box_rrt import BoxRRT
+from planner.box_planner import BoxPlanner
 from planner.models import PlannerConfig
 
 
@@ -26,8 +26,8 @@ class _DummyAllCollide:
         return True
 
 
-def _make_planner(checker, goal_bias: float = 0.0) -> BoxRRT:
-    planner = BoxRRT.__new__(BoxRRT)
+def _make_planner(checker, goal_bias: float = 0.0) -> BoxPlanner:
+    planner = BoxPlanner.__new__(BoxPlanner)
     planner.config = PlannerConfig(goal_bias=goal_bias)
     planner._n_dims = 2
     planner.joint_limits = [(-1.0, 1.0), (-2.0, 2.0)]

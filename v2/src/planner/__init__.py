@@ -1,7 +1,7 @@
 """v2 planner package."""
 
 from .models import PlannerConfig, PlannerResult, Edge, BoxTree, gmean_edge_length
-from .box_rrt import BoxRRT
+from .box_planner import BoxPlanner, BoxRRT
 from .box_query import BoxForestQuery
 from .connector import TreeConnector
 from .path_smoother import PathSmoother
@@ -15,6 +15,7 @@ __all__ = [
 	"Edge",
 	"BoxTree",
 	"gmean_edge_length",
+	"BoxPlanner",
 	"BoxRRT",
 	"BoxForestQuery",
 	"TreeConnector",

@@ -342,6 +342,113 @@ def compute_fk_incremental(
     return prefix_lo, prefix_hi, joints_lo, joints_hi
 
 
+def _split_fk_pair(
+    robot: Robot,
+    left_ivs: List[Tuple[float, float]],
+    right_ivs: List[Tuple[float, float]],
+    parent_prefix_lo: np.ndarray,
+    parent_prefix_hi: np.ndarray,
+    parent_joints_lo: np.ndarray,
+    parent_joints_hi: np.ndarray,
+    changed_joint: int,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+           np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """优化 D: 一次 parent copy 同时算左右子增量 FK.
+
+    左右子节点只在 changed_joint 的区间不同, 共享:
+    - parent prefix[0..d] (直接 copy 一次)
+    - joints[k] for k != d (直接 copy 一次)
+    只需分别重算 changed_joint 的 joint 矩阵和后续 prefix 链.
+    相比调用两次 compute_fk_incremental, 节省一次完整的 4-array copy.
+    """
+    n_joints = len(robot.dh_params)
+    has_tool = robot.tool_frame is not None
+    d = changed_joint
+
+    # ── 共享: copy parent arrays 一次 ──
+    shared_jlo = parent_joints_lo.copy()
+    shared_jhi = parent_joints_hi.copy()
+
+    # ── LEFT child ──
+    l_plo = parent_prefix_lo.copy()
+    l_phi = parent_prefix_hi.copy()
+    l_jlo = shared_jlo.copy()
+    l_jhi = shared_jhi.copy()
+
+    param = robot.dh_params[d]
+    alpha = param['alpha']
+    a_val = param['a']
+
+    # left joint d
+    lo_l, hi_l = left_ivs[d]
+    if param['type'] == 'revolute':
+        theta_lo = lo_l + param['theta']
+        theta_hi = hi_l + param['theta']
+        ct_lo, ct_hi = _icos(theta_lo, theta_hi)
+        st_lo, st_hi = _isin(theta_lo, theta_hi)
+        d_lo = d_hi = param['d']
+    else:
+        theta = param['theta']
+        ct_lo = ct_hi = math.cos(theta)
+        st_lo = st_hi = math.sin(theta)
+        d_lo = lo_l + param['d']
+        d_hi = hi_l + param['d']
+    Al_lo, Al_hi = _dh_joint_matrix(alpha, a_val, ct_lo, ct_hi, st_lo, st_hi, d_lo, d_hi)
+    l_jlo[d] = Al_lo
+    l_jhi[d] = Al_hi
+
+    T_lo, T_hi = _imat_mul_dh(l_plo[d], l_phi[d], Al_lo, Al_hi)
+    l_plo[d + 1] = T_lo
+    l_phi[d + 1] = T_hi
+    for k in range(d + 1, n_joints):
+        T_lo, T_hi = _imat_mul_dh(l_plo[k], l_phi[k], l_jlo[k], l_jhi[k])
+        l_plo[k + 1] = T_lo
+        l_phi[k + 1] = T_hi
+    if has_tool:
+        j_idx = n_joints
+        T_lo, T_hi = _imat_mul_dh(l_plo[n_joints], l_phi[n_joints], l_jlo[j_idx], l_jhi[j_idx])
+        l_plo[n_joints + 1] = T_lo
+        l_phi[n_joints + 1] = T_hi
+
+    # ── RIGHT child: 共享 shared_jlo/jhi 直接用 (不再 copy) ──
+    r_plo = parent_prefix_lo.copy()
+    r_phi = parent_prefix_hi.copy()
+    r_jlo = shared_jlo  # 直接复用, 下面只改 [d]
+    r_jhi = shared_jhi
+
+    lo_r, hi_r = right_ivs[d]
+    if param['type'] == 'revolute':
+        theta_lo = lo_r + param['theta']
+        theta_hi = hi_r + param['theta']
+        ct_lo, ct_hi = _icos(theta_lo, theta_hi)
+        st_lo, st_hi = _isin(theta_lo, theta_hi)
+        d_lo = d_hi = param['d']
+    else:
+        theta = param['theta']
+        ct_lo = ct_hi = math.cos(theta)
+        st_lo = st_hi = math.sin(theta)
+        d_lo = lo_r + param['d']
+        d_hi = hi_r + param['d']
+    Ar_lo, Ar_hi = _dh_joint_matrix(alpha, a_val, ct_lo, ct_hi, st_lo, st_hi, d_lo, d_hi)
+    r_jlo[d] = Ar_lo
+    r_jhi[d] = Ar_hi
+
+    T_lo, T_hi = _imat_mul_dh(r_plo[d], r_phi[d], Ar_lo, Ar_hi)
+    r_plo[d + 1] = T_lo
+    r_phi[d + 1] = T_hi
+    for k in range(d + 1, n_joints):
+        T_lo, T_hi = _imat_mul_dh(r_plo[k], r_phi[k], r_jlo[k], r_jhi[k])
+        r_plo[k + 1] = T_lo
+        r_phi[k + 1] = T_hi
+    if has_tool:
+        j_idx = n_joints
+        T_lo, T_hi = _imat_mul_dh(r_plo[n_joints], r_phi[n_joints], r_jlo[j_idx], r_jhi[j_idx])
+        r_plo[n_joints + 1] = T_lo
+        r_phi[n_joints + 1] = T_hi
+
+    return l_plo, l_phi, l_jlo, l_jhi, r_plo, r_phi, r_jlo, r_jhi
+
+
 # ─────────────────────────────────────────────────────
 #  prefix transforms → LinkAABBInfo
 # ─────────────────────────────────────────────────────
@@ -419,3 +526,55 @@ def compute_interval_aabb_fast(
         skip_zero_length=skip_zero_length,
         n_sub=n_sub,
     )
+
+
+# ─────────────────────────────────────────────────────
+#  Cython 加速层：若可用则替换 compute_fk_full / compute_fk_incremental
+# ─────────────────────────────────────────────────────
+
+try:
+    from ._interval_fk_core import (
+        compute_fk_full_cy as _compute_fk_full_cy,
+        compute_fk_incremental_cy as _compute_fk_incremental_cy,
+    )
+
+    # 保留纯 Python 版本（可供测试 / 回退调用）
+    compute_fk_full_py = compute_fk_full
+    compute_fk_incremental_py = compute_fk_incremental
+
+    def compute_fk_full(
+        robot: Robot,
+        intervals: List[Tuple[float, float]],
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Cython-accelerated full interval FK."""
+        return _compute_fk_full_cy(
+            robot._dh_alpha, robot._dh_a, robot._dh_d, robot._dh_theta,
+            robot._dh_joint_type,
+            robot.tool_frame is not None,
+            robot._tool_alpha, robot._tool_a, robot._tool_d,
+            intervals,
+        )
+
+    def compute_fk_incremental(
+        robot: Robot,
+        intervals: List[Tuple[float, float]],
+        parent_prefix_lo: np.ndarray,
+        parent_prefix_hi: np.ndarray,
+        parent_joints_lo: np.ndarray,
+        parent_joints_hi: np.ndarray,
+        changed_joint: int,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Cython-accelerated incremental interval FK."""
+        return _compute_fk_incremental_cy(
+            robot._dh_alpha, robot._dh_a, robot._dh_d, robot._dh_theta,
+            robot._dh_joint_type,
+            robot.tool_frame is not None,
+            robot._tool_alpha, robot._tool_a, robot._tool_d,
+            intervals,
+            parent_prefix_lo, parent_prefix_hi,
+            parent_joints_lo, parent_joints_hi,
+            changed_joint,
+        )
+
+except ImportError:
+    pass

@@ -77,6 +77,8 @@ class BoxForest:
         self._kdtree_ids: List[int] = []
         self._kdtree_dirty: bool = True
         self._intervals_arr = np.empty((0, 0, 2), dtype=np.float64)
+        self._intervals_len: int = 0           # 已使用的行数
+        self._intervals_cap: int = 0           # 预分配容量
         self._interval_ids: List[int] = []
         self._interval_id_to_index: Dict[int, int] = {}
 
@@ -116,6 +118,41 @@ class BoxForest:
             self._next_id = box.node_id + 1
         self._kdtree_dirty = True
 
+    def add_box_no_adjacency(self, box: BoxNode) -> None:
+        """添加 box, 仅更新 boxes dict + interval cache, 跳过邻接计算.
+
+        用于 coarsen 批量合并期间 — 合并完成后调用
+        rebuild_adjacency() 一次性重建邻接.
+        """
+        self.boxes[box.node_id] = box
+        self._append_interval_cache(box)
+        if box.node_id >= self._next_id:
+            self._next_id = box.node_id + 1
+        self._kdtree_dirty = True
+
+    def remove_boxes_no_adjacency(self, box_ids: Set[int]) -> None:
+        """移除指定 box, 仅更新 boxes dict + interval cache, 跳过邻接清理.
+
+        用于 coarsen 批量合并期间 — 合并完成后调用
+        rebuild_adjacency() 一次性重建邻接.
+        """
+        for bid in box_ids:
+            if bid in self.boxes:
+                del self.boxes[bid]
+                self._remove_interval_cache(bid)
+        self._kdtree_dirty = True
+
+    def rebuild_adjacency(self) -> None:
+        """从 interval cache 一次性重建全部邻接关系.
+
+        使用向量化 _adjacent_existing_ids_from_cache 逻辑,
+        比逐个 add_box_direct 的增量更新更高效 (一次 O(N²) 向量化).
+        """
+        from .deoverlap import compute_adjacency
+        box_list = list(self.boxes.values())
+        self.adjacency = compute_adjacency(
+            box_list, tol=self.config.adjacency_tolerance)
+
     def remove_boxes(self, box_ids: Set[int]) -> None:
         """移除指定 box 及其邻接边"""
         for bid in box_ids:
@@ -140,51 +177,80 @@ class BoxForest:
         self._interval_ids = list(self.boxes.keys())
         if not self._interval_ids:
             self._intervals_arr = np.empty((0, 0, 2), dtype=np.float64)
+            self._intervals_len = 0
+            self._intervals_cap = 0
             self._interval_id_to_index = {}
             return
 
-        self._intervals_arr = np.stack(
+        stacked = np.stack(
             [self._box_intervals_array(self.boxes[bid]) for bid in self._interval_ids],
             axis=0,
         )
+        n = stacked.shape[0]
+        n_dims = stacked.shape[1]
+        cap = max(64, n)
+        self._intervals_arr = np.empty((cap, n_dims, 2), dtype=np.float64)
+        self._intervals_arr[:n] = stacked
+        self._intervals_len = n
+        self._intervals_cap = cap
         self._interval_id_to_index = {
             bid: i for i, bid in enumerate(self._interval_ids)
         }
 
     def _append_interval_cache(self, box: BoxNode) -> None:
-        ivs = self._box_intervals_array(box)
-        if self._intervals_arr.size == 0:
-            self._intervals_arr = ivs[None, :, :]
-            self._interval_ids = [box.node_id]
-            self._interval_id_to_index = {box.node_id: 0}
-            return
+        ivs = self._box_intervals_array(box)          # (D, 2)
+        n_dims = ivs.shape[0]
 
-        self._intervals_arr = np.concatenate([self._intervals_arr, ivs[None, :, :]], axis=0)
+        if self._intervals_len == 0:
+            # 首次插入: 预分配 64 行
+            cap = 64
+            self._intervals_arr = np.empty((cap, n_dims, 2), dtype=np.float64)
+            self._intervals_cap = cap
+            self._intervals_len = 0
+
+        # 容量不足时 2× 扩容
+        if self._intervals_len >= self._intervals_cap:
+            new_cap = max(64, self._intervals_cap * 2)
+            new_arr = np.empty((new_cap, n_dims, 2), dtype=np.float64)
+            new_arr[:self._intervals_len] = self._intervals_arr[:self._intervals_len]
+            self._intervals_arr = new_arr
+            self._intervals_cap = new_cap
+
+        idx = self._intervals_len
+        self._intervals_arr[idx] = ivs
+        self._intervals_len += 1
         self._interval_ids.append(box.node_id)
-        self._interval_id_to_index[box.node_id] = len(self._interval_ids) - 1
+        self._interval_id_to_index[box.node_id] = idx
 
     def _remove_interval_cache(self, box_id: int) -> None:
         idx = self._interval_id_to_index.get(box_id)
         if idx is None:
             return
 
-        self._intervals_arr = np.delete(self._intervals_arr, idx, axis=0)
-        self._interval_ids.pop(idx)
-        self._interval_id_to_index = {
-            bid: i for i, bid in enumerate(self._interval_ids)
-        }
+        last = self._intervals_len - 1
+        if idx != last:
+            # swap-with-last: O(1)
+            self._intervals_arr[idx] = self._intervals_arr[last]
+            moved_id = self._interval_ids[last]
+            self._interval_ids[idx] = moved_id
+            self._interval_id_to_index[moved_id] = idx
+
+        self._intervals_len -= 1
+        self._interval_ids.pop()            # 移除尾部
+        del self._interval_id_to_index[box_id]
 
     def _adjacent_existing_ids_from_cache(
         self,
         box: BoxNode,
         tol: float,
     ) -> List[int]:
-        if not self._interval_ids:
+        if self._intervals_len == 0:
             return []
 
         ivs = self._box_intervals_array(box)  # (D,2)
-        lo_all = self._intervals_arr[:, :, 0]  # (N,D)
-        hi_all = self._intervals_arr[:, :, 1]  # (N,D)
+        n = self._intervals_len
+        lo_all = self._intervals_arr[:n, :, 0]  # (N,D)
+        hi_all = self._intervals_arr[:n, :, 1]  # (N,D)
         lo_new = ivs[:, 0][None, :]            # (1,D)
         hi_new = ivs[:, 1][None, :]            # (1,D)
 

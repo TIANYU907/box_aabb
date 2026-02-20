@@ -14,9 +14,14 @@ planner/_hier_core.pyx - HierAABBTree Cython 热路径
 import numpy as np
 cimport numpy as cnp
 from libc.string cimport memcpy, memset
-from libc.math cimport fabsf, ldexp
+from libc.math cimport fabsf, ldexp, cos, sin, ceil, floor, fmod
 
 cnp.import_array()
+
+ctypedef cnp.float64_t DTYPE_t
+ctypedef cnp.int32_t   ITYPE_t
+
+include "_fk_inline.pxi"
 
 # ─────────────────────────────────────────────
 #  节点字段偏移 (与 _hier_layout.py 保持一致)
@@ -199,6 +204,20 @@ cdef class NodeStore:
 
     # ── 节点分配 ──
 
+    cdef int _alloc_node_c(self, int parent, int depth) noexcept:
+        """C-level 节点分配 (供 descent_loop 使用)"""
+        cdef int idx = self.next_idx
+        self.next_idx += 1
+        cdef char* node = _node_ptr(self._base, self._stride, idx)
+        _set_i32(node, _OFF_LEFT, -1)
+        _set_i32(node, _OFF_RIGHT, -1)
+        _set_i32(node, _OFF_PARENT, parent)
+        _set_i32(node, _OFF_DEPTH, depth)
+        _set_f64(node, _OFF_SPLIT, 0.0)
+        _set_u8(node, _OFF_HAS_AABB, 0)
+        _set_u8(node, _OFF_DIRTY, 1)
+        return idx
+
     def alloc_node(self, int parent, int depth):
         """分配新节点，返回索引。调用前须确保容量足够。"""
         cdef int idx = self.next_idx
@@ -281,6 +300,14 @@ cdef class NodeStore:
         _set_u8(node, _OFF_HAS_AABB, 1)
         _set_u8(node, _OFF_DIRTY, 1)
 
+    cdef void _set_aabb_from_buf_c(self, int idx, float* aabb_data) noexcept:
+        """C-level: 从 float* 设置 AABB (供 descent_loop 使用)"""
+        cdef char* node = _node_ptr(self._base, self._stride, idx)
+        cdef float* dst = _aabb_ptr(node)
+        memcpy(dst, aabb_data, self._aabb_floats * sizeof(float))
+        _set_u8(node, _OFF_HAS_AABB, 1)
+        _set_u8(node, _OFF_DIRTY, 1)
+
     # ── 占用管理 ──
 
     def is_occupied(self, int idx):
@@ -295,6 +322,13 @@ cdef class NodeStore:
 
     def get_forest_id(self, int idx):
         return self._forest_id[idx]
+
+    def forest_ids_array(self):
+        """返回 forest_id 数组的 NumPy 只读视图 ([:next_idx] 部分).
+
+        用于批量构建 box→nodes 映射, 替代逐个 get_forest_id() 调用.
+        """
+        return np.asarray(self._forest_id[:self.next_idx])
 
     # ── SAT 碰撞检测 (核心热路径) ──
 
@@ -469,6 +503,10 @@ cdef class NodeStore:
     def reset_occupation(self, int idx):
         self._reset_occupation_c(idx)
 
+    def set_forest_id(self, int idx, int fid):
+        """仅修改 forest_id 标签，不影响 subtree_occ / occupied"""
+        self._forest_id[idx] = fid
+
     cdef set _collect_forest_ids_c(self, int idx):
         """收集子树中所有 forest_id"""
         cdef set ids = set()
@@ -618,3 +656,268 @@ cdef class NodeStore:
     @property
     def n_dims(self):
         return self._n_dims
+
+    # ── 完整下行循环 (Cython 加速) ──
+
+    def descent_loop(self,
+        cnp.ndarray[DTYPE_t, ndim=1] seed,
+        object obs_packed,
+        cnp.ndarray[DTYPE_t, ndim=1] alpha_arr,
+        cnp.ndarray[DTYPE_t, ndim=1] a_arr,
+        cnp.ndarray[DTYPE_t, ndim=1] d_arr,
+        cnp.ndarray[DTYPE_t, ndim=1] theta_arr,
+        cnp.ndarray[ITYPE_t, ndim=1] jtype_arr,
+        bint has_tool,
+        double tool_alpha, double tool_a, double tool_d,
+        cnp.ndarray[ITYPE_t, ndim=1] split_dims_arr,
+        int n_split_dims,
+        object base_ivs,
+        int max_depth,
+        double min_edge_length,
+        cnp.ndarray[DTYPE_t, ndim=3] root_plo,
+        cnp.ndarray[DTYPE_t, ndim=3] root_phi,
+        cnp.ndarray[DTYPE_t, ndim=3] root_jlo,
+        cnp.ndarray[DTYPE_t, ndim=3] root_jhi,
+    ):
+        """Cython 加速的 find_free_box 下行循环。
+
+        将整个 while 循环（节点访问、惰性切分、FK 计算、碰撞检测）
+        合并到单次 Cython 调用中，消除每层 ~30μs 的 Python 开销。
+
+        Returns
+        -------
+        (result_idx, path, fail_code, n_new_nodes, n_fk_calls)
+            fail_code: 0=success, 1=occupied, 2=max_depth, 3=min_edge
+        """
+        cdef int n_joints = alpha_arr.shape[0]
+        cdef int n_dims = self._n_dims
+        cdef int n_links = self._n_links
+        cdef int n_tf = n_joints + 1 + (1 if has_tool else 0)
+        cdef int n_jm = n_joints + (1 if has_tool else 0)
+        cdef int prefix_bytes = n_tf * 16 * sizeof(double)
+        cdef int joints_bytes = n_jm * 16 * sizeof(double)
+
+        # ── 指针提取 ──
+        cdef double* alpha_p = <double*>cnp.PyArray_DATA(alpha_arr)
+        cdef double* a_p     = <double*>cnp.PyArray_DATA(a_arr)
+        cdef double* d_p     = <double*>cnp.PyArray_DATA(d_arr)
+        cdef double* theta_p = <double*>cnp.PyArray_DATA(theta_arr)
+        cdef int*    jtype_p = <int*>cnp.PyArray_DATA(jtype_arr)
+        cdef int*    split_p = <int*>cnp.PyArray_DATA(split_dims_arr)
+        cdef double* seed_p  = <double*>cnp.PyArray_DATA(seed)
+
+        # ── 障碍物平坦化 ──
+        cdef int n_obs = 0
+        cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr_np
+        cdef float* obs_ptr = NULL
+        cdef tuple obs_tup
+        cdef int oi
+
+        if obs_packed is not None and len(obs_packed) > 0:
+            n_obs = len(obs_packed)
+            obs_arr_np = np.empty(n_obs * 7, dtype=np.float32)
+            for oi in range(n_obs):
+                obs_tup = <tuple>obs_packed[oi]
+                obs_arr_np[oi * 7]     = <float>(<int>obs_tup[0])
+                obs_arr_np[oi * 7 + 1] = <float>obs_tup[1]
+                obs_arr_np[oi * 7 + 2] = <float>obs_tup[2]
+                obs_arr_np[oi * 7 + 3] = <float>obs_tup[3]
+                obs_arr_np[oi * 7 + 4] = <float>obs_tup[4]
+                obs_arr_np[oi * 7 + 5] = <float>obs_tup[5]
+                obs_arr_np[oi * 7 + 6] = <float>obs_tup[6]
+            obs_ptr = <float*>cnp.PyArray_DATA(obs_arr_np)
+
+        # ── FK 状态 (栈上, ~35KB) ──
+        cdef double fk_plo[MAX_TF * 16]
+        cdef double fk_phi[MAX_TF * 16]
+        cdef double fk_jlo[MAX_TF * 16]
+        cdef double fk_jhi[MAX_TF * 16]
+        memcpy(fk_plo, <double*>cnp.PyArray_DATA(root_plo), prefix_bytes)
+        memcpy(fk_phi, <double*>cnp.PyArray_DATA(root_phi), prefix_bytes)
+        memcpy(fk_jlo, <double*>cnp.PyArray_DATA(root_jlo), joints_bytes)
+        memcpy(fk_jhi, <double*>cnp.PyArray_DATA(root_jhi), joints_bytes)
+
+        cdef double tmp_plo[MAX_TF * 16]
+        cdef double tmp_phi[MAX_TF * 16]
+        cdef double tmp_jlo[MAX_TF * 16]
+        cdef double tmp_jhi[MAX_TF * 16]
+
+        # ── 区间状态 ──
+        cdef double ivs_lo[MAX_JOINTS]
+        cdef double ivs_hi[MAX_JOINTS]
+        cdef double civs_lo[MAX_JOINTS]   # child intervals temp
+        cdef double civs_hi[MAX_JOINTS]
+        cdef int di
+        for di in range(n_dims):
+            ivs_lo[di] = <double>base_ivs[di][0]
+            ivs_hi[di] = <double>base_ivs[di][1]
+
+        # ── AABB 缓冲区 ──
+        cdef float aabb_l[MAX_LINKS * 6]
+        cdef float aabb_r[MAX_LINKS * 6]
+        cdef float aabb_u[MAX_LINKS * 6]
+
+        # ── 循环变量 ──
+        cdef int idx = 0
+        cdef char* base = self._base
+        cdef int stride = self._stride
+        cdef char* node
+        cdef float* aabb_p
+        cdef int left_idx, right_idx
+        cdef int depth, dim
+        cdef double edge, mid, sv
+        cdef int fail_code = 0
+        cdef int n_new_nodes = 0
+        cdef int n_fk_calls = 0
+        cdef bint going_left, collide
+        cdef list path = []
+        cdef int k
+
+        # ── 主循环 ──
+        while True:
+            node = _node_ptr(base, stride, idx)
+
+            # 占用检查
+            if self._occupied[idx]:
+                fail_code = 1; idx = -1; break
+
+            path.append(idx)
+
+            # 无碰撞 + 无子树占用 → 找到
+            if _get_u8(node, _OFF_HAS_AABB):
+                aabb_p = _aabb_ptr(node)
+                collide = False
+                if obs_ptr != NULL:
+                    collide = _link_aabbs_collide_flat(aabb_p, obs_ptr, n_obs)
+                if not collide and self._subtree_occ[idx] == 0:
+                    break
+
+            depth = _get_i32(node, _OFF_DEPTH)
+            if depth >= max_depth:
+                fail_code = 2; idx = -1; break
+
+            if n_split_dims > 0:
+                dim = split_p[depth % n_split_dims]
+            else:
+                dim = depth % n_dims
+
+            edge = ivs_hi[dim] - ivs_lo[dim]
+            if min_edge_length > 0 and edge < min_edge_length * 2:
+                fail_code = 3; idx = -1; break
+
+            left_idx = _get_i32(node, _OFF_LEFT)
+
+            if left_idx == -1:
+                # ────── 惰性切分 ──────
+                mid = (ivs_lo[dim] + ivs_hi[dim]) * 0.5
+
+                self.ensure_capacity(self.next_idx + 2)
+                base = self._base   # 可能重新分配
+
+                left_idx = self._alloc_node_c(idx, depth + 1)
+                right_idx = self._alloc_node_c(idx, depth + 1)
+                n_new_nodes += 2
+
+                node = _node_ptr(base, stride, idx)
+                _set_f64(node, _OFF_SPLIT, mid)
+                _set_i32(node, _OFF_LEFT, left_idx)
+                _set_i32(node, _OFF_RIGHT, right_idx)
+                _set_u8(node, _OFF_DIRTY, 1)
+
+                going_left = seed_p[dim] < mid
+
+                # 先算非目标子节点, 再算目标子节点 (tmp 保留目标 FK)
+                if going_left:
+                    # ── right (非目标) ──
+                    memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
+                    memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
+                    civs_lo[dim] = mid
+                    _incremental_fk_cc(n_joints, has_tool,
+                        fk_plo, fk_phi, fk_jlo, fk_jhi,
+                        alpha_p, a_p, d_p, theta_p, jtype_p,
+                        civs_lo, civs_hi, dim,
+                        tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
+                    _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)
+                    self._set_aabb_from_buf_c(right_idx, aabb_r)
+                    n_fk_calls += 1
+
+                    # ── left (目标, FK 留在 tmp) ──
+                    memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
+                    memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
+                    civs_hi[dim] = mid
+                    _incremental_fk_cc(n_joints, has_tool,
+                        fk_plo, fk_phi, fk_jlo, fk_jhi,
+                        alpha_p, a_p, d_p, theta_p, jtype_p,
+                        civs_lo, civs_hi, dim,
+                        tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
+                    _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)
+                    self._set_aabb_from_buf_c(left_idx, aabb_l)
+                    n_fk_calls += 1
+                else:
+                    # ── left (非目标) ──
+                    memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
+                    memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
+                    civs_hi[dim] = mid
+                    _incremental_fk_cc(n_joints, has_tool,
+                        fk_plo, fk_phi, fk_jlo, fk_jhi,
+                        alpha_p, a_p, d_p, theta_p, jtype_p,
+                        civs_lo, civs_hi, dim,
+                        tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
+                    _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)
+                    self._set_aabb_from_buf_c(left_idx, aabb_l)
+                    n_fk_calls += 1
+
+                    # ── right (目标, FK 留在 tmp) ──
+                    memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
+                    memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
+                    civs_lo[dim] = mid
+                    _incremental_fk_cc(n_joints, has_tool,
+                        fk_plo, fk_phi, fk_jlo, fk_jhi,
+                        alpha_p, a_p, d_p, theta_p, jtype_p,
+                        civs_lo, civs_hi, dim,
+                        tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
+                    _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)
+                    self._set_aabb_from_buf_c(right_idx, aabb_r)
+                    n_fk_calls += 1
+
+                # Union AABB on parent
+                _union_aabb_buf_c(aabb_l, aabb_r, n_links, aabb_u)
+                self._set_aabb_from_buf_c(idx, aabb_u)
+
+                # FK 状态 = 目标子节点
+                memcpy(fk_plo, tmp_plo, prefix_bytes)
+                memcpy(fk_phi, tmp_phi, prefix_bytes)
+                memcpy(fk_jlo, tmp_jlo, joints_bytes)
+                memcpy(fk_jhi, tmp_jhi, joints_bytes)
+
+                if going_left:
+                    ivs_hi[dim] = mid
+                    idx = left_idx
+                else:
+                    ivs_lo[dim] = mid
+                    idx = right_idx
+
+            else:
+                # ────── 已分裂，直接导航 ──────
+                sv = _get_f64(node, _OFF_SPLIT)
+                right_idx = _get_i32(node, _OFF_RIGHT)
+
+                if seed_p[dim] < sv:
+                    ivs_hi[dim] = sv
+                    idx = left_idx
+                else:
+                    ivs_lo[dim] = sv
+                    idx = right_idx
+
+                # 增量 FK: 更新到目标子节点
+                _incremental_fk_cc(n_joints, has_tool,
+                    fk_plo, fk_phi, fk_jlo, fk_jhi,
+                    alpha_p, a_p, d_p, theta_p, jtype_p,
+                    ivs_lo, ivs_hi, dim,
+                    tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
+                memcpy(fk_plo, tmp_plo, prefix_bytes)
+                memcpy(fk_phi, tmp_phi, prefix_bytes)
+                memcpy(fk_jlo, tmp_jlo, joints_bytes)
+                memcpy(fk_jhi, tmp_jhi, joints_bytes)
+
+        return (idx, path, fail_code, n_new_nodes, n_fk_calls)
