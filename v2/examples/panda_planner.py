@@ -85,6 +85,9 @@ class PandaGCSConfig:
     max_boxes: int = 500           # 7D 安全上限, 2D 不需要
     goal_bias: float = 0.10
     guided_sample_ratio: float = 0.6
+    boundary_expand: bool = True   # 边缘扩张采样 (增加 box 连通性)
+    boundary_expand_max_failures: int = 5
+    boundary_expand_epsilon: float = 0.01
     parallel_grow: bool = False    # 启用分区并行生长
     n_partitions_depth: int = 3    # KD 分区深度 (2^depth 个分区, 默认8)
     parallel_workers: int = 4      # 并行进程数 (0=auto=cpu_count)
@@ -143,6 +146,9 @@ def make_planner_config(cfg: PandaGCSConfig) -> PlannerConfig:
         guided_sample_ratio=cfg.guided_sample_ratio,
         segment_collision_resolution=0.05,
         connection_radius=1.5, verbose=False, forest_path=None,
+        boundary_expand_enabled=cfg.boundary_expand,
+        boundary_expand_max_failures=cfg.boundary_expand_max_failures,
+        boundary_expand_epsilon=cfg.boundary_expand_epsilon,
     )
 
 
@@ -470,6 +476,15 @@ def grow_forest(planner, q_start, q_goal, seed, max_miss=20, ndim=7,
                     node_id=nid, joint_intervals=ffb.intervals,
                     seed_config=qs.copy(), volume=vol))
 
+    # ── boundary expand state ──
+    boundary_on = planner.config.boundary_expand_enabled
+    boundary_max_fail = planner.config.boundary_expand_max_failures
+    expand_target = None
+    expand_fails = 0
+    n_boundary_attempts = 0
+    n_boundary_ok = 0
+    t_boundary = 0.0
+
     consec = 0
     t0 = time.perf_counter()
     terminated_by = "miss"  # 记录终止原因
@@ -478,39 +493,57 @@ def grow_forest(planner, q_start, q_goal, seed, max_miss=20, ndim=7,
             terminated_by = "max_boxes"
             break
 
-        # ── 优化 E: 批量采样 ──
-        _ts = time.perf_counter()
-        if not seed_buffer:
-            seed_buffer = _sample_batch()
-            n_sample_calls += 1
-        if not seed_buffer:
-            # 整批都碰撞 → 算一次 miss
+        # ── 采样模式: boundary expand vs 普通批量 ──
+        use_boundary = boundary_on and expand_target is not None
+        if use_boundary:
+            _ts = time.perf_counter()
+            q = planner._sample_boundary_seed(expand_target, rng)
+            t_boundary += time.perf_counter() - _ts
+            n_boundary_attempts += 1
+            if q is None:
+                expand_fails += 1
+                if expand_fails >= boundary_max_fail:
+                    expand_target = None
+                continue
+            if planner.hier_tree.is_occupied(q):
+                expand_fails += 1
+                if expand_fails >= boundary_max_fail:
+                    expand_target = None
+                continue
+        else:
+            # ── 优化 E: 批量采样 ──
+            _ts = time.perf_counter()
+            if not seed_buffer:
+                seed_buffer = _sample_batch()
+                n_sample_calls += 1
+            if not seed_buffer:
+                # 整批都碰撞 → 算一次 miss
+                t_sample += time.perf_counter() - _ts
+                consec += 1
+                continue
+            q = seed_buffer.pop()
             t_sample += time.perf_counter() - _ts
-            consec += 1
-            continue
-        q = seed_buffer.pop()
-        t_sample += time.perf_counter() - _ts
 
-        # ── is_occupied ──
-        _ts = time.perf_counter()
-        occ = planner.hier_tree.is_occupied(q)
-        t_is_occ += time.perf_counter() - _ts
-        n_is_occ_calls += 1
+            # ── is_occupied ──
+            _ts = time.perf_counter()
+            occ = planner.hier_tree.is_occupied(q)
+            t_is_occ += time.perf_counter() - _ts
+            n_is_occ_calls += 1
 
-        if occ:
-            consec += 1
-            continue
+            if occ:
+                consec += 1
+                continue
 
-        # ── 优化 C: shallow probe ──
-        _ts = time.perf_counter()
-        can = planner.hier_tree.can_expand(q, obs_packed=obs_packed)
-        t_probe += time.perf_counter() - _ts
-        n_probe_calls += 1
+            # ── 优化 C: shallow probe ──
+            _ts = time.perf_counter()
+            can = planner.hier_tree.can_expand(q, obs_packed=obs_packed)
+            t_probe += time.perf_counter() - _ts
+            n_probe_calls += 1
 
-        if not can:
-            n_probe_reject += 1
-            consec += 1
-            continue
+            if not can:
+                n_probe_reject += 1
+                consec += 1
+                continue
 
         # ── find_free_box (with cached obs_packed) ──
         nid = forest.allocate_id()
@@ -548,6 +581,12 @@ def grow_forest(planner, q_start, q_goal, seed, max_miss=20, ndim=7,
         forest.add_box_direct(box)
         t_add += time.perf_counter() - _ts
 
+        # ── trigger boundary expand ──
+        if boundary_on:
+            expand_target = box
+            expand_fails = 0
+            n_boundary_ok += 1
+
         consec = 0
         # progress
         if forest.n_boxes % 100 == 0:
@@ -558,16 +597,159 @@ def grow_forest(planner, q_start, q_goal, seed, max_miss=20, ndim=7,
     print(f"    [grow] terminated by {terminated_by}: "
           f"{forest.n_boxes} boxes, {elapsed:.1f}s")
 
+    # ── 后处理: 若 s/t 孤立, 双向 "stepping stone" 铺路连通 ──
+    # 沿 s/t↔主岛方向以小步长密集播种, 并从两端同时推进.
+    if boundary_on:
+        _ts_connect = time.perf_counter()
+        n_gap_fill = 0
+        _gap_rounds = 3
+
+        def _box_center(bx):
+            return np.array([(lo + hi) / 2
+                             for lo, hi in bx.joint_intervals])
+
+        def _find_st_bids(snap):
+            sb = tb = None
+            for bid, bx in snap.items():
+                if sb is None and all(
+                        bx.joint_intervals[d][0] - 1e-12 <= q_start[d]
+                        <= bx.joint_intervals[d][1] + 1e-12
+                        for d in range(ndim)):
+                    sb = bid
+                if tb is None and all(
+                        bx.joint_intervals[d][0] - 1e-12 <= q_goal[d]
+                        <= bx.joint_intervals[d][1] + 1e-12
+                        for d in range(ndim)):
+                    tb = bid
+            return sb, tb
+
+        def _grow_one_box(q):
+            """尝试在 q 处生长 box, 返回 BoxNode 或 None.
+            跳过 is_occupied 检查, 允许在已有 box 附近放置新 box.
+            """
+            if planner.collision_checker.check_config_collision(q):
+                return None
+            nid = forest.allocate_id()
+            ffb = planner.hier_tree.find_free_box(
+                q, planner.obstacles, mark_occupied=True,
+                forest_box_id=nid, obs_packed=obs_packed)
+            if ffb is None:
+                return None
+            vol = 1.0
+            for lo, hi in ffb.intervals:
+                vol *= max(hi - lo, 0)
+            if gmean_edge_length(vol, ndim) < planner.config.min_box_size:
+                return None
+            box = BoxNode(node_id=nid, joint_intervals=ffb.intervals,
+                          seed_config=q.copy(), volume=vol)
+            if ffb.absorbed_box_ids:
+                forest.remove_boxes(ffb.absorbed_box_ids)
+            forest.add_box_direct(box)
+            return box
+
+        def _pave_toward(start_c, end_c, max_steps=300):
+            """沿 start→end 方向以小步长密集播种."""
+            direction = end_c - start_c
+            dist = np.linalg.norm(direction)
+            if dist < 1e-6:
+                return 0
+            direction /= dist
+            pos = start_c.copy()
+            n_placed = 0
+            step_idx = 0
+            while step_idx < max_steps:
+                d_remain = np.linalg.norm(end_c - pos)
+                if d_remain < 0.05:
+                    break
+                placed = False
+                # 尝试在 pos 及其邻域放 box
+                for attempt in range(15):
+                    if attempt == 0:
+                        q = pos.copy()
+                    else:
+                        q = pos + rng.normal(0, 0.05, size=ndim)
+                    for d in range(ndim):
+                        q[d] = np.clip(q[d],
+                                       planner.joint_limits[d][0],
+                                       planner.joint_limits[d][1])
+                    box = _grow_one_box(q)
+                    if box is not None:
+                        n_placed += 1
+                        # 自适应步长: box 最小边长的一半
+                        min_edge = min(hi - lo
+                                       for lo, hi in box.joint_intervals)
+                        step_size = max(0.01, min(min_edge * 0.4, 0.1))
+                        pos = pos + direction * step_size
+                        placed = True
+                        break
+                if not placed:
+                    # 跳过碰撞区域
+                    pos = pos + direction * 0.03
+                step_idx += 1
+            return n_placed
+
+        for _gr in range(_gap_rounds):
+            _snap = {}
+            for bid, b in forest.boxes.items():
+                _snap[bid] = BoxNode(
+                    node_id=b.node_id,
+                    joint_intervals=[tuple(iv) for iv in b.joint_intervals],
+                    seed_config=b.seed_config.copy(), volume=b.volume)
+            _, _uf, _isls = _build_adjacency_and_islands(_snap)
+
+            _src_bid, _tgt_bid = _find_st_bids(_snap)
+            if _src_bid is None or _tgt_bid is None:
+                break
+            if _uf.same(_src_bid, _tgt_bid):
+                break
+
+            for _st_bid, _qs in [(_src_bid, q_start), (_tgt_bid, q_goal)]:
+                _st_isl = set()
+                for isl in _isls:
+                    if _st_bid in isl:
+                        _st_isl = isl
+                        break
+                _st_c = _box_center(_snap[_st_bid])
+
+                # 找最近的非本岛 box
+                _best_d = float('inf')
+                _tgt_c = None
+                for bid, bx in _snap.items():
+                    if bid in _st_isl:
+                        continue
+                    mc = _box_center(bx)
+                    dd = np.linalg.norm(mc - _st_c)
+                    if dd < _best_d:
+                        _best_d = dd
+                        _tgt_c = mc
+                if _tgt_c is None:
+                    continue
+
+                # 双向铺路: 从 s/t 向主岛 + 从主岛向 s/t
+                n1 = _pave_toward(_st_c, _tgt_c, max_steps=200)
+                n2 = _pave_toward(_tgt_c, _st_c, max_steps=200)
+                n_gap_fill += n1 + n2
+
+        gap_ms = (time.perf_counter() - _ts_connect) * 1000
+        t_boundary += (time.perf_counter() - _ts_connect)
+        if n_gap_fill > 0:
+            print(f"    [gap fill] +{n_gap_fill} boxes in {_gr + 1} rounds, "
+                  f"total={forest.n_boxes} ({gap_ms:.0f}ms)")
+        elif _gr > 0:
+            print(f"    [gap fill] s/t disconnected, 0 gap boxes ({gap_ms:.0f}ms)")
+
+
     # ── 详细计时报告 ──
     timing = dict(
         warmup_ms=t_warmup,
         sample_ms=t_sample * 1000,
+        boundary_ms=t_boundary * 1000,
         is_occupied_ms=t_is_occ * 1000,
         probe_ms=t_probe * 1000,
         find_free_box_ms=t_ffb * 1000,
         volume_check_ms=t_vol * 1000,
         add_box_ms=t_add * 1000,
-        overhead_ms=(elapsed - t_sample - t_is_occ - t_probe - t_ffb - t_vol - t_add) * 1000,
+        overhead_ms=(elapsed - t_sample - t_boundary - t_is_occ - t_probe - t_ffb - t_vol - t_add) * 1000,
         n_sample_calls=n_sample_calls,
         n_is_occ_calls=n_is_occ_calls,
         n_probe_calls=n_probe_calls,
@@ -581,6 +763,8 @@ def grow_forest(planner, q_start, q_goal, seed, max_miss=20, ndim=7,
           f"({n_warmed} nodes)")
     print(f"      sample_batch    : {timing['sample_ms']:8.1f} ms  "
           f"({n_sample_calls} batches)")
+    print(f"      boundary_expand : {timing['boundary_ms']:8.1f} ms  "
+          f"({n_boundary_ok}/{n_boundary_attempts} ok)")
     print(f"      is_occupied     : {timing['is_occupied_ms']:8.1f} ms  "
           f"({n_is_occ_calls} calls)")
     print(f"      can_expand      : {timing['probe_ms']:8.1f} ms  "
@@ -637,7 +821,8 @@ def _build_adjacency_and_islands(boxes):
             hi[k, d] = ivs[d][1]
 
     # 广播: overlap[i,j] = all_dims( hi[i,d] >= lo[j,d] - eps  AND  hi[j,d] >= lo[i,d] - eps )
-    eps = 1e-12
+    # 放宽 eps 使得几乎相邻的 box 也判为连通 (近触碰)
+    eps = 1e-9
     # (N,1,D) vs (1,N,D) → (N,N,D)
     overlap_ij = (hi[:, None, :] >= lo[None, :, :] - eps) & \
                  (hi[None, :, :] >= lo[:, None, :] - eps)

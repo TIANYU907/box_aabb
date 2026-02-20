@@ -1,0 +1,16 @@
+{
+    "name": "2DOF-Planar",
+    "description": "2-DOF planar robot with link lengths L1=1.0, L2=1.0. In Modified DH, row 0 has a=0 (joint 0 at origin), row 1 has a=L1 (link 0 length), and tool_frame a=L2 (link 1 length).",
+    "dh_convention": "modified",
+    "dh_params": [
+        {"alpha": 0, "a": 0.0, "d": 0.0, "theta": 0, "type": "revolute"},
+        {"alpha": 0, "a": 1.0, "d": 0.0, "theta": 0, "type": "revolute"}
+    ],
+    "tool_frame": {"alpha": 0, "a": 1.0, "d": 0.0},
+    "joint_limits": [
+        [-3.14159, 3.14159],
+        [-3.14159, 3.14159]
+    ],
+    "coupled_pairs": [],
+    "coupled_triples": []
+}

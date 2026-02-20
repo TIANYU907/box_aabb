@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sbf"
+version = "0.1.0"
+description = "SafeBoxForest (SBF) Planner — Collision-free motion planning via interval-verified box forest decomposition"
+requires-python = ">=3.9"
+dependencies = ["numpy", "scipy", "matplotlib"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+viz = ["plotly"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["aabb*", "forest*", "planner*", "baselines*", "utils*", "common*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

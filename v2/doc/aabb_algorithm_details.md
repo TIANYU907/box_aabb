@@ -2,7 +2,7 @@
 
 ## Abstract
 
-本文件描述 v2 中 AABB 子系统的“实现级算法细节”，目标是解释：给定关节区间，如何在可控计算代价下得到**保守且可复用**的连杆包络。实现覆盖 `robot.py`、`interval_fk.py`、`calculator.py`、`strategies/*`、`optimization.py` 与 `models.py`。
+本文件描述 v2 中 AABB 子系统的"实现级算法细节"，目标是解释：给定关节区间，如何在可控计算代价下得到**保守且可复用**的连杆包络。实现覆盖 `robot.py`、`interval_fk.py`、`calculator.py`、`strategies/*`、`optimization.py` 与 `models.py`。
 
 ---
 
@@ -26,7 +26,7 @@ $$
 AABB_\ell=[x_{\min},x_{\max}]\times[y_{\min},y_{\max}]\times[z_{\min},z_{\max}].
 $$
 
-该包络用于上层碰撞判定：若 `AABB ∩ Obstacle = ∅`，可直接证明对应区间无碰撞；若相交，仅表示“可能碰撞”。
+该包络用于上层碰撞判定：若 `AABB ∩ Obstacle = ∅`，可直接证明对应区间无碰撞；若相交，仅表示"可能碰撞"。
 
 ---
 
@@ -38,6 +38,7 @@ $$
 - 提供单点 FK (`forward_kinematics` / `get_link_position`) 与批量 FK (`get_link_positions_batch`)。
 - 维护 `zero_length_links`、`joint_limits`、`tool_frame` 与 `fingerprint()`。
 - 可选加载 Cython 标量核 `_fk_scalar_core`，自动降级到 Python 计算路径。
+- 预置模型加载：`load_robot("2dof_planar"/"3dof_planar"/"panda")`，从 `configs/*.json` 读取参数。
 
 ### 2.2 `interval_fk.py`: interval propagation kernel
 
@@ -45,6 +46,8 @@ $$
 - 区间 DH 矩阵构造：`_dh_joint_matrix`。
 - 区间矩阵乘法：`_imat_mul_dh`（利用 DH 结构减少乘法开销）。
 - 全量/增量接口：`compute_fk_full`, `compute_fk_incremental`, `compute_interval_aabb`。
+- 分裂辅助：`_split_fk_pair` — 用于 HierAABBTree 节点切分时的左右子 FK 对生成。
+- 可选 Cython 加速核 `_interval_fk_core`。
 
 ### 2.3 `calculator.py` + `strategies/*`
 
@@ -65,11 +68,11 @@ $$
 
 ### 3.1 Interval trigonometric enclosure
 
-对每个区间角变量 $[\theta_l,\theta_u]$，`_isin/_icos` 通过极值点穿越判定给出保守界。若宽度 $\ge 2\pi$，直接退化为 $[-1,1]$。该步骤避免离散采样漏检，是“保守性”的根源。
+对每个区间角变量 $[\theta_l,\theta_u]$，`_isin/_icos` 通过极值点穿越判定给出保守界。若宽度 $\ge 2\pi$，直接退化为 $[-1,1]$。该步骤避免离散采样漏检，是"保守性"的根源。
 
 ### 3.2 Joint interval matrix assembly
 
-`_dh_joint_matrix` 将每个关节转成区间齐次变换 $(A_{lo},A_{hi})$。对符号不确定项使用“4 角点 min/max”原则，避免引入仿射对象分配。
+`_dh_joint_matrix` 将每个关节转成区间齐次变换 $(A_{lo},A_{hi})$。对符号不确定项使用"4 角点 min/max"原则，避免引入仿射对象分配。
 
 ### 3.3 Interval chain multiplication
 
@@ -106,6 +109,8 @@ $$
 - 关节不变前缀严格复用，保证数值一致性。
 - tool frame 作为固定末端变换在后缀阶段统一处理。
 
+`_split_fk_pair`：同时生成左右子节点 FK 缓存对，供 HierAABBTree 切分时一步到位。
+
 ---
 
 ## 5. Numerical Envelope Path (Critical / Random)
@@ -119,7 +124,7 @@ $$
 3. `_evaluate_samples`：两次 FK（连杆起点/终点）+ 线性插值覆盖子段端点。
 4. `_build_link_aabbs`：构造 `LinkAABBInfo` 与边界配置。
 
-这里“分段端点线性插值”是实现关键：`n_sub` 增大时不按段重复 FK，显著节省计算。
+这里"分段端点线性插值"是实现关键：`n_sub` 增大时不按段重复 FK，显著节省计算。
 
 ### 5.2 Critical strategy (`critical.py`)
 
@@ -129,15 +134,11 @@ $$
 - 阶段 B：约束流形随机采样（覆盖离散枚举难到达区域）。
 - 阶段 C：L-BFGS-B 局部优化（以当前最优和精选种子精化极值）。
 
-该策略用于“样本效率优先”的高精度包络生成。
-
 ### 5.3 Random strategy (`random.py`)
 
-- 大量随机采样 + 可选“避开关键点邻域”。
+- 大量随机采样 + 可选"避开关键点邻域"。
 - 强制加入边界组合防止丢失区间端点极值。
 - 最后统一 L-BFGS-B 精化。
-
-该策略适合快速探索或高维弱耦合场景。
 
 ---
 
@@ -148,11 +149,9 @@ $$
 实现细节：
 
 - 优化变量仅为 relevant joints，其他关节固定在中点。
-- 种子预筛选采用 “top-1 exploit + farthest-1 explore”。
+- 种子预筛选采用 "top-1 exploit + farthest-1 explore"。
 - 优化目标函数调用 `robot.get_link_position` 的单维投影。
 - 收敛后通过 `_update_segs_for_point` 同步更新所有子段极值。
-
-这一设计平衡了 minimize 次数与种子多样性，避免“只在一个局部极值盆地收敛”。
 
 ---
 
@@ -167,11 +166,9 @@ $$
 - `angle_constraints`（耦合约束命中描述）
 - `is_aabb_vertex`（是否同属多个面极值）
 
-该元数据使结果可追溯，可用于论文图表和误差审计。
-
 ### 7.2 Reproducible envelope artifacts
 
-`AABBEnvelopeResult` 记录时间戳、样本数、方法名与分段参数；`generate_report` 可直接输出 Markdown 报告，保证实验可复现实验链。
+`AABBEnvelopeResult` 记录时间戳、样本数、方法名与分段参数；`ReportGenerator` 可直接输出 Markdown 报告，保证实验可复现。
 
 ---
 
@@ -191,7 +188,7 @@ $$
 
 ### 8.3 Conservative bias
 
-系统明确偏向“宁可误报，不可漏报”：这是为上层可行性保证服务，而非追求最紧几何包络。
+系统明确偏向"宁可误报，不可漏报"：这是为上层可行性保证服务，而非追求最紧几何包络。
 
 ---
 
@@ -200,14 +197,14 @@ $$
 ```text
 Input: joint_intervals Q, method M, strategy S
 if M == interval:
-	run interval_fk(Q) -> link_aabbs
+    run interval_fk(Q) -> link_aabbs
 else:
-	for each link l:
-		prepare relevant joints
-		sample by S (critical/random)
-		evaluate samples using two-end FK + segment interpolation
-		run L-BFGS-B refinement on boundary objectives
-		build LinkAABBInfo with boundary provenance
+    for each link l:
+        prepare relevant joints
+        sample by S (critical/random)
+        evaluate samples using two-end FK + segment interpolation
+        run L-BFGS-B refinement on boundary objectives
+        build LinkAABBInfo with boundary provenance
 aggregate to AABBEnvelopeResult
 ```
 
@@ -217,40 +214,25 @@ aggregate to AABBEnvelopeResult
 
 1. 需要安全证明优先：选 `method=interval`。
 2. 需要更紧包络：选 `numerical+critical` 并提高 `n_subdivisions`。
-3. 需要吞吐量：启用批量 FK / Cython，控制优化种子数与迭代上限。
+3. 需要吞吐量：启用批量 FK (`get_link_positions_batch`) / Cython (`_fk_scalar_core`)，控制优化种子数与迭代上限。
 4. 论文实验报告建议同时记录：方法、采样规模、分段数、总耗时与最终体积。
 
 ---
 
-## 11. 接口收敛与配置透传（实现约束）
+## 11. 接口收敛与配置透传
 
 ### 11.1 上层配置透传原则
 
 AABB 层的参数应由上层统一配置并透传，避免在中间层硬编码：
 
-1. `n_subdivisions`：分段粒度，影响包络紧致度与计算代价；
-2. `skip_zero_length`：零长度连杆跳过策略；
-3. `method` 与策略配置：`interval / numerical / hybrid`。
-
-该原则的工程意义在于：
-
-- 结果可复现（同配置同语义）；
-- 可跨层比较（Forest/Planner 与 AABB 参数一致）；
-- 避免“测试场景生效、主路径未生效”的隐式分叉。
+1. `n_subdivisions`：分段粒度，影响包络紧致度与计算代价
+2. `skip_zero_length`：零长度连杆跳过策略
+3. `method` 与策略配置：`interval / numerical`
 
 ### 11.2 relevant joints 的一致性要求
 
 当 `relevant_joints` 在策略层可用时，需保证：
 
-1. 与 `Robot` 模型的关节依赖一致；
-2. 不影响保守语义（可跳过无影响维，不可跳过有效维）；
-3. 在 interval 与 numerical 两条路径中具有一致解释。
-
-### 11.3 性能剖析建议
-
-建议在基准中额外记录以下指标以定位瓶颈：
-
-1. 单次 envelope 中 FK 调用次数；
-2. 区间三角函数求值次数；
-3. L-BFGS-B 调用次数与平均迭代轮数；
-4. 边界配置更新命中率（每条 link 的有效精化比例）。
+1. 与 `Robot` 模型的关节依赖一致
+2. 不影响保守语义（可跳过无影响维，不可跳过有效维）
+3. 在 interval 与 numerical 两条路径中具有一致解释

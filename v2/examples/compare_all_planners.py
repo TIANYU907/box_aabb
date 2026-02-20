@@ -68,12 +68,22 @@ from planner.box_planner import BoxPlanner
 
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Box-RRT Pipeline Runner
+# ═══════════════════════════════════════════════════════════════════════════# Box-RRT Pipeline Configs — 对比组
+# ═════════════════════════════════════════════════════════════════════════
+
+BOXRRT_CONFIGS = [
+    # sequential + boundary_expand (默认)
+    {"parallel_grow": False},
+]
+
+
+# ═════════════════════════════════════════════════════════════════════════# Box-RRT Pipeline Runner
 # ═══════════════════════════════════════════════════════════════════════════
 
 def run_boxrrt_pipeline(robot, scene, cfg, q_start, q_goal, ndim,
-                        parallel_grow: Optional[bool] = None):
+                        parallel_grow: Optional[bool] = None,
+                        n_partitions_depth: Optional[int] = None,
+                        parallel_workers: Optional[int] = None):
     """运行 Box-RRT 完整 pipeline, 返回各方法结果.
 
     Pipeline:
@@ -83,19 +93,33 @@ def run_boxrrt_pipeline(robot, scene, cfg, q_start, q_goal, ndim,
 
     Args:
         parallel_grow: 覆盖 cfg.parallel_grow (None=使用 cfg 默认值).
+        n_partitions_depth: 覆盖 cfg.n_partitions_depth.
+        parallel_workers: 覆盖 cfg.parallel_workers.
 
     Returns:
         dict with keys:
           - 'prep': shared forest info (grow_ms, coarsen_ms, etc.)
           - 'dijkstra': result dict or None
+          - 'label': 显示名称
     """
     t0 = time.perf_counter()
 
-    # ── 临时覆盖 parallel_grow ──
+    # ── 临时覆盖配置 ──
     orig_parallel = cfg.parallel_grow
+    orig_depth = cfg.n_partitions_depth
+    orig_workers = cfg.parallel_workers
     if parallel_grow is not None:
         cfg.parallel_grow = parallel_grow
-    label = "parallel" if cfg.parallel_grow else "sequential"
+    if n_partitions_depth is not None:
+        cfg.n_partitions_depth = n_partitions_depth
+    if parallel_workers is not None:
+        cfg.parallel_workers = parallel_workers
+
+    if cfg.parallel_grow:
+        n_parts = 2 ** cfg.n_partitions_depth
+        label = f"BoxRRT(par-{n_parts}p-{cfg.parallel_workers}w)"
+    else:
+        label = "BoxRRT(seq+bdry)" if cfg.boundary_expand else "BoxRRT(seq)"
 
     # ── grow + coarsen ──
     print("\n" + "=" * 60)
@@ -140,12 +164,15 @@ def run_boxrrt_pipeline(robot, scene, cfg, q_start, q_goal, ndim,
 
     # ── 恢复 cfg ──
     cfg.parallel_grow = orig_parallel
+    cfg.n_partitions_depth = orig_depth
+    cfg.parallel_workers = orig_workers
 
     total_ms = (time.perf_counter() - t0) * 1000
     return {
         'prep': prep,
         'dijkstra': result_dij,
         'total_ms': total_ms,
+        'label': label,
     }
 
 
@@ -311,11 +338,10 @@ def _boxrrt_row(boxrrt_results: Dict, method_label: str) -> Optional[Dict]:
         }
 
 
-def print_comparison(boxrrt_cache: Dict,
+def print_comparison(boxrrt_all: List[Dict],
                      cfg, seed: int, n_obs: int, rrt_timeout: float,
                      n_trials: int, config_dist: float,
-                     ompl_results: Optional[Dict] = None,
-                     boxrrt_parallel: Optional[Dict] = None):
+                     ompl_results: Optional[Dict] = None):
     """输出统一对比表."""
 
     print(f"\n{'=' * 100}")
@@ -332,14 +358,10 @@ def print_comparison(boxrrt_cache: Dict,
 
     rows = []
 
-    # ── Box-RRT (sequential) ──
-    row = _boxrrt_row(boxrrt_cache, 'BoxRRT(seq)')
-    if row:
-        rows.append(row)
-
-    # ── Box-RRT (parallel) ──
-    if boxrrt_parallel:
-        row = _boxrrt_row(boxrrt_parallel, 'BoxRRT(par)')
+    # ── Box-RRT variants ──
+    for br in boxrrt_all:
+        lbl = br.get('label', 'BoxRRT')
+        row = _boxrrt_row(br, lbl)
         if row:
             rows.append(row)
 
@@ -521,12 +543,13 @@ def run_one_scene(robot, cfg, args, seed, q_start, q_goal, ndim,
               f"size=({sz[0]:.3f}, {sz[1]:.3f}, {sz[2]:.3f})")
 
     # ══════════════════════════════════════════════════════════════════
-    # Part A: Box-RRT Pipeline (sequential + parallel)
+    # Part A: Box-RRT Pipeline Variants
     # ══════════════════════════════════════════════════════════════════
-    boxrrt_cache = run_boxrrt_pipeline(
-        robot, scene, cfg, q_start, q_goal, ndim, parallel_grow=False)
-    boxrrt_parallel = run_boxrrt_pipeline(
-        robot, scene, cfg, q_start, q_goal, ndim, parallel_grow=True)
+    boxrrt_all = []
+    for bcfg in BOXRRT_CONFIGS:
+        result = run_boxrrt_pipeline(
+            robot, scene, cfg, q_start, q_goal, ndim, **bcfg)
+        boxrrt_all.append(result)
 
     # ══════════════════════════════════════════════════════════════════
     # Part B: OMPL Family (via WSL)
@@ -544,22 +567,21 @@ def run_one_scene(robot, cfg, args, seed, q_start, q_goal, ndim,
     # Per-scene Table
     # ══════════════════════════════════════════════════════════════════
     rows = print_comparison(
-        boxrrt_cache,
+        boxrrt_all,
         cfg, seed, n_obs, args.timeout, args.trials, config_dist,
-        ompl_results=ompl_results if ompl_results else None,
-        boxrrt_parallel=boxrrt_parallel)
+        ompl_results=ompl_results if ompl_results else None)
 
     # ── Save per-scene results ──
     scene_dir = out_dir / f"seed_{seed}"
     scene_dir.mkdir(parents=True, exist_ok=True)
-    save_comparison(rows, boxrrt_cache,
+    save_comparison(rows, boxrrt_all[0] if boxrrt_all else {},
                     cfg, seed, config_dist, args.timeout, args.trials,
                     n_obs, scene_dir, 0.0,
                     ompl_results=ompl_results if ompl_results else None)
 
     # ── Viz ──
     best_boxrrt = None
-    for br in (boxrrt_cache, boxrrt_parallel):
+    for br in boxrrt_all:
         for key in ('dijkstra',):
             r = br.get(key)
             if r and r.get('success'):

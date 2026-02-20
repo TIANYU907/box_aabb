@@ -279,4 +279,17 @@ def _sample_seed(self, ...):
 
 ---
 
+## 8. 后续更新（2026-02-22）
+
+本报告撰写后，`_sample_seed()` 已升级为 **三层采样策略**（goal-biased → KD-guided → uniform），并支持 `sampling_intervals` 子空间约束。当前版本在 Panda 7-DOF 端到端管线中表现稳定（500 boxes, ~500ms），7-DOF 全局停滞问题已通过 coarsen + bridge 管线解决。
+
+相关代码变更：
+- `_sample_seed` 现支持三种采样源：目标偏置、KD-tree 最近节点引导、均匀随机
+- `_sample_boundary_seed` 新增边界扩展采样
+- `check_config_collision_batch` 自动启用 `SpatialIndex` gating（`spatial_index_threshold=20`）
+
+本报告中 2-DOF 基准数据仍有效作为历史参照。
+
+---
+
 *报告由自动化分析工具生成，实验数据来自 Windows 11 / Python 3.10 / conda box-rrt 环境*
