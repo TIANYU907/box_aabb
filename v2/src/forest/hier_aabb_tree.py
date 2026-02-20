@@ -570,6 +570,22 @@ class HierAABBTree:
         result[:, 3:] = np.maximum(a[:, 3:], b[:, 3:])
         return result
 
+    @staticmethod
+    def _refine_aabb(
+        old: np.ndarray, union: np.ndarray,
+    ) -> np.ndarray:
+        """精化 AABB: intersect(old_direct_FK, union(children))
+
+        old 和 union 都是有效的过逼近。它们的交集仍是有效的过逼近，
+        且严格不松于任何一方。
+          min 维度: 取 max(old, union) → 下界收紧
+          max 维度: 取 min(old, union) → 上界收紧
+        """
+        result = np.empty_like(old)
+        result[:, :3] = np.maximum(old[:, :3], union[:, :3])
+        result[:, 3:] = np.minimum(old[:, 3:], union[:, 3:])
+        return result
+
     # ──────────────────────────────────────────────
     #  切分
     # ──────────────────────────────────────────────
@@ -630,15 +646,73 @@ class HierAABBTree:
             self._ensure_aabb_at(left_idx, left_ivs)
             self._ensure_aabb_at(right_idx, right_ivs)
 
-        # 精化本节点：aabb = union(left, right)
-        ref = self._union_aabb(
+        # 精化本节点：aabb = intersect(old, union(left, right))
+        union_ab = self._union_aabb(
             store.get_aabb(left_idx), store.get_aabb(right_idx))
+        if store.get_has_aabb(idx):
+            ref = self._refine_aabb(store.get_aabb(idx), union_ab)
+        else:
+            ref = union_ab
         store.set_aabb(idx, ref)
 
     def _propagate_up(self, node_or_idx) -> None:
         """从 idx 向根方向更新 AABB = union(children)（含 early-stop）"""
         idx = node_or_idx._idx if isinstance(node_or_idx, _NodeView) else node_or_idx
         self._store.propagate_up(idx)
+
+    # ──────────────────────────────────────────────
+    #  Promotion 递归碰撞检测
+    # ──────────────────────────────────────────────
+
+    def _promotion_collide_check(
+        self,
+        idx: int,
+        obs_packed,
+        promotion_depth: int,
+    ) -> bool:
+        """递归子树碰撞检测，用于 FFB 上行 promotion。
+
+        promotion_depth=0: 用当前节点的 union AABB 检测 (等价旧行为)。
+        promotion_depth=k: 递归到 2^k 个后代节点，分别用各自 AABB 检测。
+            所有后代均无碰撞才返回 False (安全)。
+
+        Returns True 表示碰撞 (不安全)。
+        """
+        store = self._store
+        # 优先使用 Cython 加速版本
+        if hasattr(store, 'subtree_collide_check'):
+            return store.subtree_collide_check(idx, obs_packed, promotion_depth)
+        # Python fallback
+        return self._promotion_collide_check_py(idx, obs_packed, promotion_depth)
+
+    def _promotion_collide_check_py(
+        self,
+        idx: int,
+        obs_packed,
+        remaining_depth: int,
+    ) -> bool:
+        """Python fallback: 递归子树碰撞检测。"""
+        store = self._store
+        if remaining_depth <= 0:
+            return store.link_aabbs_collide(idx, obs_packed)
+
+        left = store.get_left(idx)
+        if left < 0:
+            # 叶节点，无法再下潜
+            return store.link_aabbs_collide(idx, obs_packed)
+
+        right = store.get_right(idx)
+
+        # 子节点必须有 AABB，否则回退到当前节点
+        if not store.get_has_aabb(left) or not store.get_has_aabb(right):
+            return store.link_aabbs_collide(idx, obs_packed)
+
+        # 两个子节点都无碰撞才返回 False
+        if self._promotion_collide_check_py(left, obs_packed, remaining_depth - 1):
+            return True
+        if self._promotion_collide_check_py(right, obs_packed, remaining_depth - 1):
+            return True
+        return False
 
     # ──────────────────────────────────────────────
     #  占用跟踪
@@ -666,6 +740,34 @@ class HierAABBTree:
         idx = node_or_idx._idx if isinstance(node_or_idx, _NodeView) else node_or_idx
         self._store.clear_subtree_occupation(idx)
         return 0  # NodeStore 版本不返回计数
+
+    def unoccupy_boxes(self, box_ids: Set[int]) -> int:
+        """清除指定 forest box 在 tree 中的占用状态.
+
+        通过 forest_ids_array 构建 forest_box_id → [node_idx, ...] 映射,
+        然后对每个 node 调用 unmark_occupied (mark_occupied 的逆操作).
+
+        Args:
+            box_ids: 需要清除占用的 forest box ID 集合
+
+        Returns:
+            实际清除的 tree 节点数
+        """
+        if not box_ids:
+            return 0
+        store = self._store
+        fids = store.forest_ids_array()          # int32 ndarray
+        mask = fids >= 0
+        valid_idxs = np.flatnonzero(mask)
+        valid_fids = fids[valid_idxs]
+
+        box_id_set = set(box_ids)
+        n_cleared = 0
+        for i in range(len(valid_idxs)):
+            if int(valid_fids[i]) in box_id_set:
+                store.unmark_occupied(int(valid_idxs[i]))
+                n_cleared += 1
+        return n_cleared
 
     def is_occupied(self, config: np.ndarray) -> bool:
         return self.find_containing_box_id(config) is not None
@@ -871,6 +973,7 @@ class HierAABBTree:
         forest_box_id: Optional[int] = None,
         constrained_intervals: Optional[List[Tuple[float, float]]] = None,
         obs_packed=None,
+        promotion_depth: int = 2,
     ) -> Optional[FindFreeBoxResult]:
         """从顶向下切分，找到包含 seed 的最大无碰撞 box
 
@@ -880,6 +983,13 @@ class HierAABBTree:
 
         Args:
             obs_packed: 预打包的障碍物 (可复用，避免重复构建)
+            promotion_depth: 上行 promotion 时递归碰撞检测的下潜深度。
+                0 = 用当前节点的 union AABB 做碰撞检测 (默认，兼容旧行为)。
+                1 = 用 2 个子节点的 AABB 分别检测。
+                2 = 用 4 个孙子节点的 AABB 分别检测。
+                k = 用 2^k 个后代节点的 AABB 检测。
+                更大的值使 promotion 碰撞判定更精确 (减少假阳性),
+                但每次 promotion 检查的开销从 O(1) 增长到 O(2^k)。
 
         Returns:
             FindFreeBoxResult 或 None
@@ -984,6 +1094,8 @@ class HierAABBTree:
             self._propagate_up(parent_idx)
 
         # ── 上行：尝试合并 + promotion ──
+        # promotion_depth > 0 时，碰撞检测递归到子树，减少 union AABB 假阳性
+        _collide_fn = self._promotion_collide_check
         result_idx = idx
         absorbed_ids: Set[int] = set()
         for i in range(len(path) - 2, -1, -1):
@@ -992,13 +1104,13 @@ class HierAABBTree:
                 break
 
             if store.get_subtree_occ(pidx) > 0:
-                if store.link_aabbs_collide(pidx, obs_packed):
+                if _collide_fn(pidx, obs_packed, promotion_depth):
                     break
                 absorbed_ids |= self._collect_forest_ids(pidx)
                 self._clear_subtree_occupation(pidx)
                 result_idx = pidx
             else:
-                if not store.link_aabbs_collide(pidx, obs_packed):
+                if not _collide_fn(pidx, obs_packed, promotion_depth):
                     result_idx = pidx
                 else:
                     break
@@ -1426,13 +1538,18 @@ class HierAABBTree:
             added += self._merge_recursive(
                 ds.get_right(dst_idx), other, os.get_right(src_idx))
 
-        # 刷新 AABB = union(children)
+        # 刷新 AABB = intersect(old, union(children))
         left = ds.get_left(dst_idx)
         right = ds.get_right(dst_idx)
         if (left >= 0 and right >= 0
                 and ds.get_has_aabb(left) and ds.get_has_aabb(right)):
-            ds.set_aabb(dst_idx, self._union_aabb(
-                ds.get_aabb(left), ds.get_aabb(right)))
+            union_ab = self._union_aabb(
+                ds.get_aabb(left), ds.get_aabb(right))
+            if ds.get_has_aabb(dst_idx):
+                ds.set_aabb(dst_idx, self._refine_aabb(
+                    ds.get_aabb(dst_idx), union_ab))
+            else:
+                ds.set_aabb(dst_idx, union_ab)
 
         return added
 

@@ -383,6 +383,70 @@ class BoxForest:
             )
         return colliding_ids
 
+    def invalidate_against_obstacle(
+        self,
+        obstacle,
+        robot: Robot,
+        safety_margin: float = 0.0,
+    ) -> Set[int]:
+        """检测与单个障碍物碰撞的 box (增量式场景变化检测).
+
+        构建仅含该障碍物的临时场景, 对每个 box 做 interval FK AABB
+        碰撞检测. 复杂度 O(N × links × 1) — 远低于全量 validate.
+
+        Args:
+            obstacle: 要检测的障碍物 (Obstacle 实例或含有 min_point/max_point)
+            robot: 机器人实例
+            safety_margin: 安全边距
+
+        Returns:
+            与该障碍物碰撞的 box ID 集合
+        """
+        temp_scene = Scene()
+        temp_scene.add_obstacle(
+            obstacle.min_point, obstacle.max_point,
+            name=getattr(obstacle, 'name', 'delta'),
+        )
+        temp_checker = CollisionChecker(
+            robot=robot, scene=temp_scene, safety_margin=safety_margin,
+        )
+        colliding_ids: Set[int] = set()
+        for box in self.boxes.values():
+            if temp_checker.check_box_collision(box.joint_intervals):
+                colliding_ids.add(box.node_id)
+        if colliding_ids:
+            logger.info(
+                "invalidate_against_obstacle: %d/%d boxes collide with '%s'",
+                len(colliding_ids), len(self.boxes),
+                getattr(obstacle, 'name', '?'),
+            )
+        return colliding_ids
+
+    def remove_invalidated(
+        self,
+        box_ids: Set[int],
+    ) -> List[BoxNode]:
+        """清除失效 box: 从 forest (dict+adjacency) 和 hier_tree (占用) 中移除.
+
+        Args:
+            box_ids: 需要移除的 box ID 集合
+
+        Returns:
+            被移除的 BoxNode 列表 (供调用方收集 seed 补种)
+        """
+        if not box_ids:
+            return []
+        # 保存被删 box 的副本 (补种用)
+        removed: List[BoxNode] = [
+            self.boxes[bid] for bid in box_ids if bid in self.boxes
+        ]
+        # 清除 forest dict + adjacency + interval cache
+        self.remove_boxes(box_ids)
+        # 清除 hier_tree 占用 (若有挂接的 tree)
+        if self.hier_tree is not None:
+            self.hier_tree.unoccupy_boxes(box_ids)
+        return removed
+
     def merge_partition_forests(
         self,
         local_forests: List[Dict],

@@ -73,13 +73,16 @@ from planner.box_planner import BoxPlanner
 # ═══════════════════════════════════════════════════════════════════════════
 
 def run_boxrrt_pipeline(robot, scene, cfg, q_start, q_goal, ndim,
-                        no_cache=False):
+                        parallel_grow: Optional[bool] = None):
     """运行 Box-RRT 完整 pipeline, 返回各方法结果.
 
     Pipeline:
       1. grow forest (shared)
       2. coarsen (shared)
       3. Dijkstra + SOCP refine
+
+    Args:
+        parallel_grow: 覆盖 cfg.parallel_grow (None=使用 cfg 默认值).
 
     Returns:
         dict with keys:
@@ -88,13 +91,17 @@ def run_boxrrt_pipeline(robot, scene, cfg, q_start, q_goal, ndim,
     """
     t0 = time.perf_counter()
 
+    # ── 临时覆盖 parallel_grow ──
+    orig_parallel = cfg.parallel_grow
+    if parallel_grow is not None:
+        cfg.parallel_grow = parallel_grow
+    label = "parallel" if cfg.parallel_grow else "sequential"
+
     # ── grow + coarsen ──
-    label = "no-cache" if no_cache else "with-cache"
     print("\n" + "=" * 60)
     print(f"  Box-RRT Pipeline: grow + coarsen ({label})")
     print("=" * 60)
-    prep = grow_and_prepare(robot, scene, cfg, q_start, q_goal, ndim,
-                            no_cache=no_cache)
+    prep = grow_and_prepare(robot, scene, cfg, q_start, q_goal, ndim)
 
     # 等待 cache 线程完成
     cache_thread = prep.get('_cache_thread')
@@ -130,6 +137,9 @@ def run_boxrrt_pipeline(robot, scene, cfg, q_start, q_goal, ndim,
     else:
         result_dij['total_ms'] = grow_ms + coarsen_ms + dij_total_ms
         print(f"    [FAIL] ({dij_total_ms:.0f}ms)")
+
+    # ── 恢复 cfg ──
+    cfg.parallel_grow = orig_parallel
 
     total_ms = (time.perf_counter() - t0) * 1000
     return {
@@ -305,7 +315,7 @@ def print_comparison(boxrrt_cache: Dict,
                      cfg, seed: int, n_obs: int, rrt_timeout: float,
                      n_trials: int, config_dist: float,
                      ompl_results: Optional[Dict] = None,
-                     boxrrt_nocache: Optional[Dict] = None):
+                     boxrrt_parallel: Optional[Dict] = None):
     """输出统一对比表."""
 
     print(f"\n{'=' * 100}")
@@ -322,14 +332,14 @@ def print_comparison(boxrrt_cache: Dict,
 
     rows = []
 
-    # ── Box-RRT: with cache ──
-    row = _boxrrt_row(boxrrt_cache, 'BoxRRT(cache)')
+    # ── Box-RRT (sequential) ──
+    row = _boxrrt_row(boxrrt_cache, 'BoxRRT(seq)')
     if row:
         rows.append(row)
 
-    # ── Box-RRT: no cache ──
-    if boxrrt_nocache:
-        row = _boxrrt_row(boxrrt_nocache, 'BoxRRT(no-cache)')
+    # ── Box-RRT (parallel) ──
+    if boxrrt_parallel:
+        row = _boxrrt_row(boxrrt_parallel, 'BoxRRT(par)')
         if row:
             rows.append(row)
 
@@ -488,11 +498,183 @@ def save_comparison(rows, boxrrt_results,
 # CLI + Main
 # ═══════════════════════════════════════════════════════════════════════════
 
+def run_one_scene(robot, cfg, args, seed, q_start, q_goal, ndim,
+                  config_dist, out_dir):
+    """运行单个场景的完整对比, 返回 rows list."""
+    cfg.seed = seed
+    rng = np.random.default_rng(seed)
+
+    print(f"\n{'#' * 70}")
+    print(f"  Scene: seed={seed}, {args.obstacles} obstacles")
+    print(f"{'#' * 70}")
+
+    # ── Build scene ──
+    print("Building scene ...", flush=True)
+    scene = build_panda_scene(rng, cfg, robot, q_start, q_goal)
+    n_obs = scene.n_obstacles
+    print(f"  {n_obs} obstacles")
+    for obs in scene.get_obstacles():
+        mn, mx = obs.min_point, obs.max_point
+        sz = mx - mn
+        print(f"    {obs.name}: center=({(mn[0]+mx[0])/2:.3f}, "
+              f"{(mn[1]+mx[1])/2:.3f}, {(mn[2]+mx[2])/2:.3f})  "
+              f"size=({sz[0]:.3f}, {sz[1]:.3f}, {sz[2]:.3f})")
+
+    # ══════════════════════════════════════════════════════════════════
+    # Part A: Box-RRT Pipeline (sequential + parallel)
+    # ══════════════════════════════════════════════════════════════════
+    boxrrt_cache = run_boxrrt_pipeline(
+        robot, scene, cfg, q_start, q_goal, ndim, parallel_grow=False)
+    boxrrt_parallel = run_boxrrt_pipeline(
+        robot, scene, cfg, q_start, q_goal, ndim, parallel_grow=True)
+
+    # ══════════════════════════════════════════════════════════════════
+    # Part B: OMPL Family (via WSL)
+    # ══════════════════════════════════════════════════════════════════
+    ompl_results = run_ompl_family(
+        scene, q_start, q_goal,
+        algorithms=args.ompl_algorithms,
+        timeout=args.timeout,
+        n_trials=args.trials,
+        seed=seed,
+        step_size=args.step_size,
+    )
+
+    # ══════════════════════════════════════════════════════════════════
+    # Per-scene Table
+    # ══════════════════════════════════════════════════════════════════
+    rows = print_comparison(
+        boxrrt_cache,
+        cfg, seed, n_obs, args.timeout, args.trials, config_dist,
+        ompl_results=ompl_results if ompl_results else None,
+        boxrrt_parallel=boxrrt_parallel)
+
+    # ── Save per-scene results ──
+    scene_dir = out_dir / f"seed_{seed}"
+    scene_dir.mkdir(parents=True, exist_ok=True)
+    save_comparison(rows, boxrrt_cache,
+                    cfg, seed, config_dist, args.timeout, args.trials,
+                    n_obs, scene_dir, 0.0,
+                    ompl_results=ompl_results if ompl_results else None)
+
+    # ── Viz ──
+    best_boxrrt = None
+    for br in (boxrrt_cache, boxrrt_parallel):
+        for key in ('dijkstra',):
+            r = br.get(key)
+            if r and r.get('success'):
+                if best_boxrrt is None or r['cost'] < best_boxrrt['cost']:
+                    best_boxrrt = r
+
+    best_rrt_name = None
+    best_rrt_wps = None
+    best_rrt_cost = float('inf')
+    if ompl_results:
+        for algo, data in ompl_results.items():
+            s = data.get('summary', {})
+            if s.get('n_success', 0) > 0:
+                cost = s['avg_path_length']
+                if cost < best_rrt_cost:
+                    best_rrt_cost = cost
+                    best_rrt_name = algo
+                    best_rrt_wps = data.get('best_waypoints', [])
+
+    if best_boxrrt and best_boxrrt['success']:
+        wps = best_boxrrt['waypoints']
+        method = best_boxrrt['method']
+        fig = plot_arm_scene_html(
+            robot, scene, q_start, q_goal, waypoints=wps,
+            title=f"seed={seed} Box-RRT {method} — cost={best_boxrrt['cost']:.3f}")
+        _save_plotly_html(fig, scene_dir / "boxrrt_arm_scene.html")
+
+    if best_rrt_wps and len(best_rrt_wps) > 1:
+        fig = plot_arm_scene_html(
+            robot, scene, q_start, q_goal, waypoints=best_rrt_wps,
+            title=f"seed={seed} {best_rrt_name} — cost={best_rrt_cost:.3f}")
+        _save_plotly_html(fig, scene_dir / "ompl_arm_scene.html")
+
+    return rows
+
+
+def print_aggregate_summary(all_scene_rows: List[Tuple[int, List[Dict]]],
+                            method_names: List[str]):
+    """输出所有场景的汇总统计 (成功率 / 平均耗时 / 平均路径长度)."""
+    from collections import defaultdict
+
+    # 收集每个方法在各场景的数据
+    method_stats = defaultdict(lambda: {
+        'successes': 0, 'total_scenes': 0,
+        'total_times': [], 'path_lens': [], 'first_sols': [],
+    })
+
+    for seed, rows in all_scene_rows:
+        seen = set()
+        for r in rows:
+            m = r['method']
+            seen.add(m)
+            stats = method_stats[m]
+            stats['total_scenes'] += 1
+            suc_parts = r['success'].split('/')
+            n_ok = int(suc_parts[0])
+            stats['successes'] += (1 if n_ok > 0 else 0)
+            if r['total_s'] != '—':
+                try:
+                    stats['total_times'].append(float(r['total_s']))
+                except ValueError:
+                    pass
+            if r['path_len'] != '—':
+                try:
+                    stats['path_lens'].append(float(r['path_len']))
+                except ValueError:
+                    pass
+            if r['first_sol'] != '—':
+                try:
+                    stats['first_sols'].append(float(r['first_sol']))
+                except ValueError:
+                    pass
+
+    n_scenes = len(all_scene_rows)
+
+    print(f"\n{'=' * 110}")
+    print(f"  AGGREGATE SUMMARY — {n_scenes} scenes")
+    print(f"{'=' * 110}")
+    header = (f"  {'Method':<24s} {'Win/Total':>10s} {'Avg 1stSol(s)':>14s} "
+              f"{'Avg Total(s)':>14s} {'Avg PathLen':>12s} {'Best PathLen':>12s}")
+    print(header)
+    print("  " + "-" * (len(header) - 2))
+
+    # 使用 method_names 保持顺序
+    ordered = []
+    for m in method_names:
+        if m in method_stats:
+            ordered.append(m)
+    for m in method_stats:
+        if m not in ordered:
+            ordered.append(m)
+
+    for m in ordered:
+        s = method_stats[m]
+        n_total = s['total_scenes']
+        n_ok = s['successes']
+        rate = f"{n_ok}/{n_total}"
+
+        avg_fst = f"{np.mean(s['first_sols']):.3f}" if s['first_sols'] else "—"
+        avg_total = f"{np.mean(s['total_times']):.3f}" if s['total_times'] else "—"
+        avg_plen = f"{np.mean(s['path_lens']):.3f}" if s['path_lens'] else "—"
+        best_plen = f"{min(s['path_lens']):.3f}" if s['path_lens'] else "—"
+
+        print(f"  {m:<24s} {rate:>10s} {avg_fst:>14s} "
+              f"{avg_total:>14s} {avg_plen:>12s} {best_plen:>12s}")
+    print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Unified planner comparison: Box-RRT pipeline vs OMPL (C++)")
     parser.add_argument("--seed", type=int, default=0,
-                        help="Random seed (0 = timestamp)")
+                        help="Random seed for single scene (0 = timestamp)")
+    parser.add_argument("--seeds", type=int, nargs="+", default=None,
+                        help="Multiple seeds for multi-scene comparison")
     parser.add_argument("--timeout", type=float, default=10.0,
                         help="OMPL timeout per trial (seconds)")
     parser.add_argument("--trials", type=int, default=3,
@@ -510,14 +692,19 @@ def main():
 
     t_total = time.perf_counter()
 
-    seed = args.seed if args.seed != 0 else int(time.time()) % (2**31)
+    # 确定 seeds 列表
+    if args.seeds:
+        seeds = args.seeds
+    elif args.seed != 0:
+        seeds = [args.seed]
+    else:
+        seeds = [int(time.time()) % (2**31)]
 
-    # ── Robot + Scene ──
+    # ── Robot ──
     robot = load_robot("panda")
     ndim = robot.n_joints
 
     cfg = PandaGCSConfig()
-    cfg.seed = seed
     cfg.n_obstacles = args.obstacles
     cfg.max_boxes = args.max_boxes
 
@@ -525,12 +712,10 @@ def main():
     q_goal = np.array(cfg.q_goal, dtype=np.float64)
     config_dist = float(np.linalg.norm(q_goal - q_start))
 
-    rng = np.random.default_rng(seed)
-
     print(f"{'=' * 70}")
     print(f"  Unified Planner Comparison — Panda {ndim}-DOF")
     print(f"{'=' * 70}")
-    print(f"  seed          = {seed}")
+    print(f"  seeds         = {seeds}")
     print(f"  q_start       = {np.array2string(q_start, precision=3)}")
     print(f"  q_goal        = {np.array2string(q_goal, precision=3)}")
     print(f"  config dist   = {config_dist:.3f} rad")
@@ -540,104 +725,49 @@ def main():
     print(f"  OMPL algos    = {args.ompl_algorithms}")
     print()
 
-    # ── Build scene ──
-    print("Building scene ...", flush=True)
-    scene = build_panda_scene(rng, cfg, robot, q_start, q_goal)
-    n_obs = scene.n_obstacles
-    print(f"  {n_obs} obstacles")
-    for obs in scene.get_obstacles():
-        mn, mx = obs.min_point, obs.max_point
-        sz = mx - mn
-        print(f"    {obs.name}: center=({(mn[0]+mx[0])/2:.3f}, "
-              f"{(mn[1]+mx[1])/2:.3f}, {(mn[2]+mx[2])/2:.3f})  "
-              f"size=({sz[0]:.3f}, {sz[1]:.3f}, {sz[2]:.3f})")
-
-    # ══════════════════════════════════════════════════════════════════
-    # Part A: Box-RRT Pipeline (with cache + no cache)
-    # ══════════════════════════════════════════════════════════════════
-    boxrrt_cache = run_boxrrt_pipeline(
-        robot, scene, cfg, q_start, q_goal, ndim, no_cache=False)
-    boxrrt_nocache = run_boxrrt_pipeline(
-        robot, scene, cfg, q_start, q_goal, ndim, no_cache=True)
-
-    # ══════════════════════════════════════════════════════════════════
-    # Part B: OMPL Family (via WSL)
-    # ══════════════════════════════════════════════════════════════════
-    ompl_results = run_ompl_family(
-        scene, q_start, q_goal,
-        algorithms=args.ompl_algorithms,
-        timeout=args.timeout,
-        n_trials=args.trials,
-        seed=seed,
-        step_size=args.step_size,
-    )
-
-    # ══════════════════════════════════════════════════════════════════
-    # Unified Comparison Table
-    # ══════════════════════════════════════════════════════════════════
-    rows = print_comparison(
-        boxrrt_cache,
-        cfg, seed, n_obs, args.timeout, args.trials, config_dist,
-        ompl_results=ompl_results if ompl_results else None,
-        boxrrt_nocache=boxrrt_nocache)
-
-    # ══════════════════════════════════════════════════════════════════
-    # Save Results
-    # ══════════════════════════════════════════════════════════════════
-    total_s = time.perf_counter() - t_total
     out_dir = make_output_dir("benchmarks", "planner_comparison")
 
-    save_comparison(rows, boxrrt_cache,
-                    cfg, seed, config_dist, args.timeout, args.trials,
-                    n_obs, out_dir, total_s,
-                    ompl_results=ompl_results if ompl_results else None)
+    # ── 逐场景运行 ──
+    all_scene_rows: List[Tuple[int, List[Dict]]] = []
+    method_names_ordered: List[str] = []
+
+    for i, seed in enumerate(seeds):
+        print(f"\n  >>> Scene {i+1}/{len(seeds)}: seed={seed}")
+        rows = run_one_scene(
+            robot, cfg, args, seed, q_start, q_goal, ndim,
+            config_dist, out_dir)
+        all_scene_rows.append((seed, rows))
+        # 记录方法名顺序 (以第一个场景为准)
+        if not method_names_ordered:
+            method_names_ordered = [r['method'] for r in rows]
 
     # ══════════════════════════════════════════════════════════════════
-    # Visualization (best Box-RRT path)
+    # Aggregate Summary (多场景汇总)
     # ══════════════════════════════════════════════════════════════════
-    best_boxrrt = None
-    for br in (boxrrt_cache, boxrrt_nocache):
-        for key in ('dijkstra',):
-            r = br.get(key)
-            if r and r.get('success'):
-                if best_boxrrt is None or r['cost'] < best_boxrrt['cost']:
-                    best_boxrrt = r
+    if len(seeds) > 1:
+        print_aggregate_summary(all_scene_rows, method_names_ordered)
 
-    # Also find best OMPL path
-    best_rrt_name = None
-    best_rrt_wps = None
-    best_rrt_cost = float('inf')
-    for algo, data in ompl_results.items():
-        s = data.get('summary', {})
-        if s.get('n_success', 0) > 0:
-            cost = s['avg_path_length']
-            if cost < best_rrt_cost:
-                best_rrt_cost = cost
-                best_rrt_name = algo
-                best_rrt_wps = data.get('best_waypoints', [])
+    total_s = time.perf_counter() - t_total
 
-    # Save viz for best Box-RRT
-    if best_boxrrt and best_boxrrt['success']:
-        wps = best_boxrrt['waypoints']
-        method = best_boxrrt['method']
-        print(f"\n  Viz: {method} path ...", flush=True)
-
-        t0 = time.perf_counter()
-        fig = plot_arm_scene_html(
-            robot, scene, q_start, q_goal, waypoints=wps,
-            title=f"Box-RRT {method} — cost={best_boxrrt['cost']:.3f}")
-        _save_plotly_html(fig, out_dir / "boxrrt_arm_scene.html")
-        print(f"    boxrrt_arm_scene.html ({(time.perf_counter()-t0)*1000:.0f}ms)")
-
-    # Save viz for best RRT
-    if best_rrt_wps and len(best_rrt_wps) > 1:
-        print(f"  Viz: {best_rrt_name} path ...", flush=True)
-        t0 = time.perf_counter()
-        fig = plot_arm_scene_html(
-            robot, scene, q_start, q_goal, waypoints=best_rrt_wps,
-            title=f"{best_rrt_name} — cost={best_rrt_cost:.3f}")
-        _save_plotly_html(fig, out_dir / "ompl_arm_scene.html")
-        print(f"    ompl_arm_scene.html ({(time.perf_counter()-t0)*1000:.0f}ms)")
+    # ── Save aggregate JSON ──
+    agg_json = {
+        "seeds": seeds,
+        "n_scenes": len(seeds),
+        "config_dist": config_dist,
+        "n_obstacles": args.obstacles,
+        "rrt_timeout_s": args.timeout,
+        "rrt_trials": args.trials,
+        "max_boxes": args.max_boxes,
+        "per_scene": [
+            {"seed": seed, "rows": rows}
+            for seed, rows in all_scene_rows
+        ],
+        "total_time_s": total_s,
+    }
+    agg_path = out_dir / "aggregate.json"
+    with open(agg_path, "w", encoding="utf-8") as f:
+        json.dump(agg_json, f, indent=2, ensure_ascii=False, default=str)
+    print(f"  Saved: {agg_path}")
 
     print(f"\n  Output: {out_dir}")
     print(f"  Total experiment time: {total_s:.1f}s")

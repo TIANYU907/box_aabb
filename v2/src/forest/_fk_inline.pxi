@@ -350,3 +350,36 @@ cdef inline void _union_aabb_buf_c(
         out[i*6+3] = a[i*6+3] if a[i*6+3] > b[i*6+3] else b[i*6+3]
         out[i*6+4] = a[i*6+4] if a[i*6+4] > b[i*6+4] else b[i*6+4]
         out[i*6+5] = a[i*6+5] if a[i*6+5] > b[i*6+5] else b[i*6+5]
+
+
+# ═══════════════════════════════════════════
+#  AABB refine: intersect(old, union(left, right))
+#
+#  Both old (direct FK on parent interval) and union(left, right)
+#  are valid over-approximations. Their intersection is tighter
+#  while remaining a valid over-approximation.
+#  For min-dims: take max(old, union)  → shrink lower bound upward
+#  For max-dims: take min(old, union)  → shrink upper bound downward
+# ═══════════════════════════════════════════
+
+cdef inline void _refine_aabb_buf_c(
+    float* dst, const float* union_buf,
+    int n_links,
+) noexcept nogil:
+    """dst = intersect(dst, union_buf): tighten dst in-place.
+
+    dst already holds the old (direct FK) AABB.
+    union_buf holds union(left_child, right_child) AABB.
+    Result: per-link per-axis min→max, max→min clamping.
+    """
+    cdef int i
+    cdef float v
+    for i in range(n_links):
+        # min dims: take the larger (tighter) lower bound
+        v = union_buf[i*6];   dst[i*6]   = v if v > dst[i*6]   else dst[i*6]
+        v = union_buf[i*6+1]; dst[i*6+1] = v if v > dst[i*6+1] else dst[i*6+1]
+        v = union_buf[i*6+2]; dst[i*6+2] = v if v > dst[i*6+2] else dst[i*6+2]
+        # max dims: take the smaller (tighter) upper bound
+        v = union_buf[i*6+3]; dst[i*6+3] = v if v < dst[i*6+3] else dst[i*6+3]
+        v = union_buf[i*6+4]; dst[i*6+4] = v if v < dst[i*6+4] else dst[i*6+4]
+        v = union_buf[i*6+5]; dst[i*6+5] = v if v < dst[i*6+5] else dst[i*6+5]

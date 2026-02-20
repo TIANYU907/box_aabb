@@ -1868,7 +1868,7 @@ struct __pyx_MemviewEnum_obj;
 struct __pyx_memoryview_obj;
 struct __pyx_memoryviewslice_obj;
 
-/* "forest/_hier_core.pyx":73
+/* "forest/_hier_core.pyx":137
  * #
  * 
  * cdef class NodeStore:             # <<<<<<<<<<<<<<
@@ -1897,7 +1897,7 @@ struct __pyx_obj_6forest_10_hier_core_NodeStore {
 };
 
 
-/* "forest/_hier_core.pyx":580
+/* "forest/_hier_core.pyx":730
  *     #   ()
  * 
  *     def iter_dirty(self):             # <<<<<<<<<<<<<<
@@ -1992,7 +1992,7 @@ struct __pyx_memoryviewslice_obj {
 
 
 
-/* "forest/_hier_core.pyx":73
+/* "forest/_hier_core.pyx":137
  * #
  * 
  * cdef class NodeStore:             # <<<<<<<<<<<<<<
@@ -2008,6 +2008,7 @@ struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore {
   void (*_union_aabb_c)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, float *, float *, float *);
   void (*_propagate_up_c)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int);
   void (*_mark_occupied_c)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int, int);
+  void (*_unmark_occupied_c)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int);
   void (*_reset_occupation_c)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int);
   PyObject *(*_collect_forest_ids_c)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int);
   void (*_clear_subtree_occupation_c)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int);
@@ -2808,6 +2809,7 @@ static void __Pyx_WriteUnraisable(const char *name, int clineno,
                                   int lineno, const char *filename,
                                   int full_traceback, int nogil);
 
+#define __Pyx_BufPtrStrided1d(type, buf, i0, s0) (type)((char*)buf + i0 * s0)
 /* PyObjectGetMethod.proto (used by PyObjectCallMethod0) */
 #if !(CYTHON_VECTORCALL && (__PYX_LIMITED_VERSION_HEX >= 0x030C0000 || (!CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX >= 0x03090000)))
 static int __Pyx_PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method);
@@ -2854,7 +2856,6 @@ static void __Pyx_Generator_Replace_StopIteration(int in_async_gen);
 /* BufferFallbackError.proto */
 static void __Pyx_RaiseBufferFallbackError(void);
 
-#define __Pyx_BufPtrStrided1d(type, buf, i0, s0) (type)((char*)buf + i0 * s0)
 /* AllocateExtensionType.proto */
 static PyObject *__Pyx_AllocateExtensionType(PyTypeObject *t, int is_final);
 
@@ -3569,6 +3570,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, float *__pyx_v_dst, float *__pyx_v_a, float *__pyx_v_b); /* proto*/
 static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_start_idx); /* proto*/
 static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_forest_box_id); /* proto*/
+static void __pyx_f_6forest_10_hier_core_9NodeStore__unmark_occupied_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto*/
 static void __pyx_f_6forest_10_hier_core_9NodeStore__reset_occupation_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto*/
 static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto*/
 static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto*/
@@ -3614,6 +3616,7 @@ static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__incremental_fk_cc(int, i
 static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__extract_compact_cc(double const *, double const *, int, float *); /*proto*/
 static CYTHON_INLINE int __pyx_f_6forest_10_hier_core__link_aabbs_collide_flat(float const *, float const *, int); /*proto*/
 static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__union_aabb_buf_c(float const *, float const *, int, float *); /*proto*/
+static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__refine_aabb_buf_c(float *, float const *, int); /*proto*/
 static CYTHON_INLINE char *__pyx_f_6forest_10_hier_core__node_ptr(char *, int, int); /*proto*/
 static CYTHON_INLINE int __pyx_f_6forest_10_hier_core__get_i32(char *, int); /*proto*/
 static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__set_i32(char *, int, int); /*proto*/
@@ -3622,6 +3625,7 @@ static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__set_f64(char *, int, dou
 static CYTHON_INLINE unsigned char __pyx_f_6forest_10_hier_core__get_u8(char *, int); /*proto*/
 static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__set_u8(char *, int, unsigned char); /*proto*/
 static CYTHON_INLINE float *__pyx_f_6forest_10_hier_core__aabb_ptr(char *); /*proto*/
+static int __pyx_f_6forest_10_hier_core__subtree_collide_recursive(char *, int, int, float const *, int, int); /*proto*/
 static PyObject *__pyx_f_6forest_10_hier_core___pyx_unpickle_NodeStore__set_state(struct __pyx_obj_6forest_10_hier_core_NodeStore *, PyObject *); /*proto*/
 static CYTHON_INLINE PyObject *__Pyx_carray_to_py_int(int *, Py_ssize_t); /*proto*/
 static CYTHON_INLINE PyObject *__Pyx_carray_to_tuple_int(int *, Py_ssize_t); /*proto*/
@@ -3754,27 +3758,29 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_44get_subtree_occ_vol(
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_46get_forest_id(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_48forest_ids_array(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, PyObject *__pyx_v_obs_packed); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_52propagate_up(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_start_idx); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_54mark_occupied(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_forest_box_id); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_56reset_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_58set_forest_id(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_fid); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_60collect_forest_ids(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_62clear_subtree_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_64reset_all_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_66iter_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_node_bytes(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_52subtree_collide_check(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, PyObject *__pyx_v_obs_packed, int __pyx_v_promotion_depth); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_54propagate_up(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_start_idx); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_56mark_occupied(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_forest_box_id); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_58unmark_occupied(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_60reset_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_62set_forest_id(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_fid); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_64collect_forest_ids(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_66clear_subtree_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_68reset_all_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_70iter_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73clear_all_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_stats(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77get_raw_buffer(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_79get_node_bytes(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8capacity___get__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6stride___get__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_7n_links___get__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6n_dims___get__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyArrayObject *__pyx_v_seed, PyObject *__pyx_v_obs_packed, PyArrayObject *__pyx_v_alpha_arr, PyArrayObject *__pyx_v_a_arr, PyArrayObject *__pyx_v_d_arr, PyArrayObject *__pyx_v_theta_arr, PyArrayObject *__pyx_v_jtype_arr, int __pyx_v_has_tool, CYTHON_UNUSED double __pyx_v_tool_alpha, CYTHON_UNUSED double __pyx_v_tool_a, CYTHON_UNUSED double __pyx_v_tool_d, PyArrayObject *__pyx_v_split_dims_arr, int __pyx_v_n_split_dims, PyObject *__pyx_v_base_ivs, int __pyx_v_max_depth, double __pyx_v_min_edge_length, PyArrayObject *__pyx_v_root_plo, PyArrayObject *__pyx_v_root_phi, PyArrayObject *__pyx_v_root_jlo, PyArrayObject *__pyx_v_root_jhi); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_81descent_loop(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyArrayObject *__pyx_v_seed, PyObject *__pyx_v_obs_packed, PyArrayObject *__pyx_v_alpha_arr, PyArrayObject *__pyx_v_a_arr, PyArrayObject *__pyx_v_d_arr, PyArrayObject *__pyx_v_theta_arr, PyArrayObject *__pyx_v_jtype_arr, int __pyx_v_has_tool, CYTHON_UNUSED double __pyx_v_tool_alpha, CYTHON_UNUSED double __pyx_v_tool_a, CYTHON_UNUSED double __pyx_v_tool_d, PyArrayObject *__pyx_v_split_dims_arr, int __pyx_v_n_split_dims, PyObject *__pyx_v_base_ivs, int __pyx_v_max_depth, double __pyx_v_min_edge_length, PyArrayObject *__pyx_v_root_plo, PyArrayObject *__pyx_v_root_phi, PyArrayObject *__pyx_v_root_jlo, PyArrayObject *__pyx_v_root_jhi); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8next_idx___get__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
 static int __pyx_pf_6forest_10_hier_core_9NodeStore_8next_idx_2__set__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_79__reduce_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_81__setstate_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_83__reduce_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_85__setstate_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_6forest_10_hier_core___pyx_unpickle_NodeStore(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v___pyx_type, long __pyx_v___pyx_checksum, PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_tp_new_6forest_10_hier_core_NodeStore(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_6forest_10_hier_core___pyx_scope_struct__iter_dirty(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
@@ -3836,8 +3842,8 @@ typedef struct {
   __Pyx_CachedCFunction __pyx_umethod_PyList_Type_pop;
   PyObject *__pyx_slice[1];
   PyObject *__pyx_tuple[1];
-  PyObject *__pyx_codeobj_tab[41];
-  PyObject *__pyx_string_tab[358];
+  PyObject *__pyx_codeobj_tab[43];
+  PyObject *__pyx_string_tab[366];
   PyObject *__pyx_number_tab[5];
 /* #### Code section: module_state_contents ### */
 
@@ -3983,273 +3989,281 @@ static __pyx_mstatetype * const __pyx_mstate_global = &__pyx_mstate_global_stati
 #define __pyx_n_u_NodeStore_set_parent __pyx_string_tab[88]
 #define __pyx_n_u_NodeStore_set_right __pyx_string_tab[89]
 #define __pyx_n_u_NodeStore_set_split_val __pyx_string_tab[90]
-#define __pyx_n_u_Pyx_PyDict_NextRef __pyx_string_tab[91]
-#define __pyx_n_u_Sequence __pyx_string_tab[92]
-#define __pyx_n_u_View_MemoryView __pyx_string_tab[93]
-#define __pyx_n_u_a_arr __pyx_string_tab[94]
-#define __pyx_n_u_a_p __pyx_string_tab[95]
-#define __pyx_n_u_aabb __pyx_string_tab[96]
-#define __pyx_n_u_aabb_l __pyx_string_tab[97]
-#define __pyx_n_u_aabb_p __pyx_string_tab[98]
-#define __pyx_n_u_aabb_r __pyx_string_tab[99]
-#define __pyx_n_u_aabb_u __pyx_string_tab[100]
-#define __pyx_n_u_abc __pyx_string_tab[101]
-#define __pyx_n_u_alloc_node __pyx_string_tab[102]
-#define __pyx_n_u_allocate_buffer __pyx_string_tab[103]
-#define __pyx_n_u_alpha_arr __pyx_string_tab[104]
-#define __pyx_n_u_alpha_p __pyx_string_tab[105]
-#define __pyx_n_u_asarray __pyx_string_tab[106]
-#define __pyx_n_u_asyncio_coroutines __pyx_string_tab[107]
-#define __pyx_n_u_attach_buffer __pyx_string_tab[108]
-#define __pyx_n_u_avg __pyx_string_tab[109]
-#define __pyx_n_u_avg_depth __pyx_string_tab[110]
-#define __pyx_n_u_base __pyx_string_tab[111]
-#define __pyx_n_u_base_ivs __pyx_string_tab[112]
-#define __pyx_n_u_buf __pyx_string_tab[113]
-#define __pyx_n_u_c __pyx_string_tab[114]
-#define __pyx_n_u_cap __pyx_string_tab[115]
-#define __pyx_n_u_civs_hi __pyx_string_tab[116]
-#define __pyx_n_u_civs_lo __pyx_string_tab[117]
-#define __pyx_n_u_class __pyx_string_tab[118]
-#define __pyx_n_u_class_getitem __pyx_string_tab[119]
-#define __pyx_n_u_clear_all_dirty __pyx_string_tab[120]
-#define __pyx_n_u_clear_subtree_occupation __pyx_string_tab[121]
-#define __pyx_n_u_cline_in_traceback __pyx_string_tab[122]
-#define __pyx_n_u_close __pyx_string_tab[123]
-#define __pyx_n_u_collect_forest_ids __pyx_string_tab[124]
-#define __pyx_n_u_collide __pyx_string_tab[125]
-#define __pyx_n_u_count __pyx_string_tab[126]
-#define __pyx_n_u_d __pyx_string_tab[127]
-#define __pyx_n_u_d_arr __pyx_string_tab[128]
-#define __pyx_n_u_d_p __pyx_string_tab[129]
-#define __pyx_n_u_depth __pyx_string_tab[130]
-#define __pyx_n_u_descent_loop __pyx_string_tab[131]
-#define __pyx_n_u_di __pyx_string_tab[132]
-#define __pyx_n_u_dict __pyx_string_tab[133]
-#define __pyx_n_u_dict_2 __pyx_string_tab[134]
-#define __pyx_n_u_dim __pyx_string_tab[135]
-#define __pyx_n_u_dims __pyx_string_tab[136]
-#define __pyx_n_u_dst __pyx_string_tab[137]
-#define __pyx_n_u_dtype __pyx_string_tab[138]
-#define __pyx_n_u_dtype_is_object __pyx_string_tab[139]
-#define __pyx_n_u_edge __pyx_string_tab[140]
-#define __pyx_n_u_empty __pyx_string_tab[141]
-#define __pyx_n_u_encode __pyx_string_tab[142]
-#define __pyx_n_u_ensure_capacity __pyx_string_tab[143]
-#define __pyx_n_u_enumerate __pyx_string_tab[144]
-#define __pyx_n_u_error __pyx_string_tab[145]
-#define __pyx_n_u_fail_code __pyx_string_tab[146]
-#define __pyx_n_u_fid __pyx_string_tab[147]
-#define __pyx_n_u_fk_jhi __pyx_string_tab[148]
-#define __pyx_n_u_fk_jlo __pyx_string_tab[149]
-#define __pyx_n_u_fk_phi __pyx_string_tab[150]
-#define __pyx_n_u_fk_plo __pyx_string_tab[151]
-#define __pyx_n_u_flags __pyx_string_tab[152]
-#define __pyx_n_u_float32 __pyx_string_tab[153]
-#define __pyx_n_u_float64 __pyx_string_tab[154]
-#define __pyx_n_u_forest__hier_core __pyx_string_tab[155]
-#define __pyx_n_u_forest_box_id __pyx_string_tab[156]
-#define __pyx_n_u_forest_ids_array __pyx_string_tab[157]
-#define __pyx_n_u_format __pyx_string_tab[158]
-#define __pyx_n_u_fortran __pyx_string_tab[159]
-#define __pyx_n_u_full __pyx_string_tab[160]
-#define __pyx_n_u_func __pyx_string_tab[161]
-#define __pyx_n_u_get_aabb __pyx_string_tab[162]
-#define __pyx_n_u_get_depth __pyx_string_tab[163]
-#define __pyx_n_u_get_dirty __pyx_string_tab[164]
-#define __pyx_n_u_get_forest_id __pyx_string_tab[165]
-#define __pyx_n_u_get_has_aabb __pyx_string_tab[166]
-#define __pyx_n_u_get_left __pyx_string_tab[167]
-#define __pyx_n_u_get_node_bytes __pyx_string_tab[168]
-#define __pyx_n_u_get_parent __pyx_string_tab[169]
-#define __pyx_n_u_get_raw_buffer __pyx_string_tab[170]
-#define __pyx_n_u_get_right __pyx_string_tab[171]
-#define __pyx_n_u_get_split_val __pyx_string_tab[172]
-#define __pyx_n_u_get_stats __pyx_string_tab[173]
-#define __pyx_n_u_get_subtree_occ __pyx_string_tab[174]
-#define __pyx_n_u_get_subtree_occ_vol __pyx_string_tab[175]
-#define __pyx_n_u_getstate __pyx_string_tab[176]
-#define __pyx_n_u_going_left __pyx_string_tab[177]
-#define __pyx_n_u_has_tool __pyx_string_tab[178]
-#define __pyx_n_u_i __pyx_string_tab[179]
-#define __pyx_n_u_id __pyx_string_tab[180]
-#define __pyx_n_u_idx __pyx_string_tab[181]
-#define __pyx_n_u_import __pyx_string_tab[182]
-#define __pyx_n_u_index __pyx_string_tab[183]
-#define __pyx_n_u_int32 __pyx_string_tab[184]
-#define __pyx_n_u_is_coroutine __pyx_string_tab[185]
-#define __pyx_n_u_is_occupied __pyx_string_tab[186]
-#define __pyx_n_u_items __pyx_string_tab[187]
-#define __pyx_n_u_itemsize __pyx_string_tab[188]
-#define __pyx_n_u_iter_dirty __pyx_string_tab[189]
-#define __pyx_n_u_ivs_hi __pyx_string_tab[190]
-#define __pyx_n_u_ivs_lo __pyx_string_tab[191]
-#define __pyx_n_u_joints_bytes __pyx_string_tab[192]
-#define __pyx_n_u_jtype_arr __pyx_string_tab[193]
-#define __pyx_n_u_jtype_p __pyx_string_tab[194]
-#define __pyx_n_u_k __pyx_string_tab[195]
-#define __pyx_n_u_left __pyx_string_tab[196]
-#define __pyx_n_u_left_idx __pyx_string_tab[197]
-#define __pyx_n_u_link_aabbs_collide __pyx_string_tab[198]
-#define __pyx_n_u_main __pyx_string_tab[199]
-#define __pyx_n_u_mark_occupied __pyx_string_tab[200]
-#define __pyx_n_u_max_depth __pyx_string_tab[201]
-#define __pyx_n_u_memview __pyx_string_tab[202]
-#define __pyx_n_u_mid __pyx_string_tab[203]
-#define __pyx_n_u_min_edge_length __pyx_string_tab[204]
-#define __pyx_n_u_mode __pyx_string_tab[205]
-#define __pyx_n_u_module __pyx_string_tab[206]
-#define __pyx_n_u_n_dims __pyx_string_tab[207]
-#define __pyx_n_u_n_fk_calls __pyx_string_tab[208]
-#define __pyx_n_u_n_jm __pyx_string_tab[209]
-#define __pyx_n_u_n_joints __pyx_string_tab[210]
-#define __pyx_n_u_n_leaves __pyx_string_tab[211]
-#define __pyx_n_u_n_links __pyx_string_tab[212]
-#define __pyx_n_u_n_new_nodes __pyx_string_tab[213]
-#define __pyx_n_u_n_nodes __pyx_string_tab[214]
-#define __pyx_n_u_n_obs __pyx_string_tab[215]
-#define __pyx_n_u_n_split_dims __pyx_string_tab[216]
-#define __pyx_n_u_n_tf __pyx_string_tab[217]
-#define __pyx_n_u_name __pyx_string_tab[218]
-#define __pyx_n_u_name_2 __pyx_string_tab[219]
-#define __pyx_n_u_nbytes __pyx_string_tab[220]
-#define __pyx_n_u_ndim __pyx_string_tab[221]
-#define __pyx_n_u_needed __pyx_string_tab[222]
-#define __pyx_n_u_new __pyx_string_tab[223]
-#define __pyx_n_u_new_arr __pyx_string_tab[224]
-#define __pyx_n_u_new_cap __pyx_string_tab[225]
-#define __pyx_n_u_new_fid __pyx_string_tab[226]
-#define __pyx_n_u_new_occ __pyx_string_tab[227]
-#define __pyx_n_u_new_size __pyx_string_tab[228]
-#define __pyx_n_u_new_sub __pyx_string_tab[229]
-#define __pyx_n_u_new_subv __pyx_string_tab[230]
-#define __pyx_n_u_next __pyx_string_tab[231]
-#define __pyx_n_u_node __pyx_string_tab[232]
-#define __pyx_n_u_np __pyx_string_tab[233]
-#define __pyx_n_u_numpy __pyx_string_tab[234]
-#define __pyx_n_u_obj __pyx_string_tab[235]
-#define __pyx_n_u_obs_arr_np __pyx_string_tab[236]
-#define __pyx_n_u_obs_packed __pyx_string_tab[237]
-#define __pyx_n_u_obs_ptr __pyx_string_tab[238]
-#define __pyx_n_u_obs_tup __pyx_string_tab[239]
-#define __pyx_n_u_off __pyx_string_tab[240]
-#define __pyx_n_u_oi __pyx_string_tab[241]
-#define __pyx_n_u_old_size __pyx_string_tab[242]
-#define __pyx_n_u_p __pyx_string_tab[243]
-#define __pyx_n_u_pack __pyx_string_tab[244]
-#define __pyx_n_u_parent __pyx_string_tab[245]
-#define __pyx_n_u_path __pyx_string_tab[246]
-#define __pyx_n_u_pop __pyx_string_tab[247]
-#define __pyx_n_u_prefix_bytes __pyx_string_tab[248]
-#define __pyx_n_u_propagate_up __pyx_string_tab[249]
-#define __pyx_n_u_pyx_checksum __pyx_string_tab[250]
-#define __pyx_n_u_pyx_result __pyx_string_tab[251]
-#define __pyx_n_u_pyx_state __pyx_string_tab[252]
-#define __pyx_n_u_pyx_type __pyx_string_tab[253]
-#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[254]
-#define __pyx_n_u_pyx_unpickle_NodeStore __pyx_string_tab[255]
-#define __pyx_n_u_pyx_vtable __pyx_string_tab[256]
-#define __pyx_n_u_qualname __pyx_string_tab[257]
-#define __pyx_n_u_reduce __pyx_string_tab[258]
-#define __pyx_n_u_reduce_cython __pyx_string_tab[259]
-#define __pyx_n_u_reduce_ex __pyx_string_tab[260]
-#define __pyx_n_u_register __pyx_string_tab[261]
-#define __pyx_n_u_reset_all_occupation __pyx_string_tab[262]
-#define __pyx_n_u_reset_occupation __pyx_string_tab[263]
-#define __pyx_n_u_right_idx __pyx_string_tab[264]
-#define __pyx_n_u_root_jhi __pyx_string_tab[265]
-#define __pyx_n_u_root_jlo __pyx_string_tab[266]
-#define __pyx_n_u_root_phi __pyx_string_tab[267]
-#define __pyx_n_u_root_plo __pyx_string_tab[268]
-#define __pyx_n_u_seed __pyx_string_tab[269]
-#define __pyx_n_u_seed_p __pyx_string_tab[270]
-#define __pyx_n_u_self __pyx_string_tab[271]
-#define __pyx_n_u_send __pyx_string_tab[272]
-#define __pyx_n_u_set_aabb __pyx_string_tab[273]
-#define __pyx_n_u_set_depth __pyx_string_tab[274]
-#define __pyx_n_u_set_dirty __pyx_string_tab[275]
-#define __pyx_n_u_set_forest_id __pyx_string_tab[276]
-#define __pyx_n_u_set_has_aabb __pyx_string_tab[277]
-#define __pyx_n_u_set_left __pyx_string_tab[278]
-#define __pyx_n_u_set_name __pyx_string_tab[279]
-#define __pyx_n_u_set_parent __pyx_string_tab[280]
-#define __pyx_n_u_set_right __pyx_string_tab[281]
-#define __pyx_n_u_set_split_val __pyx_string_tab[282]
-#define __pyx_n_u_setdefault __pyx_string_tab[283]
-#define __pyx_n_u_setstate __pyx_string_tab[284]
-#define __pyx_n_u_setstate_cython __pyx_string_tab[285]
-#define __pyx_n_u_shape __pyx_string_tab[286]
-#define __pyx_n_u_size __pyx_string_tab[287]
-#define __pyx_n_u_split_dims_arr __pyx_string_tab[288]
-#define __pyx_n_u_split_p __pyx_string_tab[289]
-#define __pyx_n_u_src __pyx_string_tab[290]
-#define __pyx_n_u_stack __pyx_string_tab[291]
-#define __pyx_n_u_start __pyx_string_tab[292]
-#define __pyx_n_u_start_idx __pyx_string_tab[293]
-#define __pyx_n_u_state __pyx_string_tab[294]
-#define __pyx_n_u_step __pyx_string_tab[295]
-#define __pyx_n_u_stop __pyx_string_tab[296]
-#define __pyx_n_u_stride __pyx_string_tab[297]
-#define __pyx_n_u_struct __pyx_string_tab[298]
-#define __pyx_n_u_sv __pyx_string_tab[299]
-#define __pyx_n_u_test __pyx_string_tab[300]
-#define __pyx_n_u_theta_arr __pyx_string_tab[301]
-#define __pyx_n_u_theta_p __pyx_string_tab[302]
-#define __pyx_n_u_throw __pyx_string_tab[303]
-#define __pyx_n_u_tmp_jhi __pyx_string_tab[304]
-#define __pyx_n_u_tmp_jlo __pyx_string_tab[305]
-#define __pyx_n_u_tmp_phi __pyx_string_tab[306]
-#define __pyx_n_u_tmp_plo __pyx_string_tab[307]
-#define __pyx_n_u_tool_a __pyx_string_tab[308]
-#define __pyx_n_u_tool_alpha __pyx_string_tab[309]
-#define __pyx_n_u_tool_d __pyx_string_tab[310]
-#define __pyx_n_u_total_depth __pyx_string_tab[311]
-#define __pyx_n_u_uint8 __pyx_string_tab[312]
-#define __pyx_n_u_unpack __pyx_string_tab[313]
-#define __pyx_n_u_update __pyx_string_tab[314]
-#define __pyx_n_u_use_setstate __pyx_string_tab[315]
-#define __pyx_n_u_val __pyx_string_tab[316]
-#define __pyx_n_u_value __pyx_string_tab[317]
-#define __pyx_n_u_values __pyx_string_tab[318]
-#define __pyx_n_u_x __pyx_string_tab[319]
-#define __pyx_n_u_zero_length_links __pyx_string_tab[320]
-#define __pyx_n_u_zeros __pyx_string_tab[321]
-#define __pyx_kp_b_iso88591_8_Qe1 __pyx_string_tab[322]
-#define __pyx_kp_b_iso88591_A __pyx_string_tab[323]
-#define __pyx_kp_b_iso88591_A_1D_Ja_1A_1_nBa_auE_q_oQ_q_l __pyx_string_tab[324]
-#define __pyx_kp_b_iso88591_A_1D_Ja_AU_a_AU_A_y_gQ __pyx_string_tab[325]
-#define __pyx_kp_b_iso88591_A_2 __pyx_string_tab[326]
-#define __pyx_kp_b_iso88591_A_3 __pyx_string_tab[327]
-#define __pyx_kp_b_iso88591_A_4xt_V __pyx_string_tab[328]
-#define __pyx_kp_b_iso88591_A_4xt_V_a_q_hd_F_a __pyx_string_tab[329]
-#define __pyx_kp_b_iso88591_A_4xt_V_q __pyx_string_tab[330]
-#define __pyx_kp_b_iso88591_A_4xt_V_q_q_hd_F_a __pyx_string_tab[331]
-#define __pyx_kp_b_iso88591_A_7_T_xt6_1_D_b_A_HBd_9_fBa_r_Rx __pyx_string_tab[332]
-#define __pyx_kp_b_iso88591_A_AQ __pyx_string_tab[333]
-#define __pyx_kp_b_iso88591_A_A_Q_q_1_a_T_9AT_Zq_81F_uBa_A_H __pyx_string_tab[334]
-#define __pyx_kp_b_iso88591_A_E_at1_5_Qe1_q_1F __pyx_string_tab[335]
-#define __pyx_kp_b_iso88591_A_E_at1_9AT_Zq_1F_a __pyx_string_tab[336]
-#define __pyx_kp_b_iso88591_A_HA_IWAT_aq_HA_M_6_vRq_BfAU_fBa __pyx_string_tab[337]
-#define __pyx_kp_b_iso88591_A_IV1A_a_4q_2S_1_E_q_Rs_A_Rs_A_y __pyx_string_tab[338]
-#define __pyx_kp_b_iso88591_A_Kq_q __pyx_string_tab[339]
-#define __pyx_kp_b_iso88591_A_c_1_1D_Ja_9AQ_t __pyx_string_tab[340]
-#define __pyx_kp_b_iso88591_A_q_hd_F __pyx_string_tab[341]
-#define __pyx_kp_b_iso88591_A_q_hd_F_a __pyx_string_tab[342]
-#define __pyx_kp_b_iso88591_A_r_a __pyx_string_tab[343]
-#define __pyx_kp_b_iso88591_A_r_k_4q __pyx_string_tab[344]
-#define __pyx_kp_b_iso88591_A_t __pyx_string_tab[345]
-#define __pyx_kp_b_iso88591_A_t1_M_1D_Ja_1_A_A_1_1_q_oQ_q_l __pyx_string_tab[346]
-#define __pyx_kp_b_iso88591_A_t2T_uAT_at4r_Q __pyx_string_tab[347]
-#define __pyx_kp_b_iso88591_A_t_2 __pyx_string_tab[348]
-#define __pyx_kp_b_iso88591_A_t_AQ __pyx_string_tab[349]
-#define __pyx_kp_b_iso88591_A_t_Qe3a __pyx_string_tab[350]
-#define __pyx_kp_b_iso88591_A_t_aq __pyx_string_tab[351]
-#define __pyx_kp_b_iso88591_A_way_XT_6 __pyx_string_tab[352]
-#define __pyx_kp_b_iso88591_A_xq_hd_F __pyx_string_tab[353]
-#define __pyx_kp_b_iso88591_T_HD_t7_mSWWaaeeppt_u_C_C_G_G_Y __pyx_string_tab[354]
-#define __pyx_kp_b_iso88591_q_0_kQR_9HAQ_7_1L_a_1 __pyx_string_tab[355]
-#define __pyx_kp_b_iso88591_q_a __pyx_string_tab[356]
-#define __pyx_n_b_O __pyx_string_tab[357]
+#define __pyx_n_u_NodeStore_subtree_collide_check __pyx_string_tab[91]
+#define __pyx_n_u_NodeStore_unmark_occupied __pyx_string_tab[92]
+#define __pyx_n_u_Pyx_PyDict_NextRef __pyx_string_tab[93]
+#define __pyx_n_u_Sequence __pyx_string_tab[94]
+#define __pyx_n_u_View_MemoryView __pyx_string_tab[95]
+#define __pyx_n_u_a_arr __pyx_string_tab[96]
+#define __pyx_n_u_a_p __pyx_string_tab[97]
+#define __pyx_n_u_aabb __pyx_string_tab[98]
+#define __pyx_n_u_aabb_l __pyx_string_tab[99]
+#define __pyx_n_u_aabb_p __pyx_string_tab[100]
+#define __pyx_n_u_aabb_r __pyx_string_tab[101]
+#define __pyx_n_u_aabb_u __pyx_string_tab[102]
+#define __pyx_n_u_abc __pyx_string_tab[103]
+#define __pyx_n_u_alloc_node __pyx_string_tab[104]
+#define __pyx_n_u_allocate_buffer __pyx_string_tab[105]
+#define __pyx_n_u_alpha_arr __pyx_string_tab[106]
+#define __pyx_n_u_alpha_p __pyx_string_tab[107]
+#define __pyx_n_u_asarray __pyx_string_tab[108]
+#define __pyx_n_u_asyncio_coroutines __pyx_string_tab[109]
+#define __pyx_n_u_attach_buffer __pyx_string_tab[110]
+#define __pyx_n_u_avg __pyx_string_tab[111]
+#define __pyx_n_u_avg_depth __pyx_string_tab[112]
+#define __pyx_n_u_base __pyx_string_tab[113]
+#define __pyx_n_u_base_ivs __pyx_string_tab[114]
+#define __pyx_n_u_buf __pyx_string_tab[115]
+#define __pyx_n_u_c __pyx_string_tab[116]
+#define __pyx_n_u_cap __pyx_string_tab[117]
+#define __pyx_n_u_civs_hi __pyx_string_tab[118]
+#define __pyx_n_u_civs_lo __pyx_string_tab[119]
+#define __pyx_n_u_class __pyx_string_tab[120]
+#define __pyx_n_u_class_getitem __pyx_string_tab[121]
+#define __pyx_n_u_clear_all_dirty __pyx_string_tab[122]
+#define __pyx_n_u_clear_subtree_occupation __pyx_string_tab[123]
+#define __pyx_n_u_cline_in_traceback __pyx_string_tab[124]
+#define __pyx_n_u_close __pyx_string_tab[125]
+#define __pyx_n_u_collect_forest_ids __pyx_string_tab[126]
+#define __pyx_n_u_collide __pyx_string_tab[127]
+#define __pyx_n_u_count __pyx_string_tab[128]
+#define __pyx_n_u_d __pyx_string_tab[129]
+#define __pyx_n_u_d_arr __pyx_string_tab[130]
+#define __pyx_n_u_d_p __pyx_string_tab[131]
+#define __pyx_n_u_depth __pyx_string_tab[132]
+#define __pyx_n_u_descent_loop __pyx_string_tab[133]
+#define __pyx_n_u_di __pyx_string_tab[134]
+#define __pyx_n_u_dict __pyx_string_tab[135]
+#define __pyx_n_u_dict_2 __pyx_string_tab[136]
+#define __pyx_n_u_dim __pyx_string_tab[137]
+#define __pyx_n_u_dims __pyx_string_tab[138]
+#define __pyx_n_u_dst __pyx_string_tab[139]
+#define __pyx_n_u_dtype __pyx_string_tab[140]
+#define __pyx_n_u_dtype_is_object __pyx_string_tab[141]
+#define __pyx_n_u_edge __pyx_string_tab[142]
+#define __pyx_n_u_empty __pyx_string_tab[143]
+#define __pyx_n_u_encode __pyx_string_tab[144]
+#define __pyx_n_u_ensure_capacity __pyx_string_tab[145]
+#define __pyx_n_u_enumerate __pyx_string_tab[146]
+#define __pyx_n_u_error __pyx_string_tab[147]
+#define __pyx_n_u_fail_code __pyx_string_tab[148]
+#define __pyx_n_u_fid __pyx_string_tab[149]
+#define __pyx_n_u_fk_jhi __pyx_string_tab[150]
+#define __pyx_n_u_fk_jlo __pyx_string_tab[151]
+#define __pyx_n_u_fk_phi __pyx_string_tab[152]
+#define __pyx_n_u_fk_plo __pyx_string_tab[153]
+#define __pyx_n_u_flags __pyx_string_tab[154]
+#define __pyx_n_u_float32 __pyx_string_tab[155]
+#define __pyx_n_u_float64 __pyx_string_tab[156]
+#define __pyx_n_u_forest__hier_core __pyx_string_tab[157]
+#define __pyx_n_u_forest_box_id __pyx_string_tab[158]
+#define __pyx_n_u_forest_ids_array __pyx_string_tab[159]
+#define __pyx_n_u_format __pyx_string_tab[160]
+#define __pyx_n_u_fortran __pyx_string_tab[161]
+#define __pyx_n_u_full __pyx_string_tab[162]
+#define __pyx_n_u_func __pyx_string_tab[163]
+#define __pyx_n_u_get_aabb __pyx_string_tab[164]
+#define __pyx_n_u_get_depth __pyx_string_tab[165]
+#define __pyx_n_u_get_dirty __pyx_string_tab[166]
+#define __pyx_n_u_get_forest_id __pyx_string_tab[167]
+#define __pyx_n_u_get_has_aabb __pyx_string_tab[168]
+#define __pyx_n_u_get_left __pyx_string_tab[169]
+#define __pyx_n_u_get_node_bytes __pyx_string_tab[170]
+#define __pyx_n_u_get_parent __pyx_string_tab[171]
+#define __pyx_n_u_get_raw_buffer __pyx_string_tab[172]
+#define __pyx_n_u_get_right __pyx_string_tab[173]
+#define __pyx_n_u_get_split_val __pyx_string_tab[174]
+#define __pyx_n_u_get_stats __pyx_string_tab[175]
+#define __pyx_n_u_get_subtree_occ __pyx_string_tab[176]
+#define __pyx_n_u_get_subtree_occ_vol __pyx_string_tab[177]
+#define __pyx_n_u_getstate __pyx_string_tab[178]
+#define __pyx_n_u_going_left __pyx_string_tab[179]
+#define __pyx_n_u_has_tool __pyx_string_tab[180]
+#define __pyx_n_u_i __pyx_string_tab[181]
+#define __pyx_n_u_id __pyx_string_tab[182]
+#define __pyx_n_u_idx __pyx_string_tab[183]
+#define __pyx_n_u_import __pyx_string_tab[184]
+#define __pyx_n_u_index __pyx_string_tab[185]
+#define __pyx_n_u_int32 __pyx_string_tab[186]
+#define __pyx_n_u_is_coroutine __pyx_string_tab[187]
+#define __pyx_n_u_is_occupied __pyx_string_tab[188]
+#define __pyx_n_u_items __pyx_string_tab[189]
+#define __pyx_n_u_itemsize __pyx_string_tab[190]
+#define __pyx_n_u_iter_dirty __pyx_string_tab[191]
+#define __pyx_n_u_ivs_hi __pyx_string_tab[192]
+#define __pyx_n_u_ivs_lo __pyx_string_tab[193]
+#define __pyx_n_u_joints_bytes __pyx_string_tab[194]
+#define __pyx_n_u_jtype_arr __pyx_string_tab[195]
+#define __pyx_n_u_jtype_p __pyx_string_tab[196]
+#define __pyx_n_u_k __pyx_string_tab[197]
+#define __pyx_n_u_left __pyx_string_tab[198]
+#define __pyx_n_u_left_idx __pyx_string_tab[199]
+#define __pyx_n_u_link_aabbs_collide __pyx_string_tab[200]
+#define __pyx_n_u_main __pyx_string_tab[201]
+#define __pyx_n_u_mark_occupied __pyx_string_tab[202]
+#define __pyx_n_u_max_depth __pyx_string_tab[203]
+#define __pyx_n_u_memview __pyx_string_tab[204]
+#define __pyx_n_u_mid __pyx_string_tab[205]
+#define __pyx_n_u_min_edge_length __pyx_string_tab[206]
+#define __pyx_n_u_mode __pyx_string_tab[207]
+#define __pyx_n_u_module __pyx_string_tab[208]
+#define __pyx_n_u_n_dims __pyx_string_tab[209]
+#define __pyx_n_u_n_fk_calls __pyx_string_tab[210]
+#define __pyx_n_u_n_jm __pyx_string_tab[211]
+#define __pyx_n_u_n_joints __pyx_string_tab[212]
+#define __pyx_n_u_n_leaves __pyx_string_tab[213]
+#define __pyx_n_u_n_links __pyx_string_tab[214]
+#define __pyx_n_u_n_new_nodes __pyx_string_tab[215]
+#define __pyx_n_u_n_nodes __pyx_string_tab[216]
+#define __pyx_n_u_n_obs __pyx_string_tab[217]
+#define __pyx_n_u_n_split_dims __pyx_string_tab[218]
+#define __pyx_n_u_n_tf __pyx_string_tab[219]
+#define __pyx_n_u_name __pyx_string_tab[220]
+#define __pyx_n_u_name_2 __pyx_string_tab[221]
+#define __pyx_n_u_nbytes __pyx_string_tab[222]
+#define __pyx_n_u_ndim __pyx_string_tab[223]
+#define __pyx_n_u_needed __pyx_string_tab[224]
+#define __pyx_n_u_new __pyx_string_tab[225]
+#define __pyx_n_u_new_arr __pyx_string_tab[226]
+#define __pyx_n_u_new_cap __pyx_string_tab[227]
+#define __pyx_n_u_new_fid __pyx_string_tab[228]
+#define __pyx_n_u_new_occ __pyx_string_tab[229]
+#define __pyx_n_u_new_size __pyx_string_tab[230]
+#define __pyx_n_u_new_sub __pyx_string_tab[231]
+#define __pyx_n_u_new_subv __pyx_string_tab[232]
+#define __pyx_n_u_next __pyx_string_tab[233]
+#define __pyx_n_u_node __pyx_string_tab[234]
+#define __pyx_n_u_np __pyx_string_tab[235]
+#define __pyx_n_u_numpy __pyx_string_tab[236]
+#define __pyx_n_u_obj __pyx_string_tab[237]
+#define __pyx_n_u_obs_arr __pyx_string_tab[238]
+#define __pyx_n_u_obs_arr_np __pyx_string_tab[239]
+#define __pyx_n_u_obs_packed __pyx_string_tab[240]
+#define __pyx_n_u_obs_ptr __pyx_string_tab[241]
+#define __pyx_n_u_obs_tup __pyx_string_tab[242]
+#define __pyx_n_u_off __pyx_string_tab[243]
+#define __pyx_n_u_oi __pyx_string_tab[244]
+#define __pyx_n_u_old_size __pyx_string_tab[245]
+#define __pyx_n_u_p __pyx_string_tab[246]
+#define __pyx_n_u_pack __pyx_string_tab[247]
+#define __pyx_n_u_parent __pyx_string_tab[248]
+#define __pyx_n_u_path __pyx_string_tab[249]
+#define __pyx_n_u_pop __pyx_string_tab[250]
+#define __pyx_n_u_prefix_bytes __pyx_string_tab[251]
+#define __pyx_n_u_promotion_depth __pyx_string_tab[252]
+#define __pyx_n_u_propagate_up __pyx_string_tab[253]
+#define __pyx_n_u_pyx_checksum __pyx_string_tab[254]
+#define __pyx_n_u_pyx_result __pyx_string_tab[255]
+#define __pyx_n_u_pyx_state __pyx_string_tab[256]
+#define __pyx_n_u_pyx_type __pyx_string_tab[257]
+#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[258]
+#define __pyx_n_u_pyx_unpickle_NodeStore __pyx_string_tab[259]
+#define __pyx_n_u_pyx_vtable __pyx_string_tab[260]
+#define __pyx_n_u_qualname __pyx_string_tab[261]
+#define __pyx_n_u_reduce __pyx_string_tab[262]
+#define __pyx_n_u_reduce_cython __pyx_string_tab[263]
+#define __pyx_n_u_reduce_ex __pyx_string_tab[264]
+#define __pyx_n_u_register __pyx_string_tab[265]
+#define __pyx_n_u_reset_all_occupation __pyx_string_tab[266]
+#define __pyx_n_u_reset_occupation __pyx_string_tab[267]
+#define __pyx_n_u_right_idx __pyx_string_tab[268]
+#define __pyx_n_u_root_jhi __pyx_string_tab[269]
+#define __pyx_n_u_root_jlo __pyx_string_tab[270]
+#define __pyx_n_u_root_phi __pyx_string_tab[271]
+#define __pyx_n_u_root_plo __pyx_string_tab[272]
+#define __pyx_n_u_seed __pyx_string_tab[273]
+#define __pyx_n_u_seed_p __pyx_string_tab[274]
+#define __pyx_n_u_self __pyx_string_tab[275]
+#define __pyx_n_u_send __pyx_string_tab[276]
+#define __pyx_n_u_set_aabb __pyx_string_tab[277]
+#define __pyx_n_u_set_depth __pyx_string_tab[278]
+#define __pyx_n_u_set_dirty __pyx_string_tab[279]
+#define __pyx_n_u_set_forest_id __pyx_string_tab[280]
+#define __pyx_n_u_set_has_aabb __pyx_string_tab[281]
+#define __pyx_n_u_set_left __pyx_string_tab[282]
+#define __pyx_n_u_set_name __pyx_string_tab[283]
+#define __pyx_n_u_set_parent __pyx_string_tab[284]
+#define __pyx_n_u_set_right __pyx_string_tab[285]
+#define __pyx_n_u_set_split_val __pyx_string_tab[286]
+#define __pyx_n_u_setdefault __pyx_string_tab[287]
+#define __pyx_n_u_setstate __pyx_string_tab[288]
+#define __pyx_n_u_setstate_cython __pyx_string_tab[289]
+#define __pyx_n_u_shape __pyx_string_tab[290]
+#define __pyx_n_u_size __pyx_string_tab[291]
+#define __pyx_n_u_split_dims_arr __pyx_string_tab[292]
+#define __pyx_n_u_split_p __pyx_string_tab[293]
+#define __pyx_n_u_src __pyx_string_tab[294]
+#define __pyx_n_u_stack __pyx_string_tab[295]
+#define __pyx_n_u_start __pyx_string_tab[296]
+#define __pyx_n_u_start_idx __pyx_string_tab[297]
+#define __pyx_n_u_state __pyx_string_tab[298]
+#define __pyx_n_u_step __pyx_string_tab[299]
+#define __pyx_n_u_stop __pyx_string_tab[300]
+#define __pyx_n_u_stride __pyx_string_tab[301]
+#define __pyx_n_u_struct __pyx_string_tab[302]
+#define __pyx_n_u_subtree_collide_check __pyx_string_tab[303]
+#define __pyx_n_u_sv __pyx_string_tab[304]
+#define __pyx_n_u_test __pyx_string_tab[305]
+#define __pyx_n_u_theta_arr __pyx_string_tab[306]
+#define __pyx_n_u_theta_p __pyx_string_tab[307]
+#define __pyx_n_u_throw __pyx_string_tab[308]
+#define __pyx_n_u_tmp_jhi __pyx_string_tab[309]
+#define __pyx_n_u_tmp_jlo __pyx_string_tab[310]
+#define __pyx_n_u_tmp_phi __pyx_string_tab[311]
+#define __pyx_n_u_tmp_plo __pyx_string_tab[312]
+#define __pyx_n_u_tool_a __pyx_string_tab[313]
+#define __pyx_n_u_tool_alpha __pyx_string_tab[314]
+#define __pyx_n_u_tool_d __pyx_string_tab[315]
+#define __pyx_n_u_total_depth __pyx_string_tab[316]
+#define __pyx_n_u_uint8 __pyx_string_tab[317]
+#define __pyx_n_u_unmark_occupied __pyx_string_tab[318]
+#define __pyx_n_u_unpack __pyx_string_tab[319]
+#define __pyx_n_u_update __pyx_string_tab[320]
+#define __pyx_n_u_use_setstate __pyx_string_tab[321]
+#define __pyx_n_u_val __pyx_string_tab[322]
+#define __pyx_n_u_value __pyx_string_tab[323]
+#define __pyx_n_u_values __pyx_string_tab[324]
+#define __pyx_n_u_x __pyx_string_tab[325]
+#define __pyx_n_u_zero_length_links __pyx_string_tab[326]
+#define __pyx_n_u_zeros __pyx_string_tab[327]
+#define __pyx_kp_b_iso88591_8_Qe1 __pyx_string_tab[328]
+#define __pyx_kp_b_iso88591_A __pyx_string_tab[329]
+#define __pyx_kp_b_iso88591_A_1D_Ja_1A_1_nBa_auE_q_oQ_q_l __pyx_string_tab[330]
+#define __pyx_kp_b_iso88591_A_1D_Ja_AU_a_AU_A_y_gQ __pyx_string_tab[331]
+#define __pyx_kp_b_iso88591_A_2 __pyx_string_tab[332]
+#define __pyx_kp_b_iso88591_A_3 __pyx_string_tab[333]
+#define __pyx_kp_b_iso88591_A_4xt_V __pyx_string_tab[334]
+#define __pyx_kp_b_iso88591_A_4xt_V_a_q_hd_F_a __pyx_string_tab[335]
+#define __pyx_kp_b_iso88591_A_4xt_V_q __pyx_string_tab[336]
+#define __pyx_kp_b_iso88591_A_4xt_V_q_q_hd_F_a __pyx_string_tab[337]
+#define __pyx_kp_b_iso88591_A_7_T_xt6_1_D_b_A_HBd_9_fBa_r_Rx __pyx_string_tab[338]
+#define __pyx_kp_b_iso88591_A_AQ __pyx_string_tab[339]
+#define __pyx_kp_b_iso88591_A_A_Q_q_1_a_T_9AT_Zq_81F_uBa_A_H __pyx_string_tab[340]
+#define __pyx_kp_b_iso88591_A_E_at1_5_Qe1_q_1F __pyx_string_tab[341]
+#define __pyx_kp_b_iso88591_A_E_at1_9AT_Zq_1F_a __pyx_string_tab[342]
+#define __pyx_kp_b_iso88591_A_HA_IWAT_aq_HA_M_6_vRq_BfAU_fBa __pyx_string_tab[343]
+#define __pyx_kp_b_iso88591_A_IV1A_a_4q_2S_1_E_q_Rs_A_Rs_A_y __pyx_string_tab[344]
+#define __pyx_kp_b_iso88591_A_Kq_q __pyx_string_tab[345]
+#define __pyx_kp_b_iso88591_A_c_1_1D_Ja_9AQ_t __pyx_string_tab[346]
+#define __pyx_kp_b_iso88591_A_c_1_3a_4_5_AQ_6_A_1_F_CvRq_F_q __pyx_string_tab[347]
+#define __pyx_kp_b_iso88591_A_q __pyx_string_tab[348]
+#define __pyx_kp_b_iso88591_A_q_hd_F __pyx_string_tab[349]
+#define __pyx_kp_b_iso88591_A_q_hd_F_a __pyx_string_tab[350]
+#define __pyx_kp_b_iso88591_A_r_a __pyx_string_tab[351]
+#define __pyx_kp_b_iso88591_A_r_k_4q __pyx_string_tab[352]
+#define __pyx_kp_b_iso88591_A_t __pyx_string_tab[353]
+#define __pyx_kp_b_iso88591_A_t1_M_1D_Ja_1_A_A_1_1_q_oQ_q_l __pyx_string_tab[354]
+#define __pyx_kp_b_iso88591_A_t2T_uAT_at4r_Q __pyx_string_tab[355]
+#define __pyx_kp_b_iso88591_A_t_2 __pyx_string_tab[356]
+#define __pyx_kp_b_iso88591_A_t_AQ __pyx_string_tab[357]
+#define __pyx_kp_b_iso88591_A_t_Qe3a __pyx_string_tab[358]
+#define __pyx_kp_b_iso88591_A_t_aq __pyx_string_tab[359]
+#define __pyx_kp_b_iso88591_A_way_XT_6 __pyx_string_tab[360]
+#define __pyx_kp_b_iso88591_A_xq_hd_F __pyx_string_tab[361]
+#define __pyx_kp_b_iso88591_T_HD_t7_mSWWaaeeppt_u_C_C_G_G_Y __pyx_string_tab[362]
+#define __pyx_kp_b_iso88591_q_0_kQR_9HAQ_7_1L_a_1 __pyx_string_tab[363]
+#define __pyx_kp_b_iso88591_q_a __pyx_string_tab[364]
+#define __pyx_n_b_O __pyx_string_tab[365]
 #define __pyx_int_0 __pyx_number_tab[0]
 #define __pyx_int_neg_1 __pyx_number_tab[1]
 #define __pyx_int_1 __pyx_number_tab[2]
@@ -4299,8 +4313,8 @@ static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_type___pyx_memoryviewslice);
   for (int i=0; i<1; ++i) { Py_CLEAR(clear_module_state->__pyx_slice[i]); }
   for (int i=0; i<1; ++i) { Py_CLEAR(clear_module_state->__pyx_tuple[i]); }
-  for (int i=0; i<41; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<358; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<43; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
+  for (int i=0; i<366; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<5; ++i) { Py_CLEAR(clear_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_clear_contents ### */
 /* CommonTypesMetaclass.module_state_clear */
@@ -4357,8 +4371,8 @@ static CYTHON_SMALL_CODE int __pyx_m_traverse(PyObject *m, visitproc visit, void
   Py_VISIT(traverse_module_state->__pyx_type___pyx_memoryviewslice);
   for (int i=0; i<1; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_slice[i]); }
   for (int i=0; i<1; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_tuple[i]); }
-  for (int i=0; i<41; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<358; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<43; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
+  for (int i=0; i<366; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<5; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_traverse_contents ### */
 /* CommonTypesMetaclass.module_state_traverse */
@@ -22013,6 +22027,7 @@ static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__union_aabb_buf_c(float c
  *         out[i*6+3] = a[i*6+3] if a[i*6+3] > b[i*6+3] else b[i*6+3]
  *         out[i*6+4] = a[i*6+4] if a[i*6+4] > b[i*6+4] else b[i*6+4]             # <<<<<<<<<<<<<<
  *         out[i*6+5] = a[i*6+5] if a[i*6+5] > b[i*6+5] else b[i*6+5]
+ * 
 */
     __pyx_t_5 = ((__pyx_v_a[((__pyx_v_i * 6) + 4)]) > (__pyx_v_b[((__pyx_v_i * 6) + 4)]));
     if (__pyx_t_5) {
@@ -22026,6 +22041,8 @@ static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__union_aabb_buf_c(float c
  *         out[i*6+3] = a[i*6+3] if a[i*6+3] > b[i*6+3] else b[i*6+3]
  *         out[i*6+4] = a[i*6+4] if a[i*6+4] > b[i*6+4] else b[i*6+4]
  *         out[i*6+5] = a[i*6+5] if a[i*6+5] > b[i*6+5] else b[i*6+5]             # <<<<<<<<<<<<<<
+ * 
+ * 
 */
     __pyx_t_5 = ((__pyx_v_a[((__pyx_v_i * 6) + 5)]) > (__pyx_v_b[((__pyx_v_i * 6) + 5)]));
     if (__pyx_t_5) {
@@ -22042,6 +22059,140 @@ static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__union_aabb_buf_c(float c
  * cdef inline void _union_aabb_buf_c(             # <<<<<<<<<<<<<<
  *     const float* a, const float* b,
  *     int n_links, float* out,
+*/
+
+  /* function exit code */
+}
+
+/* "src/forest/_fk_inline.pxi":365
+ * #
+ * 
+ * cdef inline void _refine_aabb_buf_c(             # <<<<<<<<<<<<<<
+ *     float* dst, const float* union_buf,
+ *     int n_links,
+*/
+
+static CYTHON_INLINE void __pyx_f_6forest_10_hier_core__refine_aabb_buf_c(float *__pyx_v_dst, float const *__pyx_v_union_buf, int __pyx_v_n_links) {
+  int __pyx_v_i;
+  float __pyx_v_v;
+  int __pyx_t_1;
+  int __pyx_t_2;
+  int __pyx_t_3;
+  float __pyx_t_4;
+  int __pyx_t_5;
+
+  /* "src/forest/_fk_inline.pxi":377
+ *     cdef int i
+ *     cdef float v
+ *     for i in range(n_links):             # <<<<<<<<<<<<<<
+ *         # min dims: take the larger (tighter) lower bound
+ *         v = union_buf[i*6];   dst[i*6]   = v if v > dst[i*6]   else dst[i*6]
+*/
+  __pyx_t_1 = __pyx_v_n_links;
+  __pyx_t_2 = __pyx_t_1;
+  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
+    __pyx_v_i = __pyx_t_3;
+
+    /* "src/forest/_fk_inline.pxi":379
+ *     for i in range(n_links):
+ *         # min dims: take the larger (tighter) lower bound
+ *         v = union_buf[i*6];   dst[i*6]   = v if v > dst[i*6]   else dst[i*6]             # <<<<<<<<<<<<<<
+ *         v = union_buf[i*6+1]; dst[i*6+1] = v if v > dst[i*6+1] else dst[i*6+1]
+ *         v = union_buf[i*6+2]; dst[i*6+2] = v if v > dst[i*6+2] else dst[i*6+2]
+*/
+    __pyx_v_v = (__pyx_v_union_buf[(__pyx_v_i * 6)]);
+    __pyx_t_5 = (__pyx_v_v > (__pyx_v_dst[(__pyx_v_i * 6)]));
+    if (__pyx_t_5) {
+      __pyx_t_4 = __pyx_v_v;
+    } else {
+      __pyx_t_4 = (__pyx_v_dst[(__pyx_v_i * 6)]);
+    }
+    (__pyx_v_dst[(__pyx_v_i * 6)]) = __pyx_t_4;
+
+    /* "src/forest/_fk_inline.pxi":380
+ *         # min dims: take the larger (tighter) lower bound
+ *         v = union_buf[i*6];   dst[i*6]   = v if v > dst[i*6]   else dst[i*6]
+ *         v = union_buf[i*6+1]; dst[i*6+1] = v if v > dst[i*6+1] else dst[i*6+1]             # <<<<<<<<<<<<<<
+ *         v = union_buf[i*6+2]; dst[i*6+2] = v if v > dst[i*6+2] else dst[i*6+2]
+ *         # max dims: take the smaller (tighter) upper bound
+*/
+    __pyx_v_v = (__pyx_v_union_buf[((__pyx_v_i * 6) + 1)]);
+    __pyx_t_5 = (__pyx_v_v > (__pyx_v_dst[((__pyx_v_i * 6) + 1)]));
+    if (__pyx_t_5) {
+      __pyx_t_4 = __pyx_v_v;
+    } else {
+      __pyx_t_4 = (__pyx_v_dst[((__pyx_v_i * 6) + 1)]);
+    }
+    (__pyx_v_dst[((__pyx_v_i * 6) + 1)]) = __pyx_t_4;
+
+    /* "src/forest/_fk_inline.pxi":381
+ *         v = union_buf[i*6];   dst[i*6]   = v if v > dst[i*6]   else dst[i*6]
+ *         v = union_buf[i*6+1]; dst[i*6+1] = v if v > dst[i*6+1] else dst[i*6+1]
+ *         v = union_buf[i*6+2]; dst[i*6+2] = v if v > dst[i*6+2] else dst[i*6+2]             # <<<<<<<<<<<<<<
+ *         # max dims: take the smaller (tighter) upper bound
+ *         v = union_buf[i*6+3]; dst[i*6+3] = v if v < dst[i*6+3] else dst[i*6+3]
+*/
+    __pyx_v_v = (__pyx_v_union_buf[((__pyx_v_i * 6) + 2)]);
+    __pyx_t_5 = (__pyx_v_v > (__pyx_v_dst[((__pyx_v_i * 6) + 2)]));
+    if (__pyx_t_5) {
+      __pyx_t_4 = __pyx_v_v;
+    } else {
+      __pyx_t_4 = (__pyx_v_dst[((__pyx_v_i * 6) + 2)]);
+    }
+    (__pyx_v_dst[((__pyx_v_i * 6) + 2)]) = __pyx_t_4;
+
+    /* "src/forest/_fk_inline.pxi":383
+ *         v = union_buf[i*6+2]; dst[i*6+2] = v if v > dst[i*6+2] else dst[i*6+2]
+ *         # max dims: take the smaller (tighter) upper bound
+ *         v = union_buf[i*6+3]; dst[i*6+3] = v if v < dst[i*6+3] else dst[i*6+3]             # <<<<<<<<<<<<<<
+ *         v = union_buf[i*6+4]; dst[i*6+4] = v if v < dst[i*6+4] else dst[i*6+4]
+ *         v = union_buf[i*6+5]; dst[i*6+5] = v if v < dst[i*6+5] else dst[i*6+5]
+*/
+    __pyx_v_v = (__pyx_v_union_buf[((__pyx_v_i * 6) + 3)]);
+    __pyx_t_5 = (__pyx_v_v < (__pyx_v_dst[((__pyx_v_i * 6) + 3)]));
+    if (__pyx_t_5) {
+      __pyx_t_4 = __pyx_v_v;
+    } else {
+      __pyx_t_4 = (__pyx_v_dst[((__pyx_v_i * 6) + 3)]);
+    }
+    (__pyx_v_dst[((__pyx_v_i * 6) + 3)]) = __pyx_t_4;
+
+    /* "src/forest/_fk_inline.pxi":384
+ *         # max dims: take the smaller (tighter) upper bound
+ *         v = union_buf[i*6+3]; dst[i*6+3] = v if v < dst[i*6+3] else dst[i*6+3]
+ *         v = union_buf[i*6+4]; dst[i*6+4] = v if v < dst[i*6+4] else dst[i*6+4]             # <<<<<<<<<<<<<<
+ *         v = union_buf[i*6+5]; dst[i*6+5] = v if v < dst[i*6+5] else dst[i*6+5]
+*/
+    __pyx_v_v = (__pyx_v_union_buf[((__pyx_v_i * 6) + 4)]);
+    __pyx_t_5 = (__pyx_v_v < (__pyx_v_dst[((__pyx_v_i * 6) + 4)]));
+    if (__pyx_t_5) {
+      __pyx_t_4 = __pyx_v_v;
+    } else {
+      __pyx_t_4 = (__pyx_v_dst[((__pyx_v_i * 6) + 4)]);
+    }
+    (__pyx_v_dst[((__pyx_v_i * 6) + 4)]) = __pyx_t_4;
+
+    /* "src/forest/_fk_inline.pxi":385
+ *         v = union_buf[i*6+3]; dst[i*6+3] = v if v < dst[i*6+3] else dst[i*6+3]
+ *         v = union_buf[i*6+4]; dst[i*6+4] = v if v < dst[i*6+4] else dst[i*6+4]
+ *         v = union_buf[i*6+5]; dst[i*6+5] = v if v < dst[i*6+5] else dst[i*6+5]             # <<<<<<<<<<<<<<
+*/
+    __pyx_v_v = (__pyx_v_union_buf[((__pyx_v_i * 6) + 5)]);
+    __pyx_t_5 = (__pyx_v_v < (__pyx_v_dst[((__pyx_v_i * 6) + 5)]));
+    if (__pyx_t_5) {
+      __pyx_t_4 = __pyx_v_v;
+    } else {
+      __pyx_t_4 = (__pyx_v_dst[((__pyx_v_i * 6) + 5)]);
+    }
+    (__pyx_v_dst[((__pyx_v_i * 6) + 5)]) = __pyx_t_4;
+  }
+
+  /* "src/forest/_fk_inline.pxi":365
+ * #
+ * 
+ * cdef inline void _refine_aabb_buf_c(             # <<<<<<<<<<<<<<
+ *     float* dst, const float* union_buf,
+ *     int n_links,
 */
 
   /* function exit code */
@@ -22307,7 +22458,361 @@ static CYTHON_INLINE float *__pyx_f_6forest_10_hier_core__aabb_ptr(char *__pyx_v
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":103
+/* "forest/_hier_core.pyx":81
+ * #
+ * 
+ * cdef bint _subtree_collide_recursive(             # <<<<<<<<<<<<<<
+ *     char* base, int stride, int idx,
+ *     const float* obs_flat, int n_obs,
+*/
+
+static int __pyx_f_6forest_10_hier_core__subtree_collide_recursive(char *__pyx_v_base, int __pyx_v_stride, int __pyx_v_idx, float const *__pyx_v_obs_flat, int __pyx_v_n_obs, int __pyx_v_remaining_depth) {
+  char *__pyx_v_node;
+  int __pyx_v_left_idx;
+  int __pyx_v_right_idx;
+  float *__pyx_v_aabb;
+  char *__pyx_v_left_node;
+  char *__pyx_v_right_node;
+  int __pyx_r;
+  int __pyx_t_1;
+  int __pyx_t_2;
+
+  /* "forest/_hier_core.pyx":92
+ *     remaining_depth>0    AABB
+ *     """
+ *     cdef char* node = base + <long long>idx * stride             # <<<<<<<<<<<<<<
+ *     cdef int left_idx, right_idx
+ *     cdef float* aabb
+*/
+  __pyx_v_node = (__pyx_v_base + (((PY_LONG_LONG)__pyx_v_idx) * __pyx_v_stride));
+
+  /* "forest/_hier_core.pyx":96
+ *     cdef float* aabb
+ * 
+ *     if remaining_depth <= 0:             # <<<<<<<<<<<<<<
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+*/
+  __pyx_t_1 = (__pyx_v_remaining_depth <= 0);
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":98
+ *     if remaining_depth <= 0:
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *             return True  #  AABB
+ *         aabb = <float*>(node + _OFF_AABB)
+*/
+    __pyx_t_1 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_node, 24) == 0);
+    if (__pyx_t_1) {
+
+      /* "forest/_hier_core.pyx":99
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+ *             return True  #  AABB             # <<<<<<<<<<<<<<
+ *         aabb = <float*>(node + _OFF_AABB)
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+*/
+      __pyx_r = 1;
+      goto __pyx_L0;
+
+      /* "forest/_hier_core.pyx":98
+ *     if remaining_depth <= 0:
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *             return True  #  AABB
+ *         aabb = <float*>(node + _OFF_AABB)
+*/
+    }
+
+    /* "forest/_hier_core.pyx":100
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+ *             return True  #  AABB
+ *         aabb = <float*>(node + _OFF_AABB)             # <<<<<<<<<<<<<<
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+ * 
+*/
+    __pyx_v_aabb = ((float *)(__pyx_v_node + 28));
+
+    /* "forest/_hier_core.pyx":101
+ *             return True  #  AABB
+ *         aabb = <float*>(node + _OFF_AABB)
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)             # <<<<<<<<<<<<<<
+ * 
+ *     left_idx = _get_i32(node, _OFF_LEFT)
+*/
+    __pyx_r = __pyx_f_6forest_10_hier_core__link_aabbs_collide_flat(__pyx_v_aabb, __pyx_v_obs_flat, __pyx_v_n_obs);
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":96
+ *     cdef float* aabb
+ * 
+ *     if remaining_depth <= 0:             # <<<<<<<<<<<<<<
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+*/
+  }
+
+  /* "forest/_hier_core.pyx":103
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+ * 
+ *     left_idx = _get_i32(node, _OFF_LEFT)             # <<<<<<<<<<<<<<
+ *     if left_idx < 0:
+ *         #    AABB
+*/
+  __pyx_v_left_idx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 0);
+
+  /* "forest/_hier_core.pyx":104
+ * 
+ *     left_idx = _get_i32(node, _OFF_LEFT)
+ *     if left_idx < 0:             # <<<<<<<<<<<<<<
+ *         #    AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+*/
+  __pyx_t_1 = (__pyx_v_left_idx < 0);
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":106
+ *     if left_idx < 0:
+ *         #    AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)
+*/
+    __pyx_t_1 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_node, 24) == 0);
+    if (__pyx_t_1) {
+
+      /* "forest/_hier_core.pyx":107
+ *         #    AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+ *             return True             # <<<<<<<<<<<<<<
+ *         aabb = <float*>(node + _OFF_AABB)
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+*/
+      __pyx_r = 1;
+      goto __pyx_L0;
+
+      /* "forest/_hier_core.pyx":106
+ *     if left_idx < 0:
+ *         #    AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)
+*/
+    }
+
+    /* "forest/_hier_core.pyx":108
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)             # <<<<<<<<<<<<<<
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+ * 
+*/
+    __pyx_v_aabb = ((float *)(__pyx_v_node + 28));
+
+    /* "forest/_hier_core.pyx":109
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)             # <<<<<<<<<<<<<<
+ * 
+ *     right_idx = _get_i32(node, _OFF_RIGHT)
+*/
+    __pyx_r = __pyx_f_6forest_10_hier_core__link_aabbs_collide_flat(__pyx_v_aabb, __pyx_v_obs_flat, __pyx_v_n_obs);
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":104
+ * 
+ *     left_idx = _get_i32(node, _OFF_LEFT)
+ *     if left_idx < 0:             # <<<<<<<<<<<<<<
+ *         #    AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+*/
+  }
+
+  /* "forest/_hier_core.pyx":111
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+ * 
+ *     right_idx = _get_i32(node, _OFF_RIGHT)             # <<<<<<<<<<<<<<
+ * 
+ *     #  AABB
+*/
+  __pyx_v_right_idx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 4);
+
+  /* "forest/_hier_core.pyx":114
+ * 
+ *     #  AABB
+ *     cdef char* left_node = base + <long long>left_idx * stride             # <<<<<<<<<<<<<<
+ *     cdef char* right_node = base + <long long>right_idx * stride
+ *     if _get_u8(left_node, _OFF_HAS_AABB) == 0 or _get_u8(right_node, _OFF_HAS_AABB) == 0:
+*/
+  __pyx_v_left_node = (__pyx_v_base + (((PY_LONG_LONG)__pyx_v_left_idx) * __pyx_v_stride));
+
+  /* "forest/_hier_core.pyx":115
+ *     #  AABB
+ *     cdef char* left_node = base + <long long>left_idx * stride
+ *     cdef char* right_node = base + <long long>right_idx * stride             # <<<<<<<<<<<<<<
+ *     if _get_u8(left_node, _OFF_HAS_AABB) == 0 or _get_u8(right_node, _OFF_HAS_AABB) == 0:
+ *         #  AABB
+*/
+  __pyx_v_right_node = (__pyx_v_base + (((PY_LONG_LONG)__pyx_v_right_idx) * __pyx_v_stride));
+
+  /* "forest/_hier_core.pyx":116
+ *     cdef char* left_node = base + <long long>left_idx * stride
+ *     cdef char* right_node = base + <long long>right_idx * stride
+ *     if _get_u8(left_node, _OFF_HAS_AABB) == 0 or _get_u8(right_node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+*/
+  __pyx_t_2 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_left_node, 24) == 0);
+  if (!__pyx_t_2) {
+  } else {
+    __pyx_t_1 = __pyx_t_2;
+    goto __pyx_L8_bool_binop_done;
+  }
+  __pyx_t_2 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_right_node, 24) == 0);
+  __pyx_t_1 = __pyx_t_2;
+  __pyx_L8_bool_binop_done:;
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":118
+ *     if _get_u8(left_node, _OFF_HAS_AABB) == 0 or _get_u8(right_node, _OFF_HAS_AABB) == 0:
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)
+*/
+    __pyx_t_1 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_node, 24) == 0);
+    if (__pyx_t_1) {
+
+      /* "forest/_hier_core.pyx":119
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+ *             return True             # <<<<<<<<<<<<<<
+ *         aabb = <float*>(node + _OFF_AABB)
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+*/
+      __pyx_r = 1;
+      goto __pyx_L0;
+
+      /* "forest/_hier_core.pyx":118
+ *     if _get_u8(left_node, _OFF_HAS_AABB) == 0 or _get_u8(right_node, _OFF_HAS_AABB) == 0:
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)
+*/
+    }
+
+    /* "forest/_hier_core.pyx":120
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)             # <<<<<<<<<<<<<<
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+ * 
+*/
+    __pyx_v_aabb = ((float *)(__pyx_v_node + 28));
+
+    /* "forest/_hier_core.pyx":121
+ *             return True
+ *         aabb = <float*>(node + _OFF_AABB)
+ *         return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)             # <<<<<<<<<<<<<<
+ * 
+ *     #  False
+*/
+    __pyx_r = __pyx_f_6forest_10_hier_core__link_aabbs_collide_flat(__pyx_v_aabb, __pyx_v_obs_flat, __pyx_v_n_obs);
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":116
+ *     cdef char* left_node = base + <long long>left_idx * stride
+ *     cdef char* right_node = base + <long long>right_idx * stride
+ *     if _get_u8(left_node, _OFF_HAS_AABB) == 0 or _get_u8(right_node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
+ *         #  AABB
+ *         if _get_u8(node, _OFF_HAS_AABB) == 0:
+*/
+  }
+
+  /* "forest/_hier_core.pyx":124
+ * 
+ *     #  False
+ *     if _subtree_collide_recursive(base, stride, left_idx,             # <<<<<<<<<<<<<<
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True
+*/
+  __pyx_t_1 = __pyx_f_6forest_10_hier_core__subtree_collide_recursive(__pyx_v_base, __pyx_v_stride, __pyx_v_left_idx, __pyx_v_obs_flat, __pyx_v_n_obs, (__pyx_v_remaining_depth - 1));
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":126
+ *     if _subtree_collide_recursive(base, stride, left_idx,
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True             # <<<<<<<<<<<<<<
+ *     if _subtree_collide_recursive(base, stride, right_idx,
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+*/
+    __pyx_r = 1;
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":124
+ * 
+ *     #  False
+ *     if _subtree_collide_recursive(base, stride, left_idx,             # <<<<<<<<<<<<<<
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True
+*/
+  }
+
+  /* "forest/_hier_core.pyx":127
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True
+ *     if _subtree_collide_recursive(base, stride, right_idx,             # <<<<<<<<<<<<<<
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True
+*/
+  __pyx_t_1 = __pyx_f_6forest_10_hier_core__subtree_collide_recursive(__pyx_v_base, __pyx_v_stride, __pyx_v_right_idx, __pyx_v_obs_flat, __pyx_v_n_obs, (__pyx_v_remaining_depth - 1));
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":129
+ *     if _subtree_collide_recursive(base, stride, right_idx,
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True             # <<<<<<<<<<<<<<
+ *     return False
+ * 
+*/
+    __pyx_r = 1;
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":127
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True
+ *     if _subtree_collide_recursive(base, stride, right_idx,             # <<<<<<<<<<<<<<
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True
+*/
+  }
+
+  /* "forest/_hier_core.pyx":130
+ *                                    obs_flat, n_obs, remaining_depth - 1):
+ *         return True
+ *     return False             # <<<<<<<<<<<<<<
+ * 
+ * 
+*/
+  __pyx_r = 0;
+  goto __pyx_L0;
+
+  /* "forest/_hier_core.pyx":81
+ * #
+ * 
+ * cdef bint _subtree_collide_recursive(             # <<<<<<<<<<<<<<
+ *     char* base, int stride, int idx,
+ *     const float* obs_flat, int n_obs,
+*/
+
+  /* function exit code */
+  __pyx_L0:;
+  return __pyx_r;
+}
+
+/* "forest/_hier_core.pyx":167
  *         cnp.int32_t[::1]  _forest_id
  * 
  *     def __init__(self, int n_links, int n_dims, int stride, int cap,             # <<<<<<<<<<<<<<
@@ -22341,36 +22846,36 @@ static int __pyx_pw_6forest_10_hier_core_9NodeStore_1__init__(PyObject *__pyx_v_
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_n_links,&__pyx_mstate_global->__pyx_n_u_n_dims,&__pyx_mstate_global->__pyx_n_u_stride,&__pyx_mstate_global->__pyx_n_u_cap,&__pyx_mstate_global->__pyx_n_u_zero_length_links,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_VARARGS(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 103, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 167, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  5:
         values[4] = __Pyx_ArgRef_VARARGS(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 167, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_VARARGS(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 167, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_VARARGS(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 167, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_VARARGS(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 167, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_VARARGS(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 167, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "__init__", 0) < (0)) __PYX_ERR(0, 103, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "__init__", 0) < (0)) __PYX_ERR(0, 167, __pyx_L3_error)
 
-      /* "forest/_hier_core.pyx":104
+      /* "forest/_hier_core.pyx":168
  * 
  *     def __init__(self, int n_links, int n_dims, int stride, int cap,
  *                  object zero_length_links=None):             # <<<<<<<<<<<<<<
@@ -22379,37 +22884,37 @@ static int __pyx_pw_6forest_10_hier_core_9NodeStore_1__init__(PyObject *__pyx_v_
 */
       if (!values[4]) values[4] = __Pyx_NewRef(((PyObject *)Py_None));
       for (Py_ssize_t i = __pyx_nargs; i < 4; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("__init__", 0, 4, 5, i); __PYX_ERR(0, 103, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("__init__", 0, 4, 5, i); __PYX_ERR(0, 167, __pyx_L3_error) }
       }
     } else {
       switch (__pyx_nargs) {
         case  5:
         values[4] = __Pyx_ArgRef_VARARGS(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 167, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_VARARGS(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 167, __pyx_L3_error)
         values[2] = __Pyx_ArgRef_VARARGS(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 167, __pyx_L3_error)
         values[1] = __Pyx_ArgRef_VARARGS(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 167, __pyx_L3_error)
         values[0] = __Pyx_ArgRef_VARARGS(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 103, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 167, __pyx_L3_error)
         break;
         default: goto __pyx_L5_argtuple_error;
       }
       if (!values[4]) values[4] = __Pyx_NewRef(((PyObject *)Py_None));
     }
-    __pyx_v_n_links = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_n_links == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 103, __pyx_L3_error)
-    __pyx_v_n_dims = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_n_dims == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 103, __pyx_L3_error)
-    __pyx_v_stride = __Pyx_PyLong_As_int(values[2]); if (unlikely((__pyx_v_stride == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 103, __pyx_L3_error)
-    __pyx_v_cap = __Pyx_PyLong_As_int(values[3]); if (unlikely((__pyx_v_cap == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 103, __pyx_L3_error)
+    __pyx_v_n_links = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_n_links == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
+    __pyx_v_n_dims = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_n_dims == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
+    __pyx_v_stride = __Pyx_PyLong_As_int(values[2]); if (unlikely((__pyx_v_stride == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
+    __pyx_v_cap = __Pyx_PyLong_As_int(values[3]); if (unlikely((__pyx_v_cap == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
     __pyx_v_zero_length_links = values[4];
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 0, 4, 5, __pyx_nargs); __PYX_ERR(0, 103, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__init__", 0, 4, 5, __pyx_nargs); __PYX_ERR(0, 167, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -22422,7 +22927,7 @@ static int __pyx_pw_6forest_10_hier_core_9NodeStore_1__init__(PyObject *__pyx_v_
   __pyx_L4_argument_unpacking_done:;
   __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore___init__(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_n_links, __pyx_v_n_dims, __pyx_v_stride, __pyx_v_cap, __pyx_v_zero_length_links);
 
-  /* "forest/_hier_core.pyx":103
+  /* "forest/_hier_core.pyx":167
  *         cnp.int32_t[::1]  _forest_id
  * 
  *     def __init__(self, int n_links, int n_dims, int stride, int cap,             # <<<<<<<<<<<<<<
@@ -22466,7 +22971,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   __pyx_pybuffernd_arr.data = NULL;
   __pyx_pybuffernd_arr.rcbuffer = &__pyx_pybuffer_arr;
 
-  /* "forest/_hier_core.pyx":105
+  /* "forest/_hier_core.pyx":169
  *     def __init__(self, int n_links, int n_dims, int stride, int cap,
  *                  object zero_length_links=None):
  *         self._n_links = n_links             # <<<<<<<<<<<<<<
@@ -22475,7 +22980,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_v_self->_n_links = __pyx_v_n_links;
 
-  /* "forest/_hier_core.pyx":106
+  /* "forest/_hier_core.pyx":170
  *                  object zero_length_links=None):
  *         self._n_links = n_links
  *         self._n_dims = n_dims             # <<<<<<<<<<<<<<
@@ -22484,7 +22989,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_v_self->_n_dims = __pyx_v_n_dims;
 
-  /* "forest/_hier_core.pyx":107
+  /* "forest/_hier_core.pyx":171
  *         self._n_links = n_links
  *         self._n_dims = n_dims
  *         self._stride = stride             # <<<<<<<<<<<<<<
@@ -22493,7 +22998,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_v_self->_stride = __pyx_v_stride;
 
-  /* "forest/_hier_core.pyx":108
+  /* "forest/_hier_core.pyx":172
  *         self._n_dims = n_dims
  *         self._stride = stride
  *         self._aabb_floats = n_links * 6             # <<<<<<<<<<<<<<
@@ -22502,7 +23007,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_v_self->_aabb_floats = (__pyx_v_n_links * 6);
 
-  /* "forest/_hier_core.pyx":109
+  /* "forest/_hier_core.pyx":173
  *         self._stride = stride
  *         self._aabb_floats = n_links * 6
  *         self._cap = cap             # <<<<<<<<<<<<<<
@@ -22511,7 +23016,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_v_self->_cap = __pyx_v_cap;
 
-  /* "forest/_hier_core.pyx":110
+  /* "forest/_hier_core.pyx":174
  *         self._aabb_floats = n_links * 6
  *         self._cap = cap
  *         self.next_idx = 1  # root = 0             # <<<<<<<<<<<<<<
@@ -22520,7 +23025,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_v_self->next_idx = 1;
 
-  /* "forest/_hier_core.pyx":113
+  /* "forest/_hier_core.pyx":177
  * 
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] arr = np.zeros(             # <<<<<<<<<<<<<<
@@ -22528,24 +23033,24 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
  *         self._buf = arr
 */
   __pyx_t_2 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 113, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 177, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 113, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 177, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "forest/_hier_core.pyx":114
+  /* "forest/_hier_core.pyx":178
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] arr = np.zeros(
  *             cap * stride, dtype=np.uint8)             # <<<<<<<<<<<<<<
  *         self._buf = arr
  *         self._base = <char*>&self._buf[0]
 */
-  __pyx_t_3 = __Pyx_PyLong_From_int((__pyx_v_cap * __pyx_v_stride)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_int((__pyx_v_cap * __pyx_v_stride)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 178, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 114, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 178, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 178, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_7 = 1;
@@ -22562,63 +23067,63 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_2, __pyx_t_3};
-    __pyx_t_5 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 113, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 177, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_6, __pyx_t_5, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 113, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_6, __pyx_t_5, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 177, __pyx_L1_error)
     __pyx_t_1 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_4, __pyx_callargs+__pyx_t_7, (2-__pyx_t_7) | (__pyx_t_7*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_5);
     __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 113, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 177, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
 
-  /* "forest/_hier_core.pyx":113
+  /* "forest/_hier_core.pyx":177
  * 
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] arr = np.zeros(             # <<<<<<<<<<<<<<
  *             cap * stride, dtype=np.uint8)
  *         self._buf = arr
 */
-  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 113, __pyx_L1_error)
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 177, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_arr.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_1), &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_arr = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_arr.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 113, __pyx_L1_error)
+      __PYX_ERR(0, 177, __pyx_L1_error)
     } else {__pyx_pybuffernd_arr.diminfo[0].strides = __pyx_pybuffernd_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_arr.diminfo[0].shape = __pyx_pybuffernd_arr.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_arr = ((PyArrayObject *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "forest/_hier_core.pyx":115
+  /* "forest/_hier_core.pyx":179
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] arr = np.zeros(
  *             cap * stride, dtype=np.uint8)
  *         self._buf = arr             # <<<<<<<<<<<<<<
  *         self._base = <char*>&self._buf[0]
  * 
 */
-  __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(((PyObject *)__pyx_v_arr), PyBUF_WRITABLE); if (unlikely(!__pyx_t_8.memview)) __PYX_ERR(0, 115, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(((PyObject *)__pyx_v_arr), PyBUF_WRITABLE); if (unlikely(!__pyx_t_8.memview)) __PYX_ERR(0, 179, __pyx_L1_error)
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_buf, 0);
   __pyx_v_self->_buf = __pyx_t_8;
   __pyx_t_8.memview = NULL;
   __pyx_t_8.data = NULL;
 
-  /* "forest/_hier_core.pyx":116
+  /* "forest/_hier_core.pyx":180
  *             cap * stride, dtype=np.uint8)
  *         self._buf = arr
  *         self._base = <char*>&self._buf[0]             # <<<<<<<<<<<<<<
  * 
  *         #  root
 */
-  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 116, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 180, __pyx_L1_error)}
   __pyx_t_9 = 0;
   __pyx_v_self->_base = ((char *)(&(*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_buf.data) + __pyx_t_9)) )))));
 
-  /* "forest/_hier_core.pyx":119
+  /* "forest/_hier_core.pyx":183
  * 
  *         #  root
  *         cdef char* root = self._base             # <<<<<<<<<<<<<<
@@ -22628,7 +23133,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   __pyx_t_10 = __pyx_v_self->_base;
   __pyx_v_root = __pyx_t_10;
 
-  /* "forest/_hier_core.pyx":120
+  /* "forest/_hier_core.pyx":184
  *         #  root
  *         cdef char* root = self._base
  *         _set_i32(root, _OFF_LEFT, -1)             # <<<<<<<<<<<<<<
@@ -22637,7 +23142,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_root, 0, -1);
 
-  /* "forest/_hier_core.pyx":121
+  /* "forest/_hier_core.pyx":185
  *         cdef char* root = self._base
  *         _set_i32(root, _OFF_LEFT, -1)
  *         _set_i32(root, _OFF_RIGHT, -1)             # <<<<<<<<<<<<<<
@@ -22646,7 +23151,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_root, 4, -1);
 
-  /* "forest/_hier_core.pyx":122
+  /* "forest/_hier_core.pyx":186
  *         _set_i32(root, _OFF_LEFT, -1)
  *         _set_i32(root, _OFF_RIGHT, -1)
  *         _set_i32(root, _OFF_PARENT, -1)             # <<<<<<<<<<<<<<
@@ -22655,7 +23160,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_root, 8, -1);
 
-  /* "forest/_hier_core.pyx":123
+  /* "forest/_hier_core.pyx":187
  *         _set_i32(root, _OFF_RIGHT, -1)
  *         _set_i32(root, _OFF_PARENT, -1)
  *         _set_i32(root, _OFF_DEPTH, 0)             # <<<<<<<<<<<<<<
@@ -22664,7 +23169,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_root, 12, 0);
 
-  /* "forest/_hier_core.pyx":124
+  /* "forest/_hier_core.pyx":188
  *         _set_i32(root, _OFF_PARENT, -1)
  *         _set_i32(root, _OFF_DEPTH, 0)
  *         _set_f64(root, _OFF_SPLIT, 0.0)             # <<<<<<<<<<<<<<
@@ -22673,7 +23178,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_f_6forest_10_hier_core__set_f64(__pyx_v_root, 16, 0.0);
 
-  /* "forest/_hier_core.pyx":125
+  /* "forest/_hier_core.pyx":189
  *         _set_i32(root, _OFF_DEPTH, 0)
  *         _set_f64(root, _OFF_SPLIT, 0.0)
  *         _set_u8(root, _OFF_HAS_AABB, 0)             # <<<<<<<<<<<<<<
@@ -22682,7 +23187,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_root, 24, 0);
 
-  /* "forest/_hier_core.pyx":126
+  /* "forest/_hier_core.pyx":190
  *         _set_f64(root, _OFF_SPLIT, 0.0)
  *         _set_u8(root, _OFF_HAS_AABB, 0)
  *         _set_u8(root, _OFF_DIRTY, 0)             # <<<<<<<<<<<<<<
@@ -22691,7 +23196,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_root, 25, 0);
 
-  /* "forest/_hier_core.pyx":129
+  /* "forest/_hier_core.pyx":193
  * 
  *         #
  *         self._occupied = np.zeros(cap, dtype=np.uint8)             # <<<<<<<<<<<<<<
@@ -22699,16 +23204,16 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
  *         self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)
 */
   __pyx_t_4 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 129, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 129, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 129, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 129, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 129, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_7 = 1;
@@ -22725,26 +23230,26 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_4, __pyx_t_5};
-    __pyx_t_3 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 129, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 193, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_2, __pyx_t_3, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 129, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_2, __pyx_t_3, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 193, __pyx_L1_error)
     __pyx_t_1 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_6, __pyx_callargs+__pyx_t_7, (2-__pyx_t_7) | (__pyx_t_7*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_3);
     __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 129, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 193, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
-  __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_8.memview)) __PYX_ERR(0, 129, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_8.memview)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_occupied, 0);
   __pyx_v_self->_occupied = __pyx_t_8;
   __pyx_t_8.memview = NULL;
   __pyx_t_8.data = NULL;
 
-  /* "forest/_hier_core.pyx":130
+  /* "forest/_hier_core.pyx":194
  *         #
  *         self._occupied = np.zeros(cap, dtype=np.uint8)
  *         self._subtree_occ = np.zeros(cap, dtype=np.int32)             # <<<<<<<<<<<<<<
@@ -22752,16 +23257,16 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
  *         self._forest_id = np.full(cap, -1, dtype=np.int32)
 */
   __pyx_t_6 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_7 = 1;
@@ -22778,26 +23283,26 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_6, __pyx_t_3};
-    __pyx_t_5 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 130, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 194, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_4, __pyx_t_5, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 130, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_4, __pyx_t_5, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 194, __pyx_L1_error)
     __pyx_t_1 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_2, __pyx_callargs+__pyx_t_7, (2-__pyx_t_7) | (__pyx_t_7*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_5);
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 194, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
-  __pyx_t_11 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_11.memview)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_11.memview)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_subtree_occ, 0);
   __pyx_v_self->_subtree_occ = __pyx_t_11;
   __pyx_t_11.memview = NULL;
   __pyx_t_11.data = NULL;
 
-  /* "forest/_hier_core.pyx":131
+  /* "forest/_hier_core.pyx":195
  *         self._occupied = np.zeros(cap, dtype=np.uint8)
  *         self._subtree_occ = np.zeros(cap, dtype=np.int32)
  *         self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)             # <<<<<<<<<<<<<<
@@ -22805,16 +23310,16 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
  * 
 */
   __pyx_t_2 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 195, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 195, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 195, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 195, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 195, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_7 = 1;
@@ -22831,26 +23336,26 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_2, __pyx_t_5};
-    __pyx_t_3 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 131, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 195, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_6, __pyx_t_3, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 131, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_6, __pyx_t_3, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 195, __pyx_L1_error)
     __pyx_t_1 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_4, __pyx_callargs+__pyx_t_7, (2-__pyx_t_7) | (__pyx_t_7*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_3);
     __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 131, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 195, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
-  __pyx_t_12 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_float64_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_12.memview)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_float64_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_12.memview)) __PYX_ERR(0, 195, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_subtree_occ_vol, 0);
   __pyx_v_self->_subtree_occ_vol = __pyx_t_12;
   __pyx_t_12.memview = NULL;
   __pyx_t_12.data = NULL;
 
-  /* "forest/_hier_core.pyx":132
+  /* "forest/_hier_core.pyx":196
  *         self._subtree_occ = np.zeros(cap, dtype=np.int32)
  *         self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)
  *         self._forest_id = np.full(cap, -1, dtype=np.int32)             # <<<<<<<<<<<<<<
@@ -22858,16 +23363,16 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
  *         #
 */
   __pyx_t_4 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 132, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_full); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 132, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_full); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 132, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 132, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 132, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_7 = 1;
@@ -22884,35 +23389,35 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   #endif
   {
     PyObject *__pyx_callargs[3 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_4, __pyx_t_3, __pyx_mstate_global->__pyx_int_neg_1};
-    __pyx_t_5 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 132, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_2, __pyx_t_5, __pyx_callargs+3, 0) < (0)) __PYX_ERR(0, 132, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_2, __pyx_t_5, __pyx_callargs+3, 0) < (0)) __PYX_ERR(0, 196, __pyx_L1_error)
     __pyx_t_1 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_6, __pyx_callargs+__pyx_t_7, (3-__pyx_t_7) | (__pyx_t_7*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_5);
     __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 132, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
-  __pyx_t_11 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_11.memview)) __PYX_ERR(0, 132, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_11.memview)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_forest_id, 0);
   __pyx_v_self->_forest_id = __pyx_t_11;
   __pyx_t_11.memview = NULL;
   __pyx_t_11.data = NULL;
 
-  /* "forest/_hier_core.pyx":135
+  /* "forest/_hier_core.pyx":199
  * 
  *         #
  *         self._setup_link_meta(zero_length_links)             # <<<<<<<<<<<<<<
  * 
  *     cdef void _setup_link_meta(self, object zero_length_links):
 */
-  ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_setup_link_meta(__pyx_v_self, __pyx_v_zero_length_links); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 135, __pyx_L1_error)
+  ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_setup_link_meta(__pyx_v_self, __pyx_v_zero_length_links); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 199, __pyx_L1_error)
 
-  /* "forest/_hier_core.pyx":103
+  /* "forest/_hier_core.pyx":167
  *         cnp.int32_t[::1]  _forest_id
  * 
  *     def __init__(self, int n_links, int n_dims, int stride, int cap,             # <<<<<<<<<<<<<<
@@ -22950,7 +23455,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore___init__(struct __pyx_obj_6f
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":137
+/* "forest/_hier_core.pyx":201
  *         self._setup_link_meta(zero_length_links)
  * 
  *     cdef void _setup_link_meta(self, object zero_length_links):             # <<<<<<<<<<<<<<
@@ -22975,21 +23480,21 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_setup_link_meta", 0);
 
-  /* "forest/_hier_core.pyx":139
+  /* "forest/_hier_core.pyx":203
  *     cdef void _setup_link_meta(self, object zero_length_links):
  *         """"""
  *         cdef set zl = set(zero_length_links) if zero_length_links else set()             # <<<<<<<<<<<<<<
  *         cdef int nl = self._n_links
  *         cdef int count = 0
 */
-  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_v_zero_length_links); if (unlikely((__pyx_t_2 < 0))) __PYX_ERR(0, 139, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_v_zero_length_links); if (unlikely((__pyx_t_2 < 0))) __PYX_ERR(0, 203, __pyx_L1_error)
   if (__pyx_t_2) {
-    __pyx_t_3 = PySet_New(__pyx_v_zero_length_links); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 139, __pyx_L1_error)
+    __pyx_t_3 = PySet_New(__pyx_v_zero_length_links); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 203, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_1 = __pyx_t_3;
     __pyx_t_3 = 0;
   } else {
-    __pyx_t_3 = PySet_New(0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 139, __pyx_L1_error)
+    __pyx_t_3 = PySet_New(0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 203, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_1 = __pyx_t_3;
     __pyx_t_3 = 0;
@@ -22997,7 +23502,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
   __pyx_v_zl = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "forest/_hier_core.pyx":140
+  /* "forest/_hier_core.pyx":204
  *         """"""
  *         cdef set zl = set(zero_length_links) if zero_length_links else set()
  *         cdef int nl = self._n_links             # <<<<<<<<<<<<<<
@@ -23007,7 +23512,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
   __pyx_t_4 = __pyx_v_self->_n_links;
   __pyx_v_nl = __pyx_t_4;
 
-  /* "forest/_hier_core.pyx":141
+  /* "forest/_hier_core.pyx":205
  *         cdef set zl = set(zero_length_links) if zero_length_links else set()
  *         cdef int nl = self._n_links
  *         cdef int count = 0             # <<<<<<<<<<<<<<
@@ -23016,7 +23521,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
 */
   __pyx_v_count = 0;
 
-  /* "forest/_hier_core.pyx":145
+  /* "forest/_hier_core.pyx":209
  * 
  *         # range_start:  link 0 (base)
  *         self._range_start = 1             # <<<<<<<<<<<<<<
@@ -23025,7 +23530,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
 */
   __pyx_v_self->_range_start = 1;
 
-  /* "forest/_hier_core.pyx":146
+  /* "forest/_hier_core.pyx":210
  *         # range_start:  link 0 (base)
  *         self._range_start = 1
  *         self._range_end = nl             # <<<<<<<<<<<<<<
@@ -23034,7 +23539,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
 */
   __pyx_v_self->_range_end = __pyx_v_nl;
 
-  /* "forest/_hier_core.pyx":148
+  /* "forest/_hier_core.pyx":212
  *         self._range_end = nl
  * 
  *         for i in range(1, nl):  # skip link 0 (base)             # <<<<<<<<<<<<<<
@@ -23046,24 +23551,24 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
   for (__pyx_t_6 = 1; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
     __pyx_v_i = __pyx_t_6;
 
-    /* "forest/_hier_core.pyx":149
+    /* "forest/_hier_core.pyx":213
  * 
  *         for i in range(1, nl):  # skip link 0 (base)
  *             if i not in zl:             # <<<<<<<<<<<<<<
  *                 self._non_zero_links[count] = i
  *                 count += 1
 */
-    __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_i); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 149, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_i); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 213, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     if (unlikely(__pyx_v_zl == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-      __PYX_ERR(0, 149, __pyx_L1_error)
+      __PYX_ERR(0, 213, __pyx_L1_error)
     }
-    __pyx_t_2 = (__Pyx_PySet_ContainsTF(__pyx_t_1, __pyx_v_zl, Py_NE)); if (unlikely((__pyx_t_2 < 0))) __PYX_ERR(0, 149, __pyx_L1_error)
+    __pyx_t_2 = (__Pyx_PySet_ContainsTF(__pyx_t_1, __pyx_v_zl, Py_NE)); if (unlikely((__pyx_t_2 < 0))) __PYX_ERR(0, 213, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     if (__pyx_t_2) {
 
-      /* "forest/_hier_core.pyx":150
+      /* "forest/_hier_core.pyx":214
  *         for i in range(1, nl):  # skip link 0 (base)
  *             if i not in zl:
  *                 self._non_zero_links[count] = i             # <<<<<<<<<<<<<<
@@ -23072,7 +23577,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
 */
       (__pyx_v_self->_non_zero_links[__pyx_v_count]) = __pyx_v_i;
 
-      /* "forest/_hier_core.pyx":151
+      /* "forest/_hier_core.pyx":215
  *             if i not in zl:
  *                 self._non_zero_links[count] = i
  *                 count += 1             # <<<<<<<<<<<<<<
@@ -23081,7 +23586,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
 */
       __pyx_v_count = (__pyx_v_count + 1);
 
-      /* "forest/_hier_core.pyx":149
+      /* "forest/_hier_core.pyx":213
  * 
  *         for i in range(1, nl):  # skip link 0 (base)
  *             if i not in zl:             # <<<<<<<<<<<<<<
@@ -23091,7 +23596,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
     }
   }
 
-  /* "forest/_hier_core.pyx":152
+  /* "forest/_hier_core.pyx":216
  *                 self._non_zero_links[count] = i
  *                 count += 1
  *         self._n_non_zero = count             # <<<<<<<<<<<<<<
@@ -23100,7 +23605,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
 */
   __pyx_v_self->_n_non_zero = __pyx_v_count;
 
-  /* "forest/_hier_core.pyx":137
+  /* "forest/_hier_core.pyx":201
  *         self._setup_link_meta(zero_length_links)
  * 
  *     cdef void _setup_link_meta(self, object zero_length_links):             # <<<<<<<<<<<<<<
@@ -23119,7 +23624,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__setup_link_meta(struct __py
   __Pyx_RefNannyFinishContext();
 }
 
-/* "forest/_hier_core.pyx":154
+/* "forest/_hier_core.pyx":218
  *         self._n_non_zero = count
  * 
  *     def attach_buffer(self, cnp.uint8_t[::1] buf, int cap):             # <<<<<<<<<<<<<<
@@ -23168,39 +23673,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_buf,&__pyx_mstate_global->__pyx_n_u_cap,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 154, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 218, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 154, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 218, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 154, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 218, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "attach_buffer", 0) < (0)) __PYX_ERR(0, 154, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "attach_buffer", 0) < (0)) __PYX_ERR(0, 218, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("attach_buffer", 1, 2, 2, i); __PYX_ERR(0, 154, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("attach_buffer", 1, 2, 2, i); __PYX_ERR(0, 218, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 154, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 218, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 154, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 218, __pyx_L3_error)
     }
-    __pyx_v_buf = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_buf.memview)) __PYX_ERR(0, 154, __pyx_L3_error)
-    __pyx_v_cap = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_cap == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 154, __pyx_L3_error)
+    __pyx_v_buf = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_buf.memview)) __PYX_ERR(0, 218, __pyx_L3_error)
+    __pyx_v_cap = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_cap == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 218, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("attach_buffer", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 154, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("attach_buffer", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 218, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -23242,7 +23747,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("attach_buffer", 0);
 
-  /* "forest/_hier_core.pyx":156
+  /* "forest/_hier_core.pyx":220
  *     def attach_buffer(self, cnp.uint8_t[::1] buf, int cap):
  *         """ (mmap ), """
  *         self._buf = buf             # <<<<<<<<<<<<<<
@@ -23253,18 +23758,18 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
   __PYX_INC_MEMVIEW(&__pyx_v_buf, 1);
   __pyx_v_self->_buf = __pyx_v_buf;
 
-  /* "forest/_hier_core.pyx":157
+  /* "forest/_hier_core.pyx":221
  *         """ (mmap ), """
  *         self._buf = buf
  *         self._base = <char*>&self._buf[0]             # <<<<<<<<<<<<<<
  *         self._cap = cap
  *         #
 */
-  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 157, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 221, __pyx_L1_error)}
   __pyx_t_1 = 0;
   __pyx_v_self->_base = ((char *)(&(*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_buf.data) + __pyx_t_1)) )))));
 
-  /* "forest/_hier_core.pyx":158
+  /* "forest/_hier_core.pyx":222
  *         self._buf = buf
  *         self._base = <char*>&self._buf[0]
  *         self._cap = cap             # <<<<<<<<<<<<<<
@@ -23273,7 +23778,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
 */
   __pyx_v_self->_cap = __pyx_v_cap;
 
-  /* "forest/_hier_core.pyx":160
+  /* "forest/_hier_core.pyx":224
  *         self._cap = cap
  *         #
  *         self._occupied = np.zeros(cap, dtype=np.uint8)             # <<<<<<<<<<<<<<
@@ -23281,16 +23786,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
  *         self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)
 */
   __pyx_t_3 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 224, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 160, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 224, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 224, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 160, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 224, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 160, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 224, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_t_8 = 1;
@@ -23307,26 +23812,26 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_3, __pyx_t_4};
-    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 160, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 224, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 160, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 224, __pyx_L1_error)
     __pyx_t_2 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_5, __pyx_callargs+__pyx_t_8, (2-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_6);
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 160, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 224, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
   }
-  __pyx_t_9 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_9.memview)) __PYX_ERR(0, 160, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_9.memview)) __PYX_ERR(0, 224, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_occupied, 0);
   __pyx_v_self->_occupied = __pyx_t_9;
   __pyx_t_9.memview = NULL;
   __pyx_t_9.data = NULL;
 
-  /* "forest/_hier_core.pyx":161
+  /* "forest/_hier_core.pyx":225
  *         #
  *         self._occupied = np.zeros(cap, dtype=np.uint8)
  *         self._subtree_occ = np.zeros(cap, dtype=np.int32)             # <<<<<<<<<<<<<<
@@ -23334,16 +23839,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
  *         self._forest_id = np.full(cap, -1, dtype=np.int32)
 */
   __pyx_t_5 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 161, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 225, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 161, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 225, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 161, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 225, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 161, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 225, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 161, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 225, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_8 = 1;
@@ -23360,26 +23865,26 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_5, __pyx_t_6};
-    __pyx_t_4 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 161, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 225, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_3, __pyx_t_4, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 161, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_3, __pyx_t_4, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 225, __pyx_L1_error)
     __pyx_t_2 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_7, __pyx_callargs+__pyx_t_8, (2-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_4);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 161, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 225, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
   }
-  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 161, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 225, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_subtree_occ, 0);
   __pyx_v_self->_subtree_occ = __pyx_t_10;
   __pyx_t_10.memview = NULL;
   __pyx_t_10.data = NULL;
 
-  /* "forest/_hier_core.pyx":162
+  /* "forest/_hier_core.pyx":226
  *         self._occupied = np.zeros(cap, dtype=np.uint8)
  *         self._subtree_occ = np.zeros(cap, dtype=np.int32)
  *         self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)             # <<<<<<<<<<<<<<
@@ -23387,16 +23892,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
  * 
 */
   __pyx_t_7 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 162, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 226, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 162, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 226, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 162, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 226, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 162, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 226, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 162, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 226, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_t_8 = 1;
@@ -23413,26 +23918,26 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_7, __pyx_t_4};
-    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 162, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 226, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_5, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 162, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_5, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 226, __pyx_L1_error)
     __pyx_t_2 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_3, __pyx_callargs+__pyx_t_8, (2-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_6);
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 162, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 226, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
   }
-  __pyx_t_11 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_float64_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_11.memview)) __PYX_ERR(0, 162, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_float64_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_11.memview)) __PYX_ERR(0, 226, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_subtree_occ_vol, 0);
   __pyx_v_self->_subtree_occ_vol = __pyx_t_11;
   __pyx_t_11.memview = NULL;
   __pyx_t_11.data = NULL;
 
-  /* "forest/_hier_core.pyx":163
+  /* "forest/_hier_core.pyx":227
  *         self._subtree_occ = np.zeros(cap, dtype=np.int32)
  *         self._subtree_occ_vol = np.zeros(cap, dtype=np.float64)
  *         self._forest_id = np.full(cap, -1, dtype=np.int32)             # <<<<<<<<<<<<<<
@@ -23440,16 +23945,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
  *     #
 */
   __pyx_t_3 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 227, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_full); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_full); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 227, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 227, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 227, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 227, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_8 = 1;
@@ -23466,26 +23971,26 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
   #endif
   {
     PyObject *__pyx_callargs[3 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_3, __pyx_t_6, __pyx_mstate_global->__pyx_int_neg_1};
-    __pyx_t_4 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 163, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 227, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_4, __pyx_callargs+3, 0) < (0)) __PYX_ERR(0, 163, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_4, __pyx_callargs+3, 0) < (0)) __PYX_ERR(0, 227, __pyx_L1_error)
     __pyx_t_2 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_5, __pyx_callargs+__pyx_t_8, (3-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_4);
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 163, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 227, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
   }
-  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 227, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_forest_id, 0);
   __pyx_v_self->_forest_id = __pyx_t_10;
   __pyx_t_10.memview = NULL;
   __pyx_t_10.data = NULL;
 
-  /* "forest/_hier_core.pyx":154
+  /* "forest/_hier_core.pyx":218
  *         self._n_non_zero = count
  * 
  *     def attach_buffer(self, cnp.uint8_t[::1] buf, int cap):             # <<<<<<<<<<<<<<
@@ -23514,7 +24019,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_2attach_buffer(struct 
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":167
+/* "forest/_hier_core.pyx":231
  *     #
  * 
  *     def ensure_capacity(self, int needed):             # <<<<<<<<<<<<<<
@@ -23562,32 +24067,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_needed,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 167, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 231, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 167, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "ensure_capacity", 0) < (0)) __PYX_ERR(0, 167, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "ensure_capacity", 0) < (0)) __PYX_ERR(0, 231, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("ensure_capacity", 1, 1, 1, i); __PYX_ERR(0, 167, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("ensure_capacity", 1, 1, 1, i); __PYX_ERR(0, 231, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 167, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 231, __pyx_L3_error)
     }
-    __pyx_v_needed = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_needed == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
+    __pyx_v_needed = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_needed == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 231, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("ensure_capacity", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 167, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("ensure_capacity", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 231, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -23669,7 +24174,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   __pyx_pybuffernd_new_fid.data = NULL;
   __pyx_pybuffernd_new_fid.rcbuffer = &__pyx_pybuffer_new_fid;
 
-  /* "forest/_hier_core.pyx":169
+  /* "forest/_hier_core.pyx":233
  *     def ensure_capacity(self, int needed):
  *         """ 2 """
  *         if needed <= self._cap:             # <<<<<<<<<<<<<<
@@ -23679,7 +24184,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   __pyx_t_1 = (__pyx_v_needed <= __pyx_v_self->_cap);
   if (__pyx_t_1) {
 
-    /* "forest/_hier_core.pyx":170
+    /* "forest/_hier_core.pyx":234
  *         """ 2 """
  *         if needed <= self._cap:
  *             return             # <<<<<<<<<<<<<<
@@ -23690,7 +24195,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "forest/_hier_core.pyx":169
+    /* "forest/_hier_core.pyx":233
  *     def ensure_capacity(self, int needed):
  *         """ 2 """
  *         if needed <= self._cap:             # <<<<<<<<<<<<<<
@@ -23699,7 +24204,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
 */
   }
 
-  /* "forest/_hier_core.pyx":171
+  /* "forest/_hier_core.pyx":235
  *         if needed <= self._cap:
  *             return
  *         cdef int new_cap = max(needed, self._cap * 2)             # <<<<<<<<<<<<<<
@@ -23716,7 +24221,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   }
   __pyx_v_new_cap = __pyx_t_4;
 
-  /* "forest/_hier_core.pyx":172
+  /* "forest/_hier_core.pyx":236
  *             return
  *         cdef int new_cap = max(needed, self._cap * 2)
  *         cdef int old_size = self._cap * self._stride             # <<<<<<<<<<<<<<
@@ -23725,7 +24230,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
 */
   __pyx_v_old_size = (__pyx_v_self->_cap * __pyx_v_self->_stride);
 
-  /* "forest/_hier_core.pyx":173
+  /* "forest/_hier_core.pyx":237
  *         cdef int new_cap = max(needed, self._cap * 2)
  *         cdef int old_size = self._cap * self._stride
  *         cdef int new_size = new_cap * self._stride             # <<<<<<<<<<<<<<
@@ -23734,7 +24239,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
 */
   __pyx_v_new_size = (__pyx_v_new_cap * __pyx_v_self->_stride);
 
-  /* "forest/_hier_core.pyx":176
+  /* "forest/_hier_core.pyx":240
  * 
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_arr = np.zeros(             # <<<<<<<<<<<<<<
@@ -23742,24 +24247,24 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  *         new_arr[:old_size] = np.asarray(self._buf)
 */
   __pyx_t_6 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 176, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 240, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 176, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 240, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-  /* "forest/_hier_core.pyx":177
+  /* "forest/_hier_core.pyx":241
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_arr = np.zeros(
  *             new_size, dtype=np.uint8)             # <<<<<<<<<<<<<<
  *         new_arr[:old_size] = np.asarray(self._buf)
  *         self._buf = new_arr
 */
-  __pyx_t_7 = __Pyx_PyLong_From_int(__pyx_v_new_size); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 177, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyLong_From_int(__pyx_v_new_size); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 241, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 177, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 241, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 177, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 241, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __pyx_t_11 = 1;
@@ -23776,39 +24281,39 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_6, __pyx_t_7};
-    __pyx_t_9 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 176, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 240, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_10, __pyx_t_9, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 176, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_10, __pyx_t_9, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 240, __pyx_L1_error)
     __pyx_t_5 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_8, __pyx_callargs+__pyx_t_11, (2-__pyx_t_11) | (__pyx_t_11*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_9);
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 176, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 240, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
 
-  /* "forest/_hier_core.pyx":176
+  /* "forest/_hier_core.pyx":240
  * 
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_arr = np.zeros(             # <<<<<<<<<<<<<<
  *             new_size, dtype=np.uint8)
  *         new_arr[:old_size] = np.asarray(self._buf)
 */
-  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 176, __pyx_L1_error)
+  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 240, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_new_arr.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_5), &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_new_arr = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_new_arr.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 176, __pyx_L1_error)
+      __PYX_ERR(0, 240, __pyx_L1_error)
     } else {__pyx_pybuffernd_new_arr.diminfo[0].strides = __pyx_pybuffernd_new_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_new_arr.diminfo[0].shape = __pyx_pybuffernd_new_arr.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_new_arr = ((PyArrayObject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":178
+  /* "forest/_hier_core.pyx":242
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_arr = np.zeros(
  *             new_size, dtype=np.uint8)
  *         new_arr[:old_size] = np.asarray(self._buf)             # <<<<<<<<<<<<<<
@@ -23816,13 +24321,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  *         self._base = <char*>&self._buf[0]
 */
   __pyx_t_8 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 178, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 242, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 178, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 242, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 178, __pyx_L1_error)}
-  __pyx_t_9 = __pyx_memoryview_fromslice(__pyx_v_self->_buf, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 178, __pyx_L1_error)
+  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 242, __pyx_L1_error)}
+  __pyx_t_9 = __pyx_memoryview_fromslice(__pyx_v_self->_buf, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 242, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_t_11 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -23842,43 +24347,43 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 178, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 242, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
-  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_old_size); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 178, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_old_size); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 242, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_9 = PySlice_New(Py_None, __pyx_t_10, Py_None); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 178, __pyx_L1_error)
+  __pyx_t_9 = PySlice_New(Py_None, __pyx_t_10, Py_None); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 242, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_arr), __pyx_t_9, __pyx_t_5) < 0))) __PYX_ERR(0, 178, __pyx_L1_error)
+  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_arr), __pyx_t_9, __pyx_t_5) < 0))) __PYX_ERR(0, 242, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":179
+  /* "forest/_hier_core.pyx":243
  *             new_size, dtype=np.uint8)
  *         new_arr[:old_size] = np.asarray(self._buf)
  *         self._buf = new_arr             # <<<<<<<<<<<<<<
  *         self._base = <char*>&self._buf[0]
  * 
 */
-  __pyx_t_12 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(((PyObject *)__pyx_v_new_arr), PyBUF_WRITABLE); if (unlikely(!__pyx_t_12.memview)) __PYX_ERR(0, 179, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(((PyObject *)__pyx_v_new_arr), PyBUF_WRITABLE); if (unlikely(!__pyx_t_12.memview)) __PYX_ERR(0, 243, __pyx_L1_error)
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_buf, 0);
   __pyx_v_self->_buf = __pyx_t_12;
   __pyx_t_12.memview = NULL;
   __pyx_t_12.data = NULL;
 
-  /* "forest/_hier_core.pyx":180
+  /* "forest/_hier_core.pyx":244
  *         new_arr[:old_size] = np.asarray(self._buf)
  *         self._buf = new_arr
  *         self._base = <char*>&self._buf[0]             # <<<<<<<<<<<<<<
  * 
  *         #
 */
-  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 180, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 244, __pyx_L1_error)}
   __pyx_t_13 = 0;
   __pyx_v_self->_base = ((char *)(&(*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_buf.data) + __pyx_t_13)) )))));
 
-  /* "forest/_hier_core.pyx":183
+  /* "forest/_hier_core.pyx":247
  * 
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_occ = np.zeros(             # <<<<<<<<<<<<<<
@@ -23886,24 +24391,24 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  *         new_occ[:self._cap] = np.asarray(self._occupied)
 */
   __pyx_t_9 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 183, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 247, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 183, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 247, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
 
-  /* "forest/_hier_core.pyx":184
+  /* "forest/_hier_core.pyx":248
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_occ = np.zeros(
  *             new_cap, dtype=np.uint8)             # <<<<<<<<<<<<<<
  *         new_occ[:self._cap] = np.asarray(self._occupied)
  *         self._occupied = new_occ
 */
-  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 184, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 248, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 184, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 248, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 184, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_uint8); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 248, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __pyx_t_11 = 1;
@@ -23920,39 +24425,39 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_9, __pyx_t_10};
-    __pyx_t_7 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 183, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 247, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_6, __pyx_t_7, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 183, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_6, __pyx_t_7, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 247, __pyx_L1_error)
     __pyx_t_5 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_8, __pyx_callargs+__pyx_t_11, (2-__pyx_t_11) | (__pyx_t_11*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_7);
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 183, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 247, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
 
-  /* "forest/_hier_core.pyx":183
+  /* "forest/_hier_core.pyx":247
  * 
  *         #
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_occ = np.zeros(             # <<<<<<<<<<<<<<
  *             new_cap, dtype=np.uint8)
  *         new_occ[:self._cap] = np.asarray(self._occupied)
 */
-  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 183, __pyx_L1_error)
+  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 247, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_new_occ.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_5), &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_new_occ = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_new_occ.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 183, __pyx_L1_error)
+      __PYX_ERR(0, 247, __pyx_L1_error)
     } else {__pyx_pybuffernd_new_occ.diminfo[0].strides = __pyx_pybuffernd_new_occ.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_new_occ.diminfo[0].shape = __pyx_pybuffernd_new_occ.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_new_occ = ((PyArrayObject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":185
+  /* "forest/_hier_core.pyx":249
  *         cdef cnp.ndarray[cnp.uint8_t, ndim=1] new_occ = np.zeros(
  *             new_cap, dtype=np.uint8)
  *         new_occ[:self._cap] = np.asarray(self._occupied)             # <<<<<<<<<<<<<<
@@ -23960,13 +24465,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  * 
 */
   __pyx_t_8 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 249, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 249, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 185, __pyx_L1_error)}
-  __pyx_t_7 = __pyx_memoryview_fromslice(__pyx_v_self->_occupied, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 185, __pyx_L1_error)
+  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 249, __pyx_L1_error)}
+  __pyx_t_7 = __pyx_memoryview_fromslice(__pyx_v_self->_occupied, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 249, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_t_11 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -23986,32 +24491,32 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 185, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 249, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
-  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 249, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = PySlice_New(Py_None, __pyx_t_6, Py_None); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_7 = PySlice_New(Py_None, __pyx_t_6, Py_None); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 249, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_occ), __pyx_t_7, __pyx_t_5) < 0))) __PYX_ERR(0, 185, __pyx_L1_error)
+  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_occ), __pyx_t_7, __pyx_t_5) < 0))) __PYX_ERR(0, 249, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":186
+  /* "forest/_hier_core.pyx":250
  *             new_cap, dtype=np.uint8)
  *         new_occ[:self._cap] = np.asarray(self._occupied)
  *         self._occupied = new_occ             # <<<<<<<<<<<<<<
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_sub = np.zeros(
 */
-  __pyx_t_12 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(((PyObject *)__pyx_v_new_occ), PyBUF_WRITABLE); if (unlikely(!__pyx_t_12.memview)) __PYX_ERR(0, 186, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_uint8_t(((PyObject *)__pyx_v_new_occ), PyBUF_WRITABLE); if (unlikely(!__pyx_t_12.memview)) __PYX_ERR(0, 250, __pyx_L1_error)
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_occupied, 0);
   __pyx_v_self->_occupied = __pyx_t_12;
   __pyx_t_12.memview = NULL;
   __pyx_t_12.data = NULL;
 
-  /* "forest/_hier_core.pyx":188
+  /* "forest/_hier_core.pyx":252
  *         self._occupied = new_occ
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_sub = np.zeros(             # <<<<<<<<<<<<<<
@@ -24019,24 +24524,24 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  *         new_sub[:self._cap] = np.asarray(self._subtree_occ)
 */
   __pyx_t_7 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 188, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 252, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 188, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 252, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
-  /* "forest/_hier_core.pyx":189
+  /* "forest/_hier_core.pyx":253
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_sub = np.zeros(
  *             new_cap, dtype=np.int32)             # <<<<<<<<<<<<<<
  *         new_sub[:self._cap] = np.asarray(self._subtree_occ)
  *         self._subtree_occ = new_sub
 */
-  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 189, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 189, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 189, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
   __pyx_t_11 = 1;
@@ -24053,39 +24558,39 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_7, __pyx_t_6};
-    __pyx_t_10 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 188, __pyx_L1_error)
+    __pyx_t_10 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 252, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_10);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_9, __pyx_t_10, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 188, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_9, __pyx_t_10, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 252, __pyx_L1_error)
     __pyx_t_5 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_8, __pyx_callargs+__pyx_t_11, (2-__pyx_t_11) | (__pyx_t_11*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_10);
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 188, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 252, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
 
-  /* "forest/_hier_core.pyx":188
+  /* "forest/_hier_core.pyx":252
  *         self._occupied = new_occ
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_sub = np.zeros(             # <<<<<<<<<<<<<<
  *             new_cap, dtype=np.int32)
  *         new_sub[:self._cap] = np.asarray(self._subtree_occ)
 */
-  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 188, __pyx_L1_error)
+  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 252, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_new_sub.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_5), &__Pyx_TypeInfo_nn___pyx_t_5numpy_int32_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_new_sub = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_new_sub.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 188, __pyx_L1_error)
+      __PYX_ERR(0, 252, __pyx_L1_error)
     } else {__pyx_pybuffernd_new_sub.diminfo[0].strides = __pyx_pybuffernd_new_sub.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_new_sub.diminfo[0].shape = __pyx_pybuffernd_new_sub.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_new_sub = ((PyArrayObject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":190
+  /* "forest/_hier_core.pyx":254
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_sub = np.zeros(
  *             new_cap, dtype=np.int32)
  *         new_sub[:self._cap] = np.asarray(self._subtree_occ)             # <<<<<<<<<<<<<<
@@ -24093,13 +24598,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  * 
 */
   __pyx_t_8 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 190, __pyx_L1_error)}
-  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_self->_subtree_occ, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_int32_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_int32_t, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 190, __pyx_L1_error)
+  if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 254, __pyx_L1_error)}
+  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_self->_subtree_occ, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_int32_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_int32_t, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __pyx_t_11 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -24119,32 +24624,32 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 190, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 254, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
-  __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_10 = PySlice_New(Py_None, __pyx_t_9, Py_None); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_10 = PySlice_New(Py_None, __pyx_t_9, Py_None); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_sub), __pyx_t_10, __pyx_t_5) < 0))) __PYX_ERR(0, 190, __pyx_L1_error)
+  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_sub), __pyx_t_10, __pyx_t_5) < 0))) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":191
+  /* "forest/_hier_core.pyx":255
  *             new_cap, dtype=np.int32)
  *         new_sub[:self._cap] = np.asarray(self._subtree_occ)
  *         self._subtree_occ = new_sub             # <<<<<<<<<<<<<<
  * 
  *         cdef cnp.ndarray[cnp.float64_t, ndim=1] new_subv = np.zeros(
 */
-  __pyx_t_14 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(((PyObject *)__pyx_v_new_sub), PyBUF_WRITABLE); if (unlikely(!__pyx_t_14.memview)) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(((PyObject *)__pyx_v_new_sub), PyBUF_WRITABLE); if (unlikely(!__pyx_t_14.memview)) __PYX_ERR(0, 255, __pyx_L1_error)
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_subtree_occ, 0);
   __pyx_v_self->_subtree_occ = __pyx_t_14;
   __pyx_t_14.memview = NULL;
   __pyx_t_14.data = NULL;
 
-  /* "forest/_hier_core.pyx":193
+  /* "forest/_hier_core.pyx":257
  *         self._subtree_occ = new_sub
  * 
  *         cdef cnp.ndarray[cnp.float64_t, ndim=1] new_subv = np.zeros(             # <<<<<<<<<<<<<<
@@ -24152,24 +24657,24 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  *         new_subv[:self._cap] = np.asarray(self._subtree_occ_vol)
 */
   __pyx_t_10 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 193, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 193, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_zeros); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-  /* "forest/_hier_core.pyx":194
+  /* "forest/_hier_core.pyx":258
  * 
  *         cdef cnp.ndarray[cnp.float64_t, ndim=1] new_subv = np.zeros(
  *             new_cap, dtype=np.float64)             # <<<<<<<<<<<<<<
  *         new_subv[:self._cap] = np.asarray(self._subtree_occ_vol)
  *         self._subtree_occ_vol = new_subv
 */
-  __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 194, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 258, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 194, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 258, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 194, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 258, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_t_11 = 1;
@@ -24186,39 +24691,39 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_10, __pyx_t_9};
-    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 193, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 257, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 193, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 257, __pyx_L1_error)
     __pyx_t_5 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_8, __pyx_callargs+__pyx_t_11, (2-__pyx_t_11) | (__pyx_t_11*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_6);
     __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 193, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 257, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
 
-  /* "forest/_hier_core.pyx":193
+  /* "forest/_hier_core.pyx":257
  *         self._subtree_occ = new_sub
  * 
  *         cdef cnp.ndarray[cnp.float64_t, ndim=1] new_subv = np.zeros(             # <<<<<<<<<<<<<<
  *             new_cap, dtype=np.float64)
  *         new_subv[:self._cap] = np.asarray(self._subtree_occ_vol)
 */
-  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 193, __pyx_L1_error)
+  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 257, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_new_subv.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_5), &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_new_subv = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_new_subv.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 193, __pyx_L1_error)
+      __PYX_ERR(0, 257, __pyx_L1_error)
     } else {__pyx_pybuffernd_new_subv.diminfo[0].strides = __pyx_pybuffernd_new_subv.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_new_subv.diminfo[0].shape = __pyx_pybuffernd_new_subv.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_new_subv = ((PyArrayObject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":195
+  /* "forest/_hier_core.pyx":259
  *         cdef cnp.ndarray[cnp.float64_t, ndim=1] new_subv = np.zeros(
  *             new_cap, dtype=np.float64)
  *         new_subv[:self._cap] = np.asarray(self._subtree_occ_vol)             # <<<<<<<<<<<<<<
@@ -24226,13 +24731,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  * 
 */
   __pyx_t_8 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 195, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 259, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 195, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 259, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 195, __pyx_L1_error)}
-  __pyx_t_6 = __pyx_memoryview_fromslice(__pyx_v_self->_subtree_occ_vol, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_float64_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_float64_t, 0);; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 195, __pyx_L1_error)
+  if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 259, __pyx_L1_error)}
+  __pyx_t_6 = __pyx_memoryview_fromslice(__pyx_v_self->_subtree_occ_vol, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_float64_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_float64_t, 0);; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 259, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __pyx_t_11 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -24252,32 +24757,32 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 195, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
-  __pyx_t_7 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 195, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 259, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_6 = PySlice_New(Py_None, __pyx_t_7, Py_None); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 195, __pyx_L1_error)
+  __pyx_t_6 = PySlice_New(Py_None, __pyx_t_7, Py_None); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 259, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_subv), __pyx_t_6, __pyx_t_5) < 0))) __PYX_ERR(0, 195, __pyx_L1_error)
+  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_subv), __pyx_t_6, __pyx_t_5) < 0))) __PYX_ERR(0, 259, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":196
+  /* "forest/_hier_core.pyx":260
  *             new_cap, dtype=np.float64)
  *         new_subv[:self._cap] = np.asarray(self._subtree_occ_vol)
  *         self._subtree_occ_vol = new_subv             # <<<<<<<<<<<<<<
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_fid = np.full(
 */
-  __pyx_t_15 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_float64_t(((PyObject *)__pyx_v_new_subv), PyBUF_WRITABLE); if (unlikely(!__pyx_t_15.memview)) __PYX_ERR(0, 196, __pyx_L1_error)
+  __pyx_t_15 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_float64_t(((PyObject *)__pyx_v_new_subv), PyBUF_WRITABLE); if (unlikely(!__pyx_t_15.memview)) __PYX_ERR(0, 260, __pyx_L1_error)
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_subtree_occ_vol, 0);
   __pyx_v_self->_subtree_occ_vol = __pyx_t_15;
   __pyx_t_15.memview = NULL;
   __pyx_t_15.data = NULL;
 
-  /* "forest/_hier_core.pyx":198
+  /* "forest/_hier_core.pyx":262
  *         self._subtree_occ_vol = new_subv
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_fid = np.full(             # <<<<<<<<<<<<<<
@@ -24285,24 +24790,24 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  *         new_fid[:self._cap] = np.asarray(self._forest_id)
 */
   __pyx_t_6 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 198, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 262, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_full); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 198, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_full); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 262, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-  /* "forest/_hier_core.pyx":199
+  /* "forest/_hier_core.pyx":263
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_fid = np.full(
  *             new_cap, -1, dtype=np.int32)             # <<<<<<<<<<<<<<
  *         new_fid[:self._cap] = np.asarray(self._forest_id)
  *         self._forest_id = new_fid
 */
-  __pyx_t_7 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 199, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyLong_From_int(__pyx_v_new_cap); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 263, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 199, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 263, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 199, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_int32); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 263, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __pyx_t_11 = 1;
@@ -24319,39 +24824,39 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   #endif
   {
     PyObject *__pyx_callargs[3 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_6, __pyx_t_7, __pyx_mstate_global->__pyx_int_neg_1};
-    __pyx_t_9 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 198, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 262, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_10, __pyx_t_9, __pyx_callargs+3, 0) < (0)) __PYX_ERR(0, 198, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_10, __pyx_t_9, __pyx_callargs+3, 0) < (0)) __PYX_ERR(0, 262, __pyx_L1_error)
     __pyx_t_5 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_8, __pyx_callargs+__pyx_t_11, (3-__pyx_t_11) | (__pyx_t_11*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_9);
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 198, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 262, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
 
-  /* "forest/_hier_core.pyx":198
+  /* "forest/_hier_core.pyx":262
  *         self._subtree_occ_vol = new_subv
  * 
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_fid = np.full(             # <<<<<<<<<<<<<<
  *             new_cap, -1, dtype=np.int32)
  *         new_fid[:self._cap] = np.asarray(self._forest_id)
 */
-  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 198, __pyx_L1_error)
+  if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 262, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_new_fid.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_5), &__Pyx_TypeInfo_nn___pyx_t_5numpy_int32_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_new_fid = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_new_fid.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 198, __pyx_L1_error)
+      __PYX_ERR(0, 262, __pyx_L1_error)
     } else {__pyx_pybuffernd_new_fid.diminfo[0].strides = __pyx_pybuffernd_new_fid.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_new_fid.diminfo[0].shape = __pyx_pybuffernd_new_fid.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_new_fid = ((PyArrayObject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":200
+  /* "forest/_hier_core.pyx":264
  *         cdef cnp.ndarray[cnp.int32_t, ndim=1] new_fid = np.full(
  *             new_cap, -1, dtype=np.int32)
  *         new_fid[:self._cap] = np.asarray(self._forest_id)             # <<<<<<<<<<<<<<
@@ -24359,13 +24864,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
  * 
 */
   __pyx_t_8 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 200, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 200, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 200, __pyx_L1_error)}
-  __pyx_t_9 = __pyx_memoryview_fromslice(__pyx_v_self->_forest_id, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_int32_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_int32_t, 0);; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 200, __pyx_L1_error)
+  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 264, __pyx_L1_error)}
+  __pyx_t_9 = __pyx_memoryview_fromslice(__pyx_v_self->_forest_id, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_int32_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_int32_t, 0);; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_t_11 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -24385,32 +24890,32 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 200, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 264, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
   }
-  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 200, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_9 = PySlice_New(Py_None, __pyx_t_10, Py_None); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 200, __pyx_L1_error)
+  __pyx_t_9 = PySlice_New(Py_None, __pyx_t_10, Py_None); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_fid), __pyx_t_9, __pyx_t_5) < 0))) __PYX_ERR(0, 200, __pyx_L1_error)
+  if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_new_fid), __pyx_t_9, __pyx_t_5) < 0))) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":201
+  /* "forest/_hier_core.pyx":265
  *             new_cap, -1, dtype=np.int32)
  *         new_fid[:self._cap] = np.asarray(self._forest_id)
  *         self._forest_id = new_fid             # <<<<<<<<<<<<<<
  * 
  *         self._cap = new_cap
 */
-  __pyx_t_14 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(((PyObject *)__pyx_v_new_fid), PyBUF_WRITABLE); if (unlikely(!__pyx_t_14.memview)) __PYX_ERR(0, 201, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_to_MemoryviewSlice_dc_nn___pyx_t_5numpy_int32_t(((PyObject *)__pyx_v_new_fid), PyBUF_WRITABLE); if (unlikely(!__pyx_t_14.memview)) __PYX_ERR(0, 265, __pyx_L1_error)
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_self->_forest_id, 0);
   __pyx_v_self->_forest_id = __pyx_t_14;
   __pyx_t_14.memview = NULL;
   __pyx_t_14.data = NULL;
 
-  /* "forest/_hier_core.pyx":203
+  /* "forest/_hier_core.pyx":267
  *         self._forest_id = new_fid
  * 
  *         self._cap = new_cap             # <<<<<<<<<<<<<<
@@ -24419,7 +24924,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
 */
   __pyx_v_self->_cap = __pyx_v_new_cap;
 
-  /* "forest/_hier_core.pyx":167
+  /* "forest/_hier_core.pyx":231
  *     #
  * 
  *     def ensure_capacity(self, int needed):             # <<<<<<<<<<<<<<
@@ -24470,7 +24975,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_4ensure_capacity(struc
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":207
+/* "forest/_hier_core.pyx":271
  *     #
  * 
  *     cdef int _alloc_node_c(self, int parent, int depth) noexcept:             # <<<<<<<<<<<<<<
@@ -24484,7 +24989,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
   int __pyx_r;
   int __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":209
+  /* "forest/_hier_core.pyx":273
  *     cdef int _alloc_node_c(self, int parent, int depth) noexcept:
  *         """C-level  ( descent_loop )"""
  *         cdef int idx = self.next_idx             # <<<<<<<<<<<<<<
@@ -24494,7 +24999,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
   __pyx_t_1 = __pyx_v_self->next_idx;
   __pyx_v_idx = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":210
+  /* "forest/_hier_core.pyx":274
  *         """C-level  ( descent_loop )"""
  *         cdef int idx = self.next_idx
  *         self.next_idx += 1             # <<<<<<<<<<<<<<
@@ -24503,7 +25008,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_v_self->next_idx = (__pyx_v_self->next_idx + 1);
 
-  /* "forest/_hier_core.pyx":211
+  /* "forest/_hier_core.pyx":275
  *         cdef int idx = self.next_idx
  *         self.next_idx += 1
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -24512,7 +25017,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":212
+  /* "forest/_hier_core.pyx":276
  *         self.next_idx += 1
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         _set_i32(node, _OFF_LEFT, -1)             # <<<<<<<<<<<<<<
@@ -24521,7 +25026,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 0, -1);
 
-  /* "forest/_hier_core.pyx":213
+  /* "forest/_hier_core.pyx":277
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         _set_i32(node, _OFF_LEFT, -1)
  *         _set_i32(node, _OFF_RIGHT, -1)             # <<<<<<<<<<<<<<
@@ -24530,7 +25035,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 4, -1);
 
-  /* "forest/_hier_core.pyx":214
+  /* "forest/_hier_core.pyx":278
  *         _set_i32(node, _OFF_LEFT, -1)
  *         _set_i32(node, _OFF_RIGHT, -1)
  *         _set_i32(node, _OFF_PARENT, parent)             # <<<<<<<<<<<<<<
@@ -24539,7 +25044,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 8, __pyx_v_parent);
 
-  /* "forest/_hier_core.pyx":215
+  /* "forest/_hier_core.pyx":279
  *         _set_i32(node, _OFF_RIGHT, -1)
  *         _set_i32(node, _OFF_PARENT, parent)
  *         _set_i32(node, _OFF_DEPTH, depth)             # <<<<<<<<<<<<<<
@@ -24548,7 +25053,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 12, __pyx_v_depth);
 
-  /* "forest/_hier_core.pyx":216
+  /* "forest/_hier_core.pyx":280
  *         _set_i32(node, _OFF_PARENT, parent)
  *         _set_i32(node, _OFF_DEPTH, depth)
  *         _set_f64(node, _OFF_SPLIT, 0.0)             # <<<<<<<<<<<<<<
@@ -24557,7 +25062,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_f_6forest_10_hier_core__set_f64(__pyx_v_node, 16, 0.0);
 
-  /* "forest/_hier_core.pyx":217
+  /* "forest/_hier_core.pyx":281
  *         _set_i32(node, _OFF_DEPTH, depth)
  *         _set_f64(node, _OFF_SPLIT, 0.0)
  *         _set_u8(node, _OFF_HAS_AABB, 0)             # <<<<<<<<<<<<<<
@@ -24566,7 +25071,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 24, 0);
 
-  /* "forest/_hier_core.pyx":218
+  /* "forest/_hier_core.pyx":282
  *         _set_f64(node, _OFF_SPLIT, 0.0)
  *         _set_u8(node, _OFF_HAS_AABB, 0)
  *         _set_u8(node, _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -24575,7 +25080,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 1);
 
-  /* "forest/_hier_core.pyx":219
+  /* "forest/_hier_core.pyx":283
  *         _set_u8(node, _OFF_HAS_AABB, 0)
  *         _set_u8(node, _OFF_DIRTY, 1)
  *         return idx             # <<<<<<<<<<<<<<
@@ -24585,7 +25090,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
   __pyx_r = __pyx_v_idx;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":207
+  /* "forest/_hier_core.pyx":271
  *     #
  * 
  *     cdef int _alloc_node_c(self, int parent, int depth) noexcept:             # <<<<<<<<<<<<<<
@@ -24598,7 +25103,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__alloc_node_c(struct __pyx_ob
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":221
+/* "forest/_hier_core.pyx":285
  *         return idx
  * 
  *     def alloc_node(self, int parent, int depth):             # <<<<<<<<<<<<<<
@@ -24647,39 +25152,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_parent,&__pyx_mstate_global->__pyx_n_u_depth,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 221, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 285, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 221, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 285, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 221, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 285, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "alloc_node", 0) < (0)) __PYX_ERR(0, 221, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "alloc_node", 0) < (0)) __PYX_ERR(0, 285, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("alloc_node", 1, 2, 2, i); __PYX_ERR(0, 221, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("alloc_node", 1, 2, 2, i); __PYX_ERR(0, 285, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 221, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 285, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 221, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 285, __pyx_L3_error)
     }
-    __pyx_v_parent = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_parent == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 221, __pyx_L3_error)
-    __pyx_v_depth = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_depth == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 221, __pyx_L3_error)
+    __pyx_v_parent = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_parent == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 285, __pyx_L3_error)
+    __pyx_v_depth = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_depth == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 285, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("alloc_node", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 221, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("alloc_node", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 285, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -24712,7 +25217,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("alloc_node", 0);
 
-  /* "forest/_hier_core.pyx":223
+  /* "forest/_hier_core.pyx":287
  *     def alloc_node(self, int parent, int depth):
  *         """"""
  *         cdef int idx = self.next_idx             # <<<<<<<<<<<<<<
@@ -24722,7 +25227,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
   __pyx_t_1 = __pyx_v_self->next_idx;
   __pyx_v_idx = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":224
+  /* "forest/_hier_core.pyx":288
  *         """"""
  *         cdef int idx = self.next_idx
  *         self.next_idx += 1             # <<<<<<<<<<<<<<
@@ -24731,7 +25236,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_v_self->next_idx = (__pyx_v_self->next_idx + 1);
 
-  /* "forest/_hier_core.pyx":225
+  /* "forest/_hier_core.pyx":289
  *         cdef int idx = self.next_idx
  *         self.next_idx += 1
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -24740,7 +25245,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":226
+  /* "forest/_hier_core.pyx":290
  *         self.next_idx += 1
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         _set_i32(node, _OFF_LEFT, -1)             # <<<<<<<<<<<<<<
@@ -24749,7 +25254,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 0, -1);
 
-  /* "forest/_hier_core.pyx":227
+  /* "forest/_hier_core.pyx":291
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         _set_i32(node, _OFF_LEFT, -1)
  *         _set_i32(node, _OFF_RIGHT, -1)             # <<<<<<<<<<<<<<
@@ -24758,7 +25263,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 4, -1);
 
-  /* "forest/_hier_core.pyx":228
+  /* "forest/_hier_core.pyx":292
  *         _set_i32(node, _OFF_LEFT, -1)
  *         _set_i32(node, _OFF_RIGHT, -1)
  *         _set_i32(node, _OFF_PARENT, parent)             # <<<<<<<<<<<<<<
@@ -24767,7 +25272,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 8, __pyx_v_parent);
 
-  /* "forest/_hier_core.pyx":229
+  /* "forest/_hier_core.pyx":293
  *         _set_i32(node, _OFF_RIGHT, -1)
  *         _set_i32(node, _OFF_PARENT, parent)
  *         _set_i32(node, _OFF_DEPTH, depth)             # <<<<<<<<<<<<<<
@@ -24776,7 +25281,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 12, __pyx_v_depth);
 
-  /* "forest/_hier_core.pyx":230
+  /* "forest/_hier_core.pyx":294
  *         _set_i32(node, _OFF_PARENT, parent)
  *         _set_i32(node, _OFF_DEPTH, depth)
  *         _set_f64(node, _OFF_SPLIT, 0.0)             # <<<<<<<<<<<<<<
@@ -24785,7 +25290,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_f64(__pyx_v_node, 16, 0.0);
 
-  /* "forest/_hier_core.pyx":231
+  /* "forest/_hier_core.pyx":295
  *         _set_i32(node, _OFF_DEPTH, depth)
  *         _set_f64(node, _OFF_SPLIT, 0.0)
  *         _set_u8(node, _OFF_HAS_AABB, 0)             # <<<<<<<<<<<<<<
@@ -24794,7 +25299,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 24, 0);
 
-  /* "forest/_hier_core.pyx":232
+  /* "forest/_hier_core.pyx":296
  *         _set_f64(node, _OFF_SPLIT, 0.0)
  *         _set_u8(node, _OFF_HAS_AABB, 0)
  *         _set_u8(node, _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -24803,7 +25308,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 1);
 
-  /* "forest/_hier_core.pyx":233
+  /* "forest/_hier_core.pyx":297
  *         _set_u8(node, _OFF_HAS_AABB, 0)
  *         _set_u8(node, _OFF_DIRTY, 1)
  *         return idx             # <<<<<<<<<<<<<<
@@ -24811,13 +25316,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
  *     #   (Python )
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 233, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 297, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":221
+  /* "forest/_hier_core.pyx":285
  *         return idx
  * 
  *     def alloc_node(self, int parent, int depth):             # <<<<<<<<<<<<<<
@@ -24836,7 +25341,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6alloc_node(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":237
+/* "forest/_hier_core.pyx":301
  *     #   (Python )
  * 
  *     def get_left(self, int idx):             # <<<<<<<<<<<<<<
@@ -24883,32 +25388,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 237, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 301, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 237, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 301, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_left", 0) < (0)) __PYX_ERR(0, 237, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_left", 0) < (0)) __PYX_ERR(0, 301, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_left", 1, 1, 1, i); __PYX_ERR(0, 237, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_left", 1, 1, 1, i); __PYX_ERR(0, 301, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 237, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 301, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 237, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 301, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_left", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 237, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_left", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 301, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -24938,7 +25443,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8get_left(struct __pyx
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_left", 0);
 
-  /* "forest/_hier_core.pyx":238
+  /* "forest/_hier_core.pyx":302
  * 
  *     def get_left(self, int idx):
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT)             # <<<<<<<<<<<<<<
@@ -24946,13 +25451,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8get_left(struct __pyx
  *     def set_left(self, int idx, int val):
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 238, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 302, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":237
+  /* "forest/_hier_core.pyx":301
  *     #   (Python )
  * 
  *     def get_left(self, int idx):             # <<<<<<<<<<<<<<
@@ -24971,7 +25476,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8get_left(struct __pyx
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":240
+/* "forest/_hier_core.pyx":304
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT)
  * 
  *     def set_left(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -25019,39 +25524,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_val,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 240, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 304, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 240, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 304, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 240, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 304, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_left", 0) < (0)) __PYX_ERR(0, 240, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_left", 0) < (0)) __PYX_ERR(0, 304, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_left", 1, 2, 2, i); __PYX_ERR(0, 240, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_left", 1, 2, 2, i); __PYX_ERR(0, 304, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 240, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 304, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 240, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 304, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 240, __pyx_L3_error)
-    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 240, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 304, __pyx_L3_error)
+    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 304, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_left", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 240, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_left", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 304, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25077,7 +25582,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_10set_left(struct __py
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_left", 0);
 
-  /* "forest/_hier_core.pyx":241
+  /* "forest/_hier_core.pyx":305
  * 
  *     def set_left(self, int idx, int val):
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT, val)             # <<<<<<<<<<<<<<
@@ -25086,7 +25591,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_10set_left(struct __py
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 0, __pyx_v_val);
 
-  /* "forest/_hier_core.pyx":242
+  /* "forest/_hier_core.pyx":306
  *     def set_left(self, int idx, int val):
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT, val)
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -25095,7 +25600,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_10set_left(struct __py
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 25, 1);
 
-  /* "forest/_hier_core.pyx":240
+  /* "forest/_hier_core.pyx":304
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT)
  * 
  *     def set_left(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -25110,7 +25615,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_10set_left(struct __py
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":244
+/* "forest/_hier_core.pyx":308
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_right(self, int idx):             # <<<<<<<<<<<<<<
@@ -25157,32 +25662,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 244, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 308, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 244, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 308, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_right", 0) < (0)) __PYX_ERR(0, 244, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_right", 0) < (0)) __PYX_ERR(0, 308, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_right", 1, 1, 1, i); __PYX_ERR(0, 244, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_right", 1, 1, 1, i); __PYX_ERR(0, 308, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 244, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 308, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 244, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 308, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_right", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 244, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_right", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 308, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25212,7 +25717,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_12get_right(struct __p
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_right", 0);
 
-  /* "forest/_hier_core.pyx":245
+  /* "forest/_hier_core.pyx":309
  * 
  *     def get_right(self, int idx):
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT)             # <<<<<<<<<<<<<<
@@ -25220,13 +25725,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_12get_right(struct __p
  *     def set_right(self, int idx, int val):
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 4)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 245, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 4)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 309, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":244
+  /* "forest/_hier_core.pyx":308
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_right(self, int idx):             # <<<<<<<<<<<<<<
@@ -25245,7 +25750,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_12get_right(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":247
+/* "forest/_hier_core.pyx":311
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT)
  * 
  *     def set_right(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -25293,39 +25798,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_val,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 247, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 311, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 247, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 311, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 247, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 311, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_right", 0) < (0)) __PYX_ERR(0, 247, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_right", 0) < (0)) __PYX_ERR(0, 311, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_right", 1, 2, 2, i); __PYX_ERR(0, 247, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_right", 1, 2, 2, i); __PYX_ERR(0, 311, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 247, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 311, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 247, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 311, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 247, __pyx_L3_error)
-    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 247, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 311, __pyx_L3_error)
+    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 311, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_right", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 247, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_right", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 311, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25351,7 +25856,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_14set_right(struct __p
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_right", 0);
 
-  /* "forest/_hier_core.pyx":248
+  /* "forest/_hier_core.pyx":312
  * 
  *     def set_right(self, int idx, int val):
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT, val)             # <<<<<<<<<<<<<<
@@ -25360,7 +25865,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_14set_right(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 4, __pyx_v_val);
 
-  /* "forest/_hier_core.pyx":249
+  /* "forest/_hier_core.pyx":313
  *     def set_right(self, int idx, int val):
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT, val)
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -25369,7 +25874,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_14set_right(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 25, 1);
 
-  /* "forest/_hier_core.pyx":247
+  /* "forest/_hier_core.pyx":311
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT)
  * 
  *     def set_right(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -25384,7 +25889,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_14set_right(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":251
+/* "forest/_hier_core.pyx":315
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_parent(self, int idx):             # <<<<<<<<<<<<<<
@@ -25431,32 +25936,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 251, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 315, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 251, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 315, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_parent", 0) < (0)) __PYX_ERR(0, 251, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_parent", 0) < (0)) __PYX_ERR(0, 315, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_parent", 1, 1, 1, i); __PYX_ERR(0, 251, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_parent", 1, 1, 1, i); __PYX_ERR(0, 315, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 251, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 315, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 251, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 315, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_parent", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 251, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_parent", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 315, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25486,7 +25991,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_16get_parent(struct __
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_parent", 0);
 
-  /* "forest/_hier_core.pyx":252
+  /* "forest/_hier_core.pyx":316
  * 
  *     def get_parent(self, int idx):
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT)             # <<<<<<<<<<<<<<
@@ -25494,13 +25999,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_16get_parent(struct __
  *     def get_depth(self, int idx):
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 8)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 252, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 8)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":251
+  /* "forest/_hier_core.pyx":315
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_parent(self, int idx):             # <<<<<<<<<<<<<<
@@ -25519,7 +26024,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_16get_parent(struct __
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":254
+/* "forest/_hier_core.pyx":318
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT)
  * 
  *     def get_depth(self, int idx):             # <<<<<<<<<<<<<<
@@ -25566,32 +26071,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 254, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 318, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 254, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 318, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_depth", 0) < (0)) __PYX_ERR(0, 254, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_depth", 0) < (0)) __PYX_ERR(0, 318, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_depth", 1, 1, 1, i); __PYX_ERR(0, 254, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_depth", 1, 1, 1, i); __PYX_ERR(0, 318, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 254, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 318, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 254, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 318, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_depth", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 254, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_depth", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 318, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25621,7 +26126,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_18get_depth(struct __p
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_depth", 0);
 
-  /* "forest/_hier_core.pyx":255
+  /* "forest/_hier_core.pyx":319
  * 
  *     def get_depth(self, int idx):
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH)             # <<<<<<<<<<<<<<
@@ -25629,13 +26134,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_18get_depth(struct __p
  *     def get_split_val(self, int idx):
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 12)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 255, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 12)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":254
+  /* "forest/_hier_core.pyx":318
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT)
  * 
  *     def get_depth(self, int idx):             # <<<<<<<<<<<<<<
@@ -25654,7 +26159,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_18get_depth(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":257
+/* "forest/_hier_core.pyx":321
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH)
  * 
  *     def get_split_val(self, int idx):             # <<<<<<<<<<<<<<
@@ -25701,32 +26206,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 257, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 321, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 257, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 321, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_split_val", 0) < (0)) __PYX_ERR(0, 257, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_split_val", 0) < (0)) __PYX_ERR(0, 321, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_split_val", 1, 1, 1, i); __PYX_ERR(0, 257, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_split_val", 1, 1, 1, i); __PYX_ERR(0, 321, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 257, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 321, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 257, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 321, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_split_val", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 257, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_split_val", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 321, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25756,7 +26261,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_20get_split_val(struct
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_split_val", 0);
 
-  /* "forest/_hier_core.pyx":258
+  /* "forest/_hier_core.pyx":322
  * 
  *     def get_split_val(self, int idx):
  *         return _get_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT)             # <<<<<<<<<<<<<<
@@ -25764,13 +26269,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_20get_split_val(struct
  *     def set_split_val(self, int idx, double val):
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_6forest_10_hier_core__get_f64(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 16)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 258, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_6forest_10_hier_core__get_f64(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 16)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 322, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":257
+  /* "forest/_hier_core.pyx":321
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH)
  * 
  *     def get_split_val(self, int idx):             # <<<<<<<<<<<<<<
@@ -25789,7 +26294,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_20get_split_val(struct
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":260
+/* "forest/_hier_core.pyx":324
  *         return _get_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT)
  * 
  *     def set_split_val(self, int idx, double val):             # <<<<<<<<<<<<<<
@@ -25837,39 +26342,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_val,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 260, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 324, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 260, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 324, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 260, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 324, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_split_val", 0) < (0)) __PYX_ERR(0, 260, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_split_val", 0) < (0)) __PYX_ERR(0, 324, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_split_val", 1, 2, 2, i); __PYX_ERR(0, 260, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_split_val", 1, 2, 2, i); __PYX_ERR(0, 324, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 260, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 324, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 260, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 324, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 260, __pyx_L3_error)
-    __pyx_v_val = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_val == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 260, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 324, __pyx_L3_error)
+    __pyx_v_val = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_val == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 324, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_split_val", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 260, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_split_val", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 324, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25895,7 +26400,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_22set_split_val(struct
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_split_val", 0);
 
-  /* "forest/_hier_core.pyx":261
+  /* "forest/_hier_core.pyx":325
  * 
  *     def set_split_val(self, int idx, double val):
  *         _set_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT, val)             # <<<<<<<<<<<<<<
@@ -25904,7 +26409,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_22set_split_val(struct
 */
   __pyx_f_6forest_10_hier_core__set_f64(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 16, __pyx_v_val);
 
-  /* "forest/_hier_core.pyx":262
+  /* "forest/_hier_core.pyx":326
  *     def set_split_val(self, int idx, double val):
  *         _set_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT, val)
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -25913,7 +26418,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_22set_split_val(struct
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 25, 1);
 
-  /* "forest/_hier_core.pyx":260
+  /* "forest/_hier_core.pyx":324
  *         return _get_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT)
  * 
  *     def set_split_val(self, int idx, double val):             # <<<<<<<<<<<<<<
@@ -25928,7 +26433,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_22set_split_val(struct
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":264
+/* "forest/_hier_core.pyx":328
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_has_aabb(self, int idx):             # <<<<<<<<<<<<<<
@@ -25975,32 +26480,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 264, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 328, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 264, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 328, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_has_aabb", 0) < (0)) __PYX_ERR(0, 264, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_has_aabb", 0) < (0)) __PYX_ERR(0, 328, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_has_aabb", 1, 1, 1, i); __PYX_ERR(0, 264, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_has_aabb", 1, 1, 1, i); __PYX_ERR(0, 328, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 264, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 328, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 264, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 328, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_has_aabb", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 264, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_has_aabb", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 328, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26030,7 +26535,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_24get_has_aabb(struct 
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_has_aabb", 0);
 
-  /* "forest/_hier_core.pyx":265
+  /* "forest/_hier_core.pyx":329
  * 
  *     def get_has_aabb(self, int idx):
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB)             # <<<<<<<<<<<<<<
@@ -26038,13 +26543,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_24get_has_aabb(struct 
  *     def set_has_aabb(self, int idx, unsigned char val):
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_unsigned_char(__pyx_f_6forest_10_hier_core__get_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 24)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 265, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_unsigned_char(__pyx_f_6forest_10_hier_core__get_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 24)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 329, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":264
+  /* "forest/_hier_core.pyx":328
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_has_aabb(self, int idx):             # <<<<<<<<<<<<<<
@@ -26063,7 +26568,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_24get_has_aabb(struct 
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":267
+/* "forest/_hier_core.pyx":331
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB)
  * 
  *     def set_has_aabb(self, int idx, unsigned char val):             # <<<<<<<<<<<<<<
@@ -26111,39 +26616,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_val,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 267, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 331, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 267, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 331, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 267, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 331, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_has_aabb", 0) < (0)) __PYX_ERR(0, 267, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_has_aabb", 0) < (0)) __PYX_ERR(0, 331, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_has_aabb", 1, 2, 2, i); __PYX_ERR(0, 267, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_has_aabb", 1, 2, 2, i); __PYX_ERR(0, 331, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 267, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 331, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 267, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 331, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 267, __pyx_L3_error)
-    __pyx_v_val = __Pyx_PyLong_As_unsigned_char(values[1]); if (unlikely((__pyx_v_val == (unsigned char)-1) && PyErr_Occurred())) __PYX_ERR(0, 267, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 331, __pyx_L3_error)
+    __pyx_v_val = __Pyx_PyLong_As_unsigned_char(values[1]); if (unlikely((__pyx_v_val == (unsigned char)-1) && PyErr_Occurred())) __PYX_ERR(0, 331, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_has_aabb", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 267, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_has_aabb", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 331, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26169,7 +26674,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_26set_has_aabb(struct 
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_has_aabb", 0);
 
-  /* "forest/_hier_core.pyx":268
+  /* "forest/_hier_core.pyx":332
  * 
  *     def set_has_aabb(self, int idx, unsigned char val):
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB, val)             # <<<<<<<<<<<<<<
@@ -26178,7 +26683,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_26set_has_aabb(struct 
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 24, __pyx_v_val);
 
-  /* "forest/_hier_core.pyx":267
+  /* "forest/_hier_core.pyx":331
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB)
  * 
  *     def set_has_aabb(self, int idx, unsigned char val):             # <<<<<<<<<<<<<<
@@ -26193,7 +26698,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_26set_has_aabb(struct 
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":270
+/* "forest/_hier_core.pyx":334
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB, val)
  * 
  *     def set_parent(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -26241,39 +26746,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_val,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 270, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 334, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 270, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 334, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 270, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 334, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_parent", 0) < (0)) __PYX_ERR(0, 270, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_parent", 0) < (0)) __PYX_ERR(0, 334, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_parent", 1, 2, 2, i); __PYX_ERR(0, 270, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_parent", 1, 2, 2, i); __PYX_ERR(0, 334, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 270, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 334, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 270, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 334, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 270, __pyx_L3_error)
-    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 270, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 334, __pyx_L3_error)
+    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 334, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_parent", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 270, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_parent", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 334, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26299,7 +26804,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_28set_parent(struct __
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_parent", 0);
 
-  /* "forest/_hier_core.pyx":271
+  /* "forest/_hier_core.pyx":335
  * 
  *     def set_parent(self, int idx, int val):
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT, val)             # <<<<<<<<<<<<<<
@@ -26308,7 +26813,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_28set_parent(struct __
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 8, __pyx_v_val);
 
-  /* "forest/_hier_core.pyx":270
+  /* "forest/_hier_core.pyx":334
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB, val)
  * 
  *     def set_parent(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -26323,7 +26828,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_28set_parent(struct __
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":273
+/* "forest/_hier_core.pyx":337
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT, val)
  * 
  *     def set_depth(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -26371,39 +26876,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_val,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 273, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 337, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 273, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 337, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 273, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 337, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_depth", 0) < (0)) __PYX_ERR(0, 273, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_depth", 0) < (0)) __PYX_ERR(0, 337, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_depth", 1, 2, 2, i); __PYX_ERR(0, 273, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_depth", 1, 2, 2, i); __PYX_ERR(0, 337, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 273, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 337, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 273, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 337, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 273, __pyx_L3_error)
-    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 273, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 337, __pyx_L3_error)
+    __pyx_v_val = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_val == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 337, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_depth", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 273, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_depth", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 337, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26429,7 +26934,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_30set_depth(struct __p
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_depth", 0);
 
-  /* "forest/_hier_core.pyx":274
+  /* "forest/_hier_core.pyx":338
  * 
  *     def set_depth(self, int idx, int val):
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH, val)             # <<<<<<<<<<<<<<
@@ -26438,7 +26943,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_30set_depth(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_i32(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 12, __pyx_v_val);
 
-  /* "forest/_hier_core.pyx":273
+  /* "forest/_hier_core.pyx":337
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT, val)
  * 
  *     def set_depth(self, int idx, int val):             # <<<<<<<<<<<<<<
@@ -26453,7 +26958,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_30set_depth(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":276
+/* "forest/_hier_core.pyx":340
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH, val)
  * 
  *     def get_dirty(self, int idx):             # <<<<<<<<<<<<<<
@@ -26500,32 +27005,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 276, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 340, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 276, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 340, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_dirty", 0) < (0)) __PYX_ERR(0, 276, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_dirty", 0) < (0)) __PYX_ERR(0, 340, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_dirty", 1, 1, 1, i); __PYX_ERR(0, 276, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_dirty", 1, 1, 1, i); __PYX_ERR(0, 340, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 276, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 340, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 276, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 340, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_dirty", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 276, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_dirty", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 340, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26555,7 +27060,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_32get_dirty(struct __p
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_dirty", 0);
 
-  /* "forest/_hier_core.pyx":277
+  /* "forest/_hier_core.pyx":341
  * 
  *     def get_dirty(self, int idx):
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY)             # <<<<<<<<<<<<<<
@@ -26563,13 +27068,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_32get_dirty(struct __p
  *     def set_dirty(self, int idx, unsigned char val):
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_unsigned_char(__pyx_f_6forest_10_hier_core__get_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 25)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 277, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_unsigned_char(__pyx_f_6forest_10_hier_core__get_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 25)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 341, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":276
+  /* "forest/_hier_core.pyx":340
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH, val)
  * 
  *     def get_dirty(self, int idx):             # <<<<<<<<<<<<<<
@@ -26588,7 +27093,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_32get_dirty(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":279
+/* "forest/_hier_core.pyx":343
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY)
  * 
  *     def set_dirty(self, int idx, unsigned char val):             # <<<<<<<<<<<<<<
@@ -26636,39 +27141,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_val,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 279, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 343, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 279, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 343, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 279, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 343, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_dirty", 0) < (0)) __PYX_ERR(0, 279, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_dirty", 0) < (0)) __PYX_ERR(0, 343, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_dirty", 1, 2, 2, i); __PYX_ERR(0, 279, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_dirty", 1, 2, 2, i); __PYX_ERR(0, 343, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 279, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 343, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 279, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 343, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 279, __pyx_L3_error)
-    __pyx_v_val = __Pyx_PyLong_As_unsigned_char(values[1]); if (unlikely((__pyx_v_val == (unsigned char)-1) && PyErr_Occurred())) __PYX_ERR(0, 279, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 343, __pyx_L3_error)
+    __pyx_v_val = __Pyx_PyLong_As_unsigned_char(values[1]); if (unlikely((__pyx_v_val == (unsigned char)-1) && PyErr_Occurred())) __PYX_ERR(0, 343, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_dirty", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 279, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_dirty", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 343, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26694,7 +27199,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_34set_dirty(struct __p
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_dirty", 0);
 
-  /* "forest/_hier_core.pyx":280
+  /* "forest/_hier_core.pyx":344
  * 
  *     def set_dirty(self, int idx, unsigned char val):
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, val)             # <<<<<<<<<<<<<<
@@ -26703,7 +27208,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_34set_dirty(struct __p
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx), 25, __pyx_v_val);
 
-  /* "forest/_hier_core.pyx":279
+  /* "forest/_hier_core.pyx":343
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY)
  * 
  *     def set_dirty(self, int idx, unsigned char val):             # <<<<<<<<<<<<<<
@@ -26718,7 +27223,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_34set_dirty(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":282
+/* "forest/_hier_core.pyx":346
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, val)
  * 
  *     def get_aabb(self, int idx):             # <<<<<<<<<<<<<<
@@ -26766,32 +27271,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 282, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 346, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 282, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 346, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_aabb", 0) < (0)) __PYX_ERR(0, 282, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_aabb", 0) < (0)) __PYX_ERR(0, 346, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_aabb", 1, 1, 1, i); __PYX_ERR(0, 282, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_aabb", 1, 1, 1, i); __PYX_ERR(0, 346, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 282, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 346, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 282, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 346, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_aabb", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 282, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_aabb", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 346, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26825,7 +27330,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_36get_aabb(struct __py
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_aabb", 0);
 
-  /* "forest/_hier_core.pyx":284
+  /* "forest/_hier_core.pyx":348
  *     def get_aabb(self, int idx):
  *         """ AABB  numpy view (n_links, 6), float32"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -26834,7 +27339,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_36get_aabb(struct __py
 */
   __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":285
+  /* "forest/_hier_core.pyx":349
  *         """ AABB  numpy view (n_links, 6), float32"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef float* p = _aabb_ptr(node)             # <<<<<<<<<<<<<<
@@ -26843,7 +27348,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_36get_aabb(struct __py
 */
   __pyx_v_p = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_node);
 
-  /* "forest/_hier_core.pyx":288
+  /* "forest/_hier_core.pyx":352
  *         #  numpy  ()
  *         cdef cnp.npy_intp dims[2]
  *         dims[0] = self._n_links             # <<<<<<<<<<<<<<
@@ -26853,7 +27358,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_36get_aabb(struct __py
   __pyx_t_1 = __pyx_v_self->_n_links;
   (__pyx_v_dims[0]) = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":289
+  /* "forest/_hier_core.pyx":353
  *         cdef cnp.npy_intp dims[2]
  *         dims[0] = self._n_links
  *         dims[1] = 6             # <<<<<<<<<<<<<<
@@ -26862,7 +27367,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_36get_aabb(struct __py
 */
   (__pyx_v_dims[1]) = 6;
 
-  /* "forest/_hier_core.pyx":290
+  /* "forest/_hier_core.pyx":354
  *         dims[0] = self._n_links
  *         dims[1] = 6
  *         return cnp.PyArray_SimpleNewFromData(             # <<<<<<<<<<<<<<
@@ -26871,20 +27376,20 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_36get_aabb(struct __py
 */
   __Pyx_XDECREF(__pyx_r);
 
-  /* "forest/_hier_core.pyx":291
+  /* "forest/_hier_core.pyx":355
  *         dims[1] = 6
  *         return cnp.PyArray_SimpleNewFromData(
  *             2, dims, cnp.NPY_FLOAT32, <void*>p)             # <<<<<<<<<<<<<<
  * 
  *     def set_aabb(self, int idx, cnp.ndarray[cnp.float32_t, ndim=2] aabb):
 */
-  __pyx_t_2 = PyArray_SimpleNewFromData(2, __pyx_v_dims, NPY_FLOAT32, ((void *)__pyx_v_p)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 290, __pyx_L1_error)
+  __pyx_t_2 = PyArray_SimpleNewFromData(2, __pyx_v_dims, NPY_FLOAT32, ((void *)__pyx_v_p)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 354, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":282
+  /* "forest/_hier_core.pyx":346
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, val)
  * 
  *     def get_aabb(self, int idx):             # <<<<<<<<<<<<<<
@@ -26903,7 +27408,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_36get_aabb(struct __py
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":293
+/* "forest/_hier_core.pyx":357
  *             2, dims, cnp.NPY_FLOAT32, <void*>p)
  * 
  *     def set_aabb(self, int idx, cnp.ndarray[cnp.float32_t, ndim=2] aabb):             # <<<<<<<<<<<<<<
@@ -26952,39 +27457,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_aabb,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 293, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 357, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 293, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 357, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 293, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 357, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_aabb", 0) < (0)) __PYX_ERR(0, 293, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_aabb", 0) < (0)) __PYX_ERR(0, 357, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_aabb", 1, 2, 2, i); __PYX_ERR(0, 293, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_aabb", 1, 2, 2, i); __PYX_ERR(0, 357, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 293, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 357, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 293, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 357, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 293, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 357, __pyx_L3_error)
     __pyx_v_aabb = ((PyArrayObject *)values[1]);
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_aabb", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 293, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_aabb", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 357, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26995,7 +27500,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_aabb), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "aabb", 0))) __PYX_ERR(0, 293, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_aabb), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "aabb", 0))) __PYX_ERR(0, 357, __pyx_L1_error)
   __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx, __pyx_v_aabb);
 
   /* function exit code */
@@ -27034,11 +27539,11 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
   __pyx_pybuffernd_aabb.rcbuffer = &__pyx_pybuffer_aabb;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_aabb.rcbuffer->pybuffer, (PyObject*)__pyx_v_aabb, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float32_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 293, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_aabb.rcbuffer->pybuffer, (PyObject*)__pyx_v_aabb, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float32_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 357, __pyx_L1_error)
   }
   __pyx_pybuffernd_aabb.diminfo[0].strides = __pyx_pybuffernd_aabb.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_aabb.diminfo[0].shape = __pyx_pybuffernd_aabb.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_aabb.diminfo[1].strides = __pyx_pybuffernd_aabb.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_aabb.diminfo[1].shape = __pyx_pybuffernd_aabb.rcbuffer->pybuffer.shape[1];
 
-  /* "forest/_hier_core.pyx":295
+  /* "forest/_hier_core.pyx":359
  *     def set_aabb(self, int idx, cnp.ndarray[cnp.float32_t, ndim=2] aabb):
  *         """ AABB  dirty"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -27047,7 +27552,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
 */
   __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":296
+  /* "forest/_hier_core.pyx":360
  *         """ AABB  dirty"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef float* dst = _aabb_ptr(node)             # <<<<<<<<<<<<<<
@@ -27056,7 +27561,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
 */
   __pyx_v_dst = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_node);
 
-  /* "forest/_hier_core.pyx":297
+  /* "forest/_hier_core.pyx":361
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef float* dst = _aabb_ptr(node)
  *         cdef float* src = <float*>cnp.PyArray_DATA(aabb)             # <<<<<<<<<<<<<<
@@ -27065,7 +27570,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
 */
   __pyx_v_src = ((float *)PyArray_DATA(((PyArrayObject *)__pyx_v_aabb)));
 
-  /* "forest/_hier_core.pyx":298
+  /* "forest/_hier_core.pyx":362
  *         cdef float* dst = _aabb_ptr(node)
  *         cdef float* src = <float*>cnp.PyArray_DATA(aabb)
  *         cdef int nbytes = self._aabb_floats * 4  # sizeof(float32)             # <<<<<<<<<<<<<<
@@ -27074,7 +27579,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
 */
   __pyx_v_nbytes = (__pyx_v_self->_aabb_floats * 4);
 
-  /* "forest/_hier_core.pyx":299
+  /* "forest/_hier_core.pyx":363
  *         cdef float* src = <float*>cnp.PyArray_DATA(aabb)
  *         cdef int nbytes = self._aabb_floats * 4  # sizeof(float32)
  *         memcpy(dst, src, nbytes)             # <<<<<<<<<<<<<<
@@ -27083,7 +27588,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
 */
   (void)(memcpy(__pyx_v_dst, __pyx_v_src, __pyx_v_nbytes));
 
-  /* "forest/_hier_core.pyx":300
+  /* "forest/_hier_core.pyx":364
  *         cdef int nbytes = self._aabb_floats * 4  # sizeof(float32)
  *         memcpy(dst, src, nbytes)
  *         _set_u8(node, _OFF_HAS_AABB, 1)             # <<<<<<<<<<<<<<
@@ -27092,7 +27597,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 24, 1);
 
-  /* "forest/_hier_core.pyx":301
+  /* "forest/_hier_core.pyx":365
  *         memcpy(dst, src, nbytes)
  *         _set_u8(node, _OFF_HAS_AABB, 1)
  *         _set_u8(node, _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -27101,7 +27606,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 1);
 
-  /* "forest/_hier_core.pyx":293
+  /* "forest/_hier_core.pyx":357
  *             2, dims, cnp.NPY_FLOAT32, <void*>p)
  * 
  *     def set_aabb(self, int idx, cnp.ndarray[cnp.float32_t, ndim=2] aabb):             # <<<<<<<<<<<<<<
@@ -27130,7 +27635,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_38set_aabb(struct __py
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":303
+/* "forest/_hier_core.pyx":367
  *         _set_u8(node, _OFF_DIRTY, 1)
  * 
  *     cdef void _set_aabb_from_buf_c(self, int idx, float* aabb_data) noexcept:             # <<<<<<<<<<<<<<
@@ -27142,7 +27647,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__set_aabb_from_buf_c(struct 
   char *__pyx_v_node;
   float *__pyx_v_dst;
 
-  /* "forest/_hier_core.pyx":305
+  /* "forest/_hier_core.pyx":369
  *     cdef void _set_aabb_from_buf_c(self, int idx, float* aabb_data) noexcept:
  *         """C-level:  float*  AABB ( descent_loop )"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -27151,7 +27656,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__set_aabb_from_buf_c(struct 
 */
   __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":306
+  /* "forest/_hier_core.pyx":370
  *         """C-level:  float*  AABB ( descent_loop )"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef float* dst = _aabb_ptr(node)             # <<<<<<<<<<<<<<
@@ -27160,7 +27665,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__set_aabb_from_buf_c(struct 
 */
   __pyx_v_dst = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_node);
 
-  /* "forest/_hier_core.pyx":307
+  /* "forest/_hier_core.pyx":371
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef float* dst = _aabb_ptr(node)
  *         memcpy(dst, aabb_data, self._aabb_floats * sizeof(float))             # <<<<<<<<<<<<<<
@@ -27169,7 +27674,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__set_aabb_from_buf_c(struct 
 */
   (void)(memcpy(__pyx_v_dst, __pyx_v_aabb_data, (__pyx_v_self->_aabb_floats * (sizeof(float)))));
 
-  /* "forest/_hier_core.pyx":308
+  /* "forest/_hier_core.pyx":372
  *         cdef float* dst = _aabb_ptr(node)
  *         memcpy(dst, aabb_data, self._aabb_floats * sizeof(float))
  *         _set_u8(node, _OFF_HAS_AABB, 1)             # <<<<<<<<<<<<<<
@@ -27178,7 +27683,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__set_aabb_from_buf_c(struct 
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 24, 1);
 
-  /* "forest/_hier_core.pyx":309
+  /* "forest/_hier_core.pyx":373
  *         memcpy(dst, aabb_data, self._aabb_floats * sizeof(float))
  *         _set_u8(node, _OFF_HAS_AABB, 1)
  *         _set_u8(node, _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -27187,7 +27692,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__set_aabb_from_buf_c(struct 
 */
   __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 1);
 
-  /* "forest/_hier_core.pyx":303
+  /* "forest/_hier_core.pyx":367
  *         _set_u8(node, _OFF_DIRTY, 1)
  * 
  *     cdef void _set_aabb_from_buf_c(self, int idx, float* aabb_data) noexcept:             # <<<<<<<<<<<<<<
@@ -27198,7 +27703,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__set_aabb_from_buf_c(struct 
   /* function exit code */
 }
 
-/* "forest/_hier_core.pyx":313
+/* "forest/_hier_core.pyx":377
  *     #
  * 
  *     def is_occupied(self, int idx):             # <<<<<<<<<<<<<<
@@ -27245,32 +27750,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 313, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 377, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 313, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 377, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "is_occupied", 0) < (0)) __PYX_ERR(0, 313, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "is_occupied", 0) < (0)) __PYX_ERR(0, 377, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("is_occupied", 1, 1, 1, i); __PYX_ERR(0, 313, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("is_occupied", 1, 1, 1, i); __PYX_ERR(0, 377, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 313, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 377, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 313, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 377, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("is_occupied", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 313, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("is_occupied", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 377, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -27301,7 +27806,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_40is_occupied(struct _
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("is_occupied", 0);
 
-  /* "forest/_hier_core.pyx":314
+  /* "forest/_hier_core.pyx":378
  * 
  *     def is_occupied(self, int idx):
  *         return self._occupied[idx] != 0             # <<<<<<<<<<<<<<
@@ -27309,15 +27814,15 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_40is_occupied(struct _
  *     def get_subtree_occ(self, int idx):
 */
   __Pyx_XDECREF(__pyx_r);
-  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 314, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 378, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
-  __pyx_t_2 = __Pyx_PyBool_FromLong(((*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_1)) ))) != 0)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 314, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBool_FromLong(((*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_1)) ))) != 0)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 378, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":313
+  /* "forest/_hier_core.pyx":377
  *     #
  * 
  *     def is_occupied(self, int idx):             # <<<<<<<<<<<<<<
@@ -27336,7 +27841,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_40is_occupied(struct _
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":316
+/* "forest/_hier_core.pyx":380
  *         return self._occupied[idx] != 0
  * 
  *     def get_subtree_occ(self, int idx):             # <<<<<<<<<<<<<<
@@ -27383,32 +27888,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 316, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 380, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 316, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 380, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_subtree_occ", 0) < (0)) __PYX_ERR(0, 316, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_subtree_occ", 0) < (0)) __PYX_ERR(0, 380, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_subtree_occ", 1, 1, 1, i); __PYX_ERR(0, 316, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_subtree_occ", 1, 1, 1, i); __PYX_ERR(0, 380, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 316, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 380, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 380, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_subtree_occ", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 316, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_subtree_occ", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 380, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -27439,7 +27944,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_42get_subtree_occ(stru
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_subtree_occ", 0);
 
-  /* "forest/_hier_core.pyx":317
+  /* "forest/_hier_core.pyx":381
  * 
  *     def get_subtree_occ(self, int idx):
  *         return self._subtree_occ[idx]             # <<<<<<<<<<<<<<
@@ -27447,15 +27952,15 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_42get_subtree_occ(stru
  *     def get_subtree_occ_vol(self, int idx):
 */
   __Pyx_XDECREF(__pyx_r);
-  if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 317, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 381, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
-  __pyx_t_2 = __Pyx_PyLong_From_npy_int32((*((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_1)) )))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 317, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyLong_From_npy_int32((*((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_1)) )))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 381, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":316
+  /* "forest/_hier_core.pyx":380
  *         return self._occupied[idx] != 0
  * 
  *     def get_subtree_occ(self, int idx):             # <<<<<<<<<<<<<<
@@ -27474,7 +27979,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_42get_subtree_occ(stru
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":319
+/* "forest/_hier_core.pyx":383
  *         return self._subtree_occ[idx]
  * 
  *     def get_subtree_occ_vol(self, int idx):             # <<<<<<<<<<<<<<
@@ -27522,32 +28027,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 319, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 383, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 319, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 383, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_subtree_occ_vol", 0) < (0)) __PYX_ERR(0, 319, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_subtree_occ_vol", 0) < (0)) __PYX_ERR(0, 383, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_subtree_occ_vol", 1, 1, 1, i); __PYX_ERR(0, 319, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_subtree_occ_vol", 1, 1, 1, i); __PYX_ERR(0, 383, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 319, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 383, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 319, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 383, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_subtree_occ_vol", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 319, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_subtree_occ_vol", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 383, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -27578,7 +28083,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_44get_subtree_occ_vol(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_subtree_occ_vol", 0);
 
-  /* "forest/_hier_core.pyx":321
+  /* "forest/_hier_core.pyx":385
  *     def get_subtree_occ_vol(self, int idx):
  *         """ ( root )"""
  *         return self._subtree_occ_vol[idx]             # <<<<<<<<<<<<<<
@@ -27586,15 +28091,15 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_44get_subtree_occ_vol(
  *     def get_forest_id(self, int idx):
 */
   __Pyx_XDECREF(__pyx_r);
-  if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 321, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 385, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
-  __pyx_t_2 = PyFloat_FromDouble((*((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_1)) )))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble((*((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_1)) )))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 385, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":319
+  /* "forest/_hier_core.pyx":383
  *         return self._subtree_occ[idx]
  * 
  *     def get_subtree_occ_vol(self, int idx):             # <<<<<<<<<<<<<<
@@ -27613,7 +28118,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_44get_subtree_occ_vol(
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":323
+/* "forest/_hier_core.pyx":387
  *         return self._subtree_occ_vol[idx]
  * 
  *     def get_forest_id(self, int idx):             # <<<<<<<<<<<<<<
@@ -27660,32 +28165,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 323, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 387, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 323, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 387, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_forest_id", 0) < (0)) __PYX_ERR(0, 323, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_forest_id", 0) < (0)) __PYX_ERR(0, 387, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_forest_id", 1, 1, 1, i); __PYX_ERR(0, 323, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_forest_id", 1, 1, 1, i); __PYX_ERR(0, 387, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 323, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 387, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 323, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 387, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_forest_id", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 323, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_forest_id", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 387, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -27716,7 +28221,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_46get_forest_id(struct
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_forest_id", 0);
 
-  /* "forest/_hier_core.pyx":324
+  /* "forest/_hier_core.pyx":388
  * 
  *     def get_forest_id(self, int idx):
  *         return self._forest_id[idx]             # <<<<<<<<<<<<<<
@@ -27724,15 +28229,15 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_46get_forest_id(struct
  *     def forest_ids_array(self):
 */
   __Pyx_XDECREF(__pyx_r);
-  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 324, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 388, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
-  __pyx_t_2 = __Pyx_PyLong_From_npy_int32((*((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_1)) )))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 324, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyLong_From_npy_int32((*((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_1)) )))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 388, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":323
+  /* "forest/_hier_core.pyx":387
  *         return self._subtree_occ_vol[idx]
  * 
  *     def get_forest_id(self, int idx):             # <<<<<<<<<<<<<<
@@ -27751,7 +28256,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_46get_forest_id(struct
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":326
+/* "forest/_hier_core.pyx":390
  *         return self._forest_id[idx]
  * 
  *     def forest_ids_array(self):             # <<<<<<<<<<<<<<
@@ -27817,7 +28322,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_48forest_ids_array(str
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("forest_ids_array", 0);
 
-  /* "forest/_hier_core.pyx":331
+  /* "forest/_hier_core.pyx":395
  *          boxnodes ,  get_forest_id() .
  *         """
  *         return np.asarray(self._forest_id[:self.next_idx])             # <<<<<<<<<<<<<<
@@ -27826,12 +28331,12 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_48forest_ids_array(str
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_2 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 331, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 395, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 331, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 395, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 331, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 395, __pyx_L1_error)}
   __pyx_t_5.data = __pyx_v_self->_forest_id.data;
   __pyx_t_5.memview = __pyx_v_self->_forest_id.memview;
   __PYX_INC_MEMVIEW(&__pyx_t_5, 1);
@@ -27850,10 +28355,10 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_48forest_ids_array(str
     0,
     1) < 0))
 {
-    __PYX_ERR(0, 331, __pyx_L1_error)
+    __PYX_ERR(0, 395, __pyx_L1_error)
 }
 
-__pyx_t_3 = __pyx_memoryview_fromslice(__pyx_t_5, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_int32_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_int32_t, 0);; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 331, __pyx_L1_error)
+__pyx_t_3 = __pyx_memoryview_fromslice(__pyx_t_5, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_int32_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_int32_t, 0);; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 395, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_5, 1);
   __pyx_t_5.memview = NULL; __pyx_t_5.data = NULL;
@@ -27875,14 +28380,14 @@ __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_t_5, 1, (PyObject *(*)(char *)) __p
     __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 331, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 395, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":326
+  /* "forest/_hier_core.pyx":390
  *         return self._forest_id[idx]
  * 
  *     def forest_ids_array(self):             # <<<<<<<<<<<<<<
@@ -27905,7 +28410,7 @@ __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_t_5, 1, (PyObject *(*)(char *)) __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":335
+/* "forest/_hier_core.pyx":399
  *     #  SAT  ()
  * 
  *     cdef bint _link_aabbs_collide_c(             # <<<<<<<<<<<<<<
@@ -27948,17 +28453,17 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_link_aabbs_collide_c", 0);
 
-  /* "forest/_hier_core.pyx":345
+  /* "forest/_hier_core.pyx":409
  *          True  SAT  +
  *         """
  *         cdef int n_obs = len(obs_packed)             # <<<<<<<<<<<<<<
  *         cdef int i, link_idx
  *         cdef float lo0, hi0, lo1, hi1, lo2, hi2
 */
-  __pyx_t_1 = PyObject_Length(__pyx_v_obs_packed); if (unlikely(__pyx_t_1 == ((Py_ssize_t)-1))) __PYX_ERR(0, 345, __pyx_L1_error)
+  __pyx_t_1 = PyObject_Length(__pyx_v_obs_packed); if (unlikely(__pyx_t_1 == ((Py_ssize_t)-1))) __PYX_ERR(0, 409, __pyx_L1_error)
   __pyx_v_n_obs = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":352
+  /* "forest/_hier_core.pyx":416
  *         cdef tuple obs
  * 
  *         for i in range(n_obs):             # <<<<<<<<<<<<<<
@@ -27970,14 +28475,14 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
   for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_3; __pyx_t_4+=1) {
     __pyx_v_i = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":353
+    /* "forest/_hier_core.pyx":417
  * 
  *         for i in range(n_obs):
  *             obs = <tuple>obs_packed[i]             # <<<<<<<<<<<<<<
  *             link_idx = <int>obs[0]
  *             lo0 = <float>obs[1]
 */
-    __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_obs_packed, __pyx_v_i, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 353, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_obs_packed, __pyx_v_i, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 417, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
     __pyx_t_6 = __pyx_t_5;
     __Pyx_INCREF(__pyx_t_6);
@@ -27985,7 +28490,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
     __Pyx_XDECREF_SET(__pyx_v_obs, ((PyObject*)__pyx_t_6));
     __pyx_t_6 = 0;
 
-    /* "forest/_hier_core.pyx":354
+    /* "forest/_hier_core.pyx":418
  *         for i in range(n_obs):
  *             obs = <tuple>obs_packed[i]
  *             link_idx = <int>obs[0]             # <<<<<<<<<<<<<<
@@ -27994,12 +28499,12 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     if (unlikely(__pyx_v_obs == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 354, __pyx_L1_error)
+      __PYX_ERR(0, 418, __pyx_L1_error)
     }
-    __pyx_t_7 = __Pyx_PyLong_As_int(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 0)); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 354, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyLong_As_int(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 0)); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 418, __pyx_L1_error)
     __pyx_v_link_idx = ((int)__pyx_t_7);
 
-    /* "forest/_hier_core.pyx":355
+    /* "forest/_hier_core.pyx":419
  *             obs = <tuple>obs_packed[i]
  *             link_idx = <int>obs[0]
  *             lo0 = <float>obs[1]             # <<<<<<<<<<<<<<
@@ -28008,12 +28513,12 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     if (unlikely(__pyx_v_obs == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 355, __pyx_L1_error)
+      __PYX_ERR(0, 419, __pyx_L1_error)
     }
-    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 1)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 355, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 1)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 419, __pyx_L1_error)
     __pyx_v_lo0 = ((float)__pyx_t_8);
 
-    /* "forest/_hier_core.pyx":356
+    /* "forest/_hier_core.pyx":420
  *             link_idx = <int>obs[0]
  *             lo0 = <float>obs[1]
  *             hi0 = <float>obs[2]             # <<<<<<<<<<<<<<
@@ -28022,12 +28527,12 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     if (unlikely(__pyx_v_obs == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 356, __pyx_L1_error)
+      __PYX_ERR(0, 420, __pyx_L1_error)
     }
-    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 2)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 356, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 2)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 420, __pyx_L1_error)
     __pyx_v_hi0 = ((float)__pyx_t_8);
 
-    /* "forest/_hier_core.pyx":357
+    /* "forest/_hier_core.pyx":421
  *             lo0 = <float>obs[1]
  *             hi0 = <float>obs[2]
  *             lo1 = <float>obs[3]             # <<<<<<<<<<<<<<
@@ -28036,12 +28541,12 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     if (unlikely(__pyx_v_obs == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 357, __pyx_L1_error)
+      __PYX_ERR(0, 421, __pyx_L1_error)
     }
-    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 3)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 357, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 3)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 421, __pyx_L1_error)
     __pyx_v_lo1 = ((float)__pyx_t_8);
 
-    /* "forest/_hier_core.pyx":358
+    /* "forest/_hier_core.pyx":422
  *             hi0 = <float>obs[2]
  *             lo1 = <float>obs[3]
  *             hi1 = <float>obs[4]             # <<<<<<<<<<<<<<
@@ -28050,12 +28555,12 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     if (unlikely(__pyx_v_obs == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 358, __pyx_L1_error)
+      __PYX_ERR(0, 422, __pyx_L1_error)
     }
-    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 4)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 358, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 4)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 422, __pyx_L1_error)
     __pyx_v_hi1 = ((float)__pyx_t_8);
 
-    /* "forest/_hier_core.pyx":359
+    /* "forest/_hier_core.pyx":423
  *             lo1 = <float>obs[3]
  *             hi1 = <float>obs[4]
  *             lo2 = <float>obs[5]             # <<<<<<<<<<<<<<
@@ -28064,12 +28569,12 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     if (unlikely(__pyx_v_obs == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 359, __pyx_L1_error)
+      __PYX_ERR(0, 423, __pyx_L1_error)
     }
-    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 5)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 359, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 5)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 423, __pyx_L1_error)
     __pyx_v_lo2 = ((float)__pyx_t_8);
 
-    /* "forest/_hier_core.pyx":360
+    /* "forest/_hier_core.pyx":424
  *             hi1 = <float>obs[4]
  *             lo2 = <float>obs[5]
  *             hi2 = <float>obs[6]             # <<<<<<<<<<<<<<
@@ -28078,12 +28583,12 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     if (unlikely(__pyx_v_obs == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 360, __pyx_L1_error)
+      __PYX_ERR(0, 424, __pyx_L1_error)
     }
-    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 6)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 360, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs, 6)); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 424, __pyx_L1_error)
     __pyx_v_hi2 = ((float)__pyx_t_8);
 
-    /* "forest/_hier_core.pyx":363
+    /* "forest/_hier_core.pyx":427
  * 
  *             # AABB : link_idx * 6
  *             off = link_idx * 6             # <<<<<<<<<<<<<<
@@ -28092,7 +28597,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     __pyx_v_off = (__pyx_v_link_idx * 6);
 
-    /* "forest/_hier_core.pyx":364
+    /* "forest/_hier_core.pyx":428
  *             # AABB : link_idx * 6
  *             off = link_idx * 6
  *             a_lo0 = aabb[off]             # <<<<<<<<<<<<<<
@@ -28101,7 +28606,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     __pyx_v_a_lo0 = (__pyx_v_aabb[__pyx_v_off]);
 
-    /* "forest/_hier_core.pyx":365
+    /* "forest/_hier_core.pyx":429
  *             off = link_idx * 6
  *             a_lo0 = aabb[off]
  *             a_hi0 = aabb[off + 3]             # <<<<<<<<<<<<<<
@@ -28110,7 +28615,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     __pyx_v_a_hi0 = (__pyx_v_aabb[(__pyx_v_off + 3)]);
 
-    /* "forest/_hier_core.pyx":366
+    /* "forest/_hier_core.pyx":430
  *             a_lo0 = aabb[off]
  *             a_hi0 = aabb[off + 3]
  *             a_lo1 = aabb[off + 1]             # <<<<<<<<<<<<<<
@@ -28119,7 +28624,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     __pyx_v_a_lo1 = (__pyx_v_aabb[(__pyx_v_off + 1)]);
 
-    /* "forest/_hier_core.pyx":367
+    /* "forest/_hier_core.pyx":431
  *             a_hi0 = aabb[off + 3]
  *             a_lo1 = aabb[off + 1]
  *             a_hi1 = aabb[off + 4]             # <<<<<<<<<<<<<<
@@ -28128,7 +28633,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     __pyx_v_a_hi1 = (__pyx_v_aabb[(__pyx_v_off + 4)]);
 
-    /* "forest/_hier_core.pyx":368
+    /* "forest/_hier_core.pyx":432
  *             a_lo1 = aabb[off + 1]
  *             a_hi1 = aabb[off + 4]
  *             a_lo2 = aabb[off + 2]             # <<<<<<<<<<<<<<
@@ -28137,7 +28642,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     __pyx_v_a_lo2 = (__pyx_v_aabb[(__pyx_v_off + 2)]);
 
-    /* "forest/_hier_core.pyx":369
+    /* "forest/_hier_core.pyx":433
  *             a_hi1 = aabb[off + 4]
  *             a_lo2 = aabb[off + 2]
  *             a_hi2 = aabb[off + 5]             # <<<<<<<<<<<<<<
@@ -28146,7 +28651,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     __pyx_v_a_hi2 = (__pyx_v_aabb[(__pyx_v_off + 5)]);
 
-    /* "forest/_hier_core.pyx":372
+    /* "forest/_hier_core.pyx":436
  * 
  *             # SAT:
  *             if a_hi0 < lo0 or a_lo0 > hi0:             # <<<<<<<<<<<<<<
@@ -28164,7 +28669,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
     __pyx_L6_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "forest/_hier_core.pyx":373
+      /* "forest/_hier_core.pyx":437
  *             # SAT:
  *             if a_hi0 < lo0 or a_lo0 > hi0:
  *                 continue             # <<<<<<<<<<<<<<
@@ -28173,7 +28678,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
       goto __pyx_L3_continue;
 
-      /* "forest/_hier_core.pyx":372
+      /* "forest/_hier_core.pyx":436
  * 
  *             # SAT:
  *             if a_hi0 < lo0 or a_lo0 > hi0:             # <<<<<<<<<<<<<<
@@ -28182,7 +28687,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     }
 
-    /* "forest/_hier_core.pyx":374
+    /* "forest/_hier_core.pyx":438
  *             if a_hi0 < lo0 or a_lo0 > hi0:
  *                 continue
  *             if a_hi1 < lo1 or a_lo1 > hi1:             # <<<<<<<<<<<<<<
@@ -28200,7 +28705,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
     __pyx_L9_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "forest/_hier_core.pyx":375
+      /* "forest/_hier_core.pyx":439
  *                 continue
  *             if a_hi1 < lo1 or a_lo1 > hi1:
  *                 continue             # <<<<<<<<<<<<<<
@@ -28209,7 +28714,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
       goto __pyx_L3_continue;
 
-      /* "forest/_hier_core.pyx":374
+      /* "forest/_hier_core.pyx":438
  *             if a_hi0 < lo0 or a_lo0 > hi0:
  *                 continue
  *             if a_hi1 < lo1 or a_lo1 > hi1:             # <<<<<<<<<<<<<<
@@ -28218,7 +28723,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     }
 
-    /* "forest/_hier_core.pyx":376
+    /* "forest/_hier_core.pyx":440
  *             if a_hi1 < lo1 or a_lo1 > hi1:
  *                 continue
  *             if a_hi2 < lo2 or a_lo2 > hi2:             # <<<<<<<<<<<<<<
@@ -28236,7 +28741,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
     __pyx_L12_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "forest/_hier_core.pyx":377
+      /* "forest/_hier_core.pyx":441
  *                 continue
  *             if a_hi2 < lo2 or a_lo2 > hi2:
  *                 continue             # <<<<<<<<<<<<<<
@@ -28245,7 +28750,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
       goto __pyx_L3_continue;
 
-      /* "forest/_hier_core.pyx":376
+      /* "forest/_hier_core.pyx":440
  *             if a_hi1 < lo1 or a_lo1 > hi1:
  *                 continue
  *             if a_hi2 < lo2 or a_lo2 > hi2:             # <<<<<<<<<<<<<<
@@ -28254,7 +28759,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
 */
     }
 
-    /* "forest/_hier_core.pyx":379
+    /* "forest/_hier_core.pyx":443
  *                 continue
  *             #
  *             return True             # <<<<<<<<<<<<<<
@@ -28266,7 +28771,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
     __pyx_L3_continue:;
   }
 
-  /* "forest/_hier_core.pyx":381
+  /* "forest/_hier_core.pyx":445
  *             return True
  * 
  *         return False             # <<<<<<<<<<<<<<
@@ -28276,7 +28781,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
   __pyx_r = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":335
+  /* "forest/_hier_core.pyx":399
  *     #  SAT  ()
  * 
  *     cdef bint _link_aabbs_collide_c(             # <<<<<<<<<<<<<<
@@ -28296,7 +28801,7 @@ static int __pyx_f_6forest_10_hier_core_9NodeStore__link_aabbs_collide_c(CYTHON_
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":383
+/* "forest/_hier_core.pyx":447
  *         return False
  * 
  *     def link_aabbs_collide(self, int idx, object obs_packed):             # <<<<<<<<<<<<<<
@@ -28345,39 +28850,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_obs_packed,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 383, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 447, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 383, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 447, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 383, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 447, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "link_aabbs_collide", 0) < (0)) __PYX_ERR(0, 383, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "link_aabbs_collide", 0) < (0)) __PYX_ERR(0, 447, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("link_aabbs_collide", 1, 2, 2, i); __PYX_ERR(0, 383, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("link_aabbs_collide", 1, 2, 2, i); __PYX_ERR(0, 447, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 383, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 447, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 383, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 447, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 383, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 447, __pyx_L3_error)
     __pyx_v_obs_packed = values[1];
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("link_aabbs_collide", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 383, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("link_aabbs_collide", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 447, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -28410,7 +28915,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(s
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("link_aabbs_collide", 0);
 
-  /* "forest/_hier_core.pyx":385
+  /* "forest/_hier_core.pyx":449
  *     def link_aabbs_collide(self, int idx, object obs_packed):
  *         """Python """
  *         if obs_packed is None:             # <<<<<<<<<<<<<<
@@ -28420,7 +28925,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(s
   __pyx_t_1 = (__pyx_v_obs_packed == Py_None);
   if (__pyx_t_1) {
 
-    /* "forest/_hier_core.pyx":386
+    /* "forest/_hier_core.pyx":450
  *         """Python """
  *         if obs_packed is None:
  *             return False             # <<<<<<<<<<<<<<
@@ -28432,7 +28937,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(s
     __pyx_r = Py_False;
     goto __pyx_L0;
 
-    /* "forest/_hier_core.pyx":385
+    /* "forest/_hier_core.pyx":449
  *     def link_aabbs_collide(self, int idx, object obs_packed):
  *         """Python """
  *         if obs_packed is None:             # <<<<<<<<<<<<<<
@@ -28441,7 +28946,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(s
 */
   }
 
-  /* "forest/_hier_core.pyx":387
+  /* "forest/_hier_core.pyx":451
  *         if obs_packed is None:
  *             return False
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -28450,7 +28955,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(s
 */
   __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":388
+  /* "forest/_hier_core.pyx":452
  *             return False
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef float* aabb = _aabb_ptr(node)             # <<<<<<<<<<<<<<
@@ -28459,21 +28964,21 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(s
 */
   __pyx_v_aabb = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_node);
 
-  /* "forest/_hier_core.pyx":389
+  /* "forest/_hier_core.pyx":453
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef float* aabb = _aabb_ptr(node)
  *         return self._link_aabbs_collide_c(aabb, obs_packed)             # <<<<<<<<<<<<<<
  * 
- *     #  AABB union ()
+ *     def subtree_collide_check(
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyBool_FromLong(((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_link_aabbs_collide_c(__pyx_v_self, __pyx_v_aabb, __pyx_v_obs_packed)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 389, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBool_FromLong(((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_link_aabbs_collide_c(__pyx_v_self, __pyx_v_aabb, __pyx_v_obs_packed)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 453, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":383
+  /* "forest/_hier_core.pyx":447
  *         return False
  * 
  *     def link_aabbs_collide(self, int idx, object obs_packed):             # <<<<<<<<<<<<<<
@@ -28492,7 +28997,540 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_50link_aabbs_collide(s
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":393
+/* "forest/_hier_core.pyx":455
+ *         return self._link_aabbs_collide_c(aabb, obs_packed)
+ * 
+ *     def subtree_collide_check(             # <<<<<<<<<<<<<<
+ *         self, int idx, object obs_packed, int promotion_depth,
+ *     ):
+*/
+
+/* Python wrapper */
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_53subtree_collide_check(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_52subtree_collide_check, "\351\200\222\345\275\222\345\255\220\346\240\221\347\242\260\346\222\236\346\243\200\346\265\213 (promotion \347\262\276\345\214\226)\n\n        promotion_depth=0: \347\224\250\345\275\223\345\211\215\350\212\202\347\202\271 union AABB (\347\255\211\344\273\267\344\272\216 link_aabbs_collide)\n        promotion_depth=1: \347\224\250 2 \344\270\252\345\255\220\350\212\202\347\202\271 AABB \345\210\206\345\210\253\346\243\200\346\265\213\n        promotion_depth=2: \347\224\250 4 \344\270\252\345\255\231\345\255\220\350\212\202\347\202\271 AABB \345\210\206\345\210\253\346\243\200\346\265\213\n        promotion_depth=k: \347\224\250 2^k \344\270\252\345\220\216\344\273\243\350\212\202\347\202\271 AABB \345\210\206\345\210\253\346\243\200\346\265\213\n\n        Returns True \350\241\250\347\244\272\347\242\260\346\222\236 (\344\270\215\345\256\211\345\205\250), False \350\241\250\347\244\272\346\227\240\347\242\260\346\222\236 (\345\256\211\345\205\250).\n        ");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_53subtree_collide_check = {"subtree_collide_check", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_53subtree_collide_check, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_52subtree_collide_check};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_53subtree_collide_check(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  int __pyx_v_idx;
+  PyObject *__pyx_v_obs_packed = 0;
+  int __pyx_v_promotion_depth;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[3] = {0,0,0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("subtree_collide_check (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_SIZE
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_obs_packed,&__pyx_mstate_global->__pyx_n_u_promotion_depth,0};
+    const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 455, __pyx_L3_error)
+    if (__pyx_kwds_len > 0) {
+      switch (__pyx_nargs) {
+        case  3:
+        values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 455, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  2:
+        values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 455, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  1:
+        values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 455, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      const Py_ssize_t kwd_pos_args = __pyx_nargs;
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "subtree_collide_check", 0) < (0)) __PYX_ERR(0, 455, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 3; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("subtree_collide_check", 1, 3, 3, i); __PYX_ERR(0, 455, __pyx_L3_error) }
+      }
+    } else if (unlikely(__pyx_nargs != 3)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 455, __pyx_L3_error)
+      values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 455, __pyx_L3_error)
+      values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 455, __pyx_L3_error)
+    }
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 456, __pyx_L3_error)
+    __pyx_v_obs_packed = values[1];
+    __pyx_v_promotion_depth = __Pyx_PyLong_As_int(values[2]); if (unlikely((__pyx_v_promotion_depth == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 456, __pyx_L3_error)
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("subtree_collide_check", 1, 3, 3, __pyx_nargs); __PYX_ERR(0, 455, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_AddTraceback("forest._hier_core.NodeStore.subtree_collide_check", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_52subtree_collide_check(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx, __pyx_v_obs_packed, __pyx_v_promotion_depth);
+
+  /* function exit code */
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_52subtree_collide_check(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, PyObject *__pyx_v_obs_packed, int __pyx_v_promotion_depth) {
+  int __pyx_v_n_obs;
+  PyArrayObject *__pyx_v_obs_arr = 0;
+  PyObject *__pyx_v_obs_tup = 0;
+  int __pyx_v_oi;
+  float *__pyx_v_obs_ptr;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_obs_arr;
+  __Pyx_Buffer __pyx_pybuffer_obs_arr;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  size_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  int __pyx_t_10;
+  int __pyx_t_11;
+  int __pyx_t_12;
+  int __pyx_t_13;
+  Py_ssize_t __pyx_t_14;
+  float __pyx_t_15;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("subtree_collide_check", 0);
+  __pyx_pybuffer_obs_arr.pybuffer.buf = NULL;
+  __pyx_pybuffer_obs_arr.refcount = 0;
+  __pyx_pybuffernd_obs_arr.data = NULL;
+  __pyx_pybuffernd_obs_arr.rcbuffer = &__pyx_pybuffer_obs_arr;
+
+  /* "forest/_hier_core.pyx":467
+ *         Returns True  (), False  ().
+ *         """
+ *         if obs_packed is None:             # <<<<<<<<<<<<<<
+ *             return False
+ *         if promotion_depth <= 0:
+*/
+  __pyx_t_1 = (__pyx_v_obs_packed == Py_None);
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":468
+ *         """
+ *         if obs_packed is None:
+ *             return False             # <<<<<<<<<<<<<<
+ *         if promotion_depth <= 0:
+ *             return self.link_aabbs_collide(idx, obs_packed)
+*/
+    __Pyx_XDECREF(__pyx_r);
+    __Pyx_INCREF(Py_False);
+    __pyx_r = Py_False;
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":467
+ *         Returns True  (), False  ().
+ *         """
+ *         if obs_packed is None:             # <<<<<<<<<<<<<<
+ *             return False
+ *         if promotion_depth <= 0:
+*/
+  }
+
+  /* "forest/_hier_core.pyx":469
+ *         if obs_packed is None:
+ *             return False
+ *         if promotion_depth <= 0:             # <<<<<<<<<<<<<<
+ *             return self.link_aabbs_collide(idx, obs_packed)
+ * 
+*/
+  __pyx_t_1 = (__pyx_v_promotion_depth <= 0);
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":470
+ *             return False
+ *         if promotion_depth <= 0:
+ *             return self.link_aabbs_collide(idx, obs_packed)             # <<<<<<<<<<<<<<
+ * 
+ *         #   float* ( descent_loop )
+*/
+    __Pyx_XDECREF(__pyx_r);
+    __pyx_t_3 = ((PyObject *)__pyx_v_self);
+    __Pyx_INCREF(__pyx_t_3);
+    __pyx_t_4 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 470, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_5 = 0;
+    {
+      PyObject *__pyx_callargs[3] = {__pyx_t_3, __pyx_t_4, __pyx_v_obs_packed};
+      __pyx_t_2 = __Pyx_PyObject_FastCallMethod((PyObject*)__pyx_mstate_global->__pyx_n_u_link_aabbs_collide, __pyx_callargs+__pyx_t_5, (3-__pyx_t_5) | (1*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
+      __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 470, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_2);
+    }
+    __pyx_r = __pyx_t_2;
+    __pyx_t_2 = 0;
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":469
+ *         if obs_packed is None:
+ *             return False
+ *         if promotion_depth <= 0:             # <<<<<<<<<<<<<<
+ *             return self.link_aabbs_collide(idx, obs_packed)
+ * 
+*/
+  }
+
+  /* "forest/_hier_core.pyx":473
+ * 
+ *         #   float* ( descent_loop )
+ *         cdef int n_obs = len(obs_packed)             # <<<<<<<<<<<<<<
+ *         if n_obs == 0:
+ *             return False
+*/
+  __pyx_t_6 = PyObject_Length(__pyx_v_obs_packed); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 473, __pyx_L1_error)
+  __pyx_v_n_obs = __pyx_t_6;
+
+  /* "forest/_hier_core.pyx":474
+ *         #   float* ( descent_loop )
+ *         cdef int n_obs = len(obs_packed)
+ *         if n_obs == 0:             # <<<<<<<<<<<<<<
+ *             return False
+ *         cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr = np.empty(
+*/
+  __pyx_t_1 = (__pyx_v_n_obs == 0);
+  if (__pyx_t_1) {
+
+    /* "forest/_hier_core.pyx":475
+ *         cdef int n_obs = len(obs_packed)
+ *         if n_obs == 0:
+ *             return False             # <<<<<<<<<<<<<<
+ *         cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr = np.empty(
+ *             n_obs * 7, dtype=np.float32)
+*/
+    __Pyx_XDECREF(__pyx_r);
+    __Pyx_INCREF(Py_False);
+    __pyx_r = Py_False;
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":474
+ *         #   float* ( descent_loop )
+ *         cdef int n_obs = len(obs_packed)
+ *         if n_obs == 0:             # <<<<<<<<<<<<<<
+ *             return False
+ *         cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr = np.empty(
+*/
+  }
+
+  /* "forest/_hier_core.pyx":476
+ *         if n_obs == 0:
+ *             return False
+ *         cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr = np.empty(             # <<<<<<<<<<<<<<
+ *             n_obs * 7, dtype=np.float32)
+ *         cdef tuple obs_tup
+*/
+  __pyx_t_4 = NULL;
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 476, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 476, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
+  /* "forest/_hier_core.pyx":477
+ *             return False
+ *         cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr = np.empty(
+ *             n_obs * 7, dtype=np.float32)             # <<<<<<<<<<<<<<
+ *         cdef tuple obs_tup
+ *         cdef int oi
+*/
+  __pyx_t_3 = __Pyx_PyLong_From_long((__pyx_v_n_obs * 7)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 477, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 477, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_float32); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 477, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_9);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_5 = 1;
+  #if CYTHON_UNPACK_METHODS
+  if (unlikely(PyMethod_Check(__pyx_t_7))) {
+    __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_7);
+    assert(__pyx_t_4);
+    PyObject* __pyx__function = PyMethod_GET_FUNCTION(__pyx_t_7);
+    __Pyx_INCREF(__pyx_t_4);
+    __Pyx_INCREF(__pyx__function);
+    __Pyx_DECREF_SET(__pyx_t_7, __pyx__function);
+    __pyx_t_5 = 0;
+  }
+  #endif
+  {
+    PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_4, __pyx_t_3};
+    __pyx_t_8 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 476, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_9, __pyx_t_8, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 476, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_7, __pyx_callargs+__pyx_t_5, (2-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_8);
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 476, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+  }
+
+  /* "forest/_hier_core.pyx":476
+ *         if n_obs == 0:
+ *             return False
+ *         cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr = np.empty(             # <<<<<<<<<<<<<<
+ *             n_obs * 7, dtype=np.float32)
+ *         cdef tuple obs_tup
+*/
+  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 476, __pyx_L1_error)
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_obs_arr.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_2), &__Pyx_TypeInfo_nn___pyx_t_5numpy_float32_t, PyBUF_FORMAT| PyBUF_STRIDES| PyBUF_WRITABLE, 1, 0, __pyx_stack) == -1)) {
+      __pyx_v_obs_arr = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf = NULL;
+      __PYX_ERR(0, 476, __pyx_L1_error)
+    } else {__pyx_pybuffernd_obs_arr.diminfo[0].strides = __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_obs_arr.diminfo[0].shape = __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.shape[0];
+    }
+  }
+  __pyx_v_obs_arr = ((PyArrayObject *)__pyx_t_2);
+  __pyx_t_2 = 0;
+
+  /* "forest/_hier_core.pyx":480
+ *         cdef tuple obs_tup
+ *         cdef int oi
+ *         for oi in range(n_obs):             # <<<<<<<<<<<<<<
+ *             obs_tup = <tuple>obs_packed[oi]
+ *             obs_arr[oi * 7]     = <float>(<int>obs_tup[0])
+*/
+  __pyx_t_10 = __pyx_v_n_obs;
+  __pyx_t_11 = __pyx_t_10;
+  for (__pyx_t_12 = 0; __pyx_t_12 < __pyx_t_11; __pyx_t_12+=1) {
+    __pyx_v_oi = __pyx_t_12;
+
+    /* "forest/_hier_core.pyx":481
+ *         cdef int oi
+ *         for oi in range(n_obs):
+ *             obs_tup = <tuple>obs_packed[oi]             # <<<<<<<<<<<<<<
+ *             obs_arr[oi * 7]     = <float>(<int>obs_tup[0])
+ *             obs_arr[oi * 7 + 1] = <float>obs_tup[1]
+*/
+    __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_obs_packed, __pyx_v_oi, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 481, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_7 = __pyx_t_2;
+    __Pyx_INCREF(__pyx_t_7);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_obs_tup, ((PyObject*)__pyx_t_7));
+    __pyx_t_7 = 0;
+
+    /* "forest/_hier_core.pyx":482
+ *         for oi in range(n_obs):
+ *             obs_tup = <tuple>obs_packed[oi]
+ *             obs_arr[oi * 7]     = <float>(<int>obs_tup[0])             # <<<<<<<<<<<<<<
+ *             obs_arr[oi * 7 + 1] = <float>obs_tup[1]
+ *             obs_arr[oi * 7 + 2] = <float>obs_tup[2]
+*/
+    if (unlikely(__pyx_v_obs_tup == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 482, __pyx_L1_error)
+    }
+    __pyx_t_13 = __Pyx_PyLong_As_int(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 0)); if (unlikely((__pyx_t_13 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 482, __pyx_L1_error)
+    __pyx_t_14 = (__pyx_v_oi * 7);
+    *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_obs_arr.diminfo[0].strides) = ((float)((int)__pyx_t_13));
+
+    /* "forest/_hier_core.pyx":483
+ *             obs_tup = <tuple>obs_packed[oi]
+ *             obs_arr[oi * 7]     = <float>(<int>obs_tup[0])
+ *             obs_arr[oi * 7 + 1] = <float>obs_tup[1]             # <<<<<<<<<<<<<<
+ *             obs_arr[oi * 7 + 2] = <float>obs_tup[2]
+ *             obs_arr[oi * 7 + 3] = <float>obs_tup[3]
+*/
+    if (unlikely(__pyx_v_obs_tup == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 483, __pyx_L1_error)
+    }
+    __pyx_t_15 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 1)); if (unlikely((__pyx_t_15 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 483, __pyx_L1_error)
+    __pyx_t_14 = ((__pyx_v_oi * 7) + 1);
+    *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_obs_arr.diminfo[0].strides) = ((float)__pyx_t_15);
+
+    /* "forest/_hier_core.pyx":484
+ *             obs_arr[oi * 7]     = <float>(<int>obs_tup[0])
+ *             obs_arr[oi * 7 + 1] = <float>obs_tup[1]
+ *             obs_arr[oi * 7 + 2] = <float>obs_tup[2]             # <<<<<<<<<<<<<<
+ *             obs_arr[oi * 7 + 3] = <float>obs_tup[3]
+ *             obs_arr[oi * 7 + 4] = <float>obs_tup[4]
+*/
+    if (unlikely(__pyx_v_obs_tup == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 484, __pyx_L1_error)
+    }
+    __pyx_t_15 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 2)); if (unlikely((__pyx_t_15 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 484, __pyx_L1_error)
+    __pyx_t_14 = ((__pyx_v_oi * 7) + 2);
+    *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_obs_arr.diminfo[0].strides) = ((float)__pyx_t_15);
+
+    /* "forest/_hier_core.pyx":485
+ *             obs_arr[oi * 7 + 1] = <float>obs_tup[1]
+ *             obs_arr[oi * 7 + 2] = <float>obs_tup[2]
+ *             obs_arr[oi * 7 + 3] = <float>obs_tup[3]             # <<<<<<<<<<<<<<
+ *             obs_arr[oi * 7 + 4] = <float>obs_tup[4]
+ *             obs_arr[oi * 7 + 5] = <float>obs_tup[5]
+*/
+    if (unlikely(__pyx_v_obs_tup == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 485, __pyx_L1_error)
+    }
+    __pyx_t_15 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 3)); if (unlikely((__pyx_t_15 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 485, __pyx_L1_error)
+    __pyx_t_14 = ((__pyx_v_oi * 7) + 3);
+    *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_obs_arr.diminfo[0].strides) = ((float)__pyx_t_15);
+
+    /* "forest/_hier_core.pyx":486
+ *             obs_arr[oi * 7 + 2] = <float>obs_tup[2]
+ *             obs_arr[oi * 7 + 3] = <float>obs_tup[3]
+ *             obs_arr[oi * 7 + 4] = <float>obs_tup[4]             # <<<<<<<<<<<<<<
+ *             obs_arr[oi * 7 + 5] = <float>obs_tup[5]
+ *             obs_arr[oi * 7 + 6] = <float>obs_tup[6]
+*/
+    if (unlikely(__pyx_v_obs_tup == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 486, __pyx_L1_error)
+    }
+    __pyx_t_15 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 4)); if (unlikely((__pyx_t_15 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 486, __pyx_L1_error)
+    __pyx_t_14 = ((__pyx_v_oi * 7) + 4);
+    *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_obs_arr.diminfo[0].strides) = ((float)__pyx_t_15);
+
+    /* "forest/_hier_core.pyx":487
+ *             obs_arr[oi * 7 + 3] = <float>obs_tup[3]
+ *             obs_arr[oi * 7 + 4] = <float>obs_tup[4]
+ *             obs_arr[oi * 7 + 5] = <float>obs_tup[5]             # <<<<<<<<<<<<<<
+ *             obs_arr[oi * 7 + 6] = <float>obs_tup[6]
+ *         cdef float* obs_ptr = <float*>cnp.PyArray_DATA(obs_arr)
+*/
+    if (unlikely(__pyx_v_obs_tup == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 487, __pyx_L1_error)
+    }
+    __pyx_t_15 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 5)); if (unlikely((__pyx_t_15 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 487, __pyx_L1_error)
+    __pyx_t_14 = ((__pyx_v_oi * 7) + 5);
+    *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_obs_arr.diminfo[0].strides) = ((float)__pyx_t_15);
+
+    /* "forest/_hier_core.pyx":488
+ *             obs_arr[oi * 7 + 4] = <float>obs_tup[4]
+ *             obs_arr[oi * 7 + 5] = <float>obs_tup[5]
+ *             obs_arr[oi * 7 + 6] = <float>obs_tup[6]             # <<<<<<<<<<<<<<
+ *         cdef float* obs_ptr = <float*>cnp.PyArray_DATA(obs_arr)
+ * 
+*/
+    if (unlikely(__pyx_v_obs_tup == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 488, __pyx_L1_error)
+    }
+    __pyx_t_15 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 6)); if (unlikely((__pyx_t_15 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 488, __pyx_L1_error)
+    __pyx_t_14 = ((__pyx_v_oi * 7) + 6);
+    *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_obs_arr.diminfo[0].strides) = ((float)__pyx_t_15);
+  }
+
+  /* "forest/_hier_core.pyx":489
+ *             obs_arr[oi * 7 + 5] = <float>obs_tup[5]
+ *             obs_arr[oi * 7 + 6] = <float>obs_tup[6]
+ *         cdef float* obs_ptr = <float*>cnp.PyArray_DATA(obs_arr)             # <<<<<<<<<<<<<<
+ * 
+ *         return _subtree_collide_recursive(
+*/
+  __pyx_v_obs_ptr = ((float *)PyArray_DATA(((PyArrayObject *)__pyx_v_obs_arr)));
+
+  /* "forest/_hier_core.pyx":491
+ *         cdef float* obs_ptr = <float*>cnp.PyArray_DATA(obs_arr)
+ * 
+ *         return _subtree_collide_recursive(             # <<<<<<<<<<<<<<
+ *             self._base, self._stride, idx,
+ *             obs_ptr, n_obs, promotion_depth,
+*/
+  __Pyx_XDECREF(__pyx_r);
+
+  /* "forest/_hier_core.pyx":493
+ *         return _subtree_collide_recursive(
+ *             self._base, self._stride, idx,
+ *             obs_ptr, n_obs, promotion_depth,             # <<<<<<<<<<<<<<
+ *         )
+ * 
+*/
+  __pyx_t_7 = __Pyx_PyBool_FromLong(__pyx_f_6forest_10_hier_core__subtree_collide_recursive(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx, __pyx_v_obs_ptr, __pyx_v_n_obs, __pyx_v_promotion_depth)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 491, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
+  goto __pyx_L0;
+
+  /* "forest/_hier_core.pyx":455
+ *         return self._link_aabbs_collide_c(aabb, obs_packed)
+ * 
+ *     def subtree_collide_check(             # <<<<<<<<<<<<<<
+ *         self, int idx, object obs_packed, int promotion_depth,
+ *     ):
+*/
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_obs_arr.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("forest._hier_core.NodeStore.subtree_collide_check", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_obs_arr.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XDECREF((PyObject *)__pyx_v_obs_arr);
+  __Pyx_XDECREF(__pyx_v_obs_tup);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "forest/_hier_core.pyx":498
  *     #  AABB union ()
  * 
  *     cdef void _union_aabb_c(             # <<<<<<<<<<<<<<
@@ -28510,7 +29548,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
   float __pyx_t_4;
   int __pyx_t_5;
 
-  /* "forest/_hier_core.pyx":397
+  /* "forest/_hier_core.pyx":502
  *     ) noexcept nogil:
  *         """dst = union(a, b),  dst"""
  *         cdef int total = self._aabb_floats             # <<<<<<<<<<<<<<
@@ -28520,7 +29558,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
   __pyx_t_1 = __pyx_v_self->_aabb_floats;
   __pyx_v_total = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":398
+  /* "forest/_hier_core.pyx":503
  *         """dst = union(a, b),  dst"""
  *         cdef int total = self._aabb_floats
  *         cdef int half = total // 2  # n_links * 3             # <<<<<<<<<<<<<<
@@ -28529,7 +29567,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
 */
   __pyx_v_half = (__pyx_v_total / 2);
 
-  /* "forest/_hier_core.pyx":403
+  /* "forest/_hier_core.pyx":508
  *         # max  [3, 4, 5] per link   max
  *         # : [lo_x, lo_y, lo_z, hi_x, hi_y, hi_z] per link
  *         for i in range(self._n_links):             # <<<<<<<<<<<<<<
@@ -28541,7 +29579,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "forest/_hier_core.pyx":405
+    /* "forest/_hier_core.pyx":510
  *         for i in range(self._n_links):
  *             # min_x, min_y, min_z
  *             dst[i*6]   = a[i*6]   if a[i*6]   < b[i*6]   else b[i*6]             # <<<<<<<<<<<<<<
@@ -28556,7 +29594,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
     }
     (__pyx_v_dst[(__pyx_v_i * 6)]) = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":406
+    /* "forest/_hier_core.pyx":511
  *             # min_x, min_y, min_z
  *             dst[i*6]   = a[i*6]   if a[i*6]   < b[i*6]   else b[i*6]
  *             dst[i*6+1] = a[i*6+1] if a[i*6+1] < b[i*6+1] else b[i*6+1]             # <<<<<<<<<<<<<<
@@ -28571,7 +29609,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
     }
     (__pyx_v_dst[((__pyx_v_i * 6) + 1)]) = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":407
+    /* "forest/_hier_core.pyx":512
  *             dst[i*6]   = a[i*6]   if a[i*6]   < b[i*6]   else b[i*6]
  *             dst[i*6+1] = a[i*6+1] if a[i*6+1] < b[i*6+1] else b[i*6+1]
  *             dst[i*6+2] = a[i*6+2] if a[i*6+2] < b[i*6+2] else b[i*6+2]             # <<<<<<<<<<<<<<
@@ -28586,7 +29624,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
     }
     (__pyx_v_dst[((__pyx_v_i * 6) + 2)]) = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":409
+    /* "forest/_hier_core.pyx":514
  *             dst[i*6+2] = a[i*6+2] if a[i*6+2] < b[i*6+2] else b[i*6+2]
  *             # max_x, max_y, max_z
  *             dst[i*6+3] = a[i*6+3] if a[i*6+3] > b[i*6+3] else b[i*6+3]             # <<<<<<<<<<<<<<
@@ -28601,7 +29639,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
     }
     (__pyx_v_dst[((__pyx_v_i * 6) + 3)]) = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":410
+    /* "forest/_hier_core.pyx":515
  *             # max_x, max_y, max_z
  *             dst[i*6+3] = a[i*6+3] if a[i*6+3] > b[i*6+3] else b[i*6+3]
  *             dst[i*6+4] = a[i*6+4] if a[i*6+4] > b[i*6+4] else b[i*6+4]             # <<<<<<<<<<<<<<
@@ -28616,7 +29654,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
     }
     (__pyx_v_dst[((__pyx_v_i * 6) + 4)]) = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":411
+    /* "forest/_hier_core.pyx":516
  *             dst[i*6+3] = a[i*6+3] if a[i*6+3] > b[i*6+3] else b[i*6+3]
  *             dst[i*6+4] = a[i*6+4] if a[i*6+4] > b[i*6+4] else b[i*6+4]
  *             dst[i*6+5] = a[i*6+5] if a[i*6+5] > b[i*6+5] else b[i*6+5]             # <<<<<<<<<<<<<<
@@ -28632,7 +29670,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
     (__pyx_v_dst[((__pyx_v_i * 6) + 5)]) = __pyx_t_4;
   }
 
-  /* "forest/_hier_core.pyx":393
+  /* "forest/_hier_core.pyx":498
  *     #  AABB union ()
  * 
  *     cdef void _union_aabb_c(             # <<<<<<<<<<<<<<
@@ -28643,12 +29681,12 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c(struct __pyx_o
   /* function exit code */
 }
 
-/* "forest/_hier_core.pyx":415
+/* "forest/_hier_core.pyx":520
  *     #
  * 
  *     cdef void _propagate_up_c(self, int start_idx) noexcept:             # <<<<<<<<<<<<<<
- *         """ start_idx  AABB union,  root """
- *         cdef int idx = start_idx
+ *         """ start_idx  AABB refine,  root
+ * 
 */
 
 static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_start_idx) {
@@ -28661,6 +29699,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
   float *__pyx_v_dst;
   float *__pyx_v_a;
   float *__pyx_v_b;
+  float __pyx_v_union_val;
   float __pyx_v_new_val;
   int __pyx_v_changed;
   int __pyx_v_i;
@@ -28671,16 +29710,16 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
   int __pyx_t_5;
   float __pyx_t_6;
 
-  /* "forest/_hier_core.pyx":417
- *     cdef void _propagate_up_c(self, int start_idx) noexcept:
- *         """ start_idx  AABB union,  root """
+  /* "forest/_hier_core.pyx":527
+ *          AABB
+ *         """
  *         cdef int idx = start_idx             # <<<<<<<<<<<<<<
  *         cdef char* node
  *         cdef char* left_node
 */
   __pyx_v_idx = __pyx_v_start_idx;
 
-  /* "forest/_hier_core.pyx":429
+  /* "forest/_hier_core.pyx":539
  *         cdef int i
  * 
  *         while idx >= 0:             # <<<<<<<<<<<<<<
@@ -28691,7 +29730,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
     __pyx_t_1 = (__pyx_v_idx >= 0);
     if (!__pyx_t_1) break;
 
-    /* "forest/_hier_core.pyx":430
+    /* "forest/_hier_core.pyx":540
  * 
  *         while idx >= 0:
  *             node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -28700,7 +29739,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-    /* "forest/_hier_core.pyx":431
+    /* "forest/_hier_core.pyx":541
  *         while idx >= 0:
  *             node = _node_ptr(self._base, self._stride, idx)
  *             left_idx = _get_i32(node, _OFF_LEFT)             # <<<<<<<<<<<<<<
@@ -28709,7 +29748,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     __pyx_v_left_idx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 0);
 
-    /* "forest/_hier_core.pyx":432
+    /* "forest/_hier_core.pyx":542
  *             node = _node_ptr(self._base, self._stride, idx)
  *             left_idx = _get_i32(node, _OFF_LEFT)
  *             right_idx = _get_i32(node, _OFF_RIGHT)             # <<<<<<<<<<<<<<
@@ -28718,7 +29757,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     __pyx_v_right_idx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 4);
 
-    /* "forest/_hier_core.pyx":434
+    /* "forest/_hier_core.pyx":544
  *             right_idx = _get_i32(node, _OFF_RIGHT)
  * 
  *             if left_idx < 0 or right_idx < 0:             # <<<<<<<<<<<<<<
@@ -28736,7 +29775,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
     __pyx_L6_bool_binop_done:;
     if (__pyx_t_1) {
 
-      /* "forest/_hier_core.pyx":435
+      /* "forest/_hier_core.pyx":545
  * 
  *             if left_idx < 0 or right_idx < 0:
  *                 break             # <<<<<<<<<<<<<<
@@ -28745,7 +29784,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
       goto __pyx_L4_break;
 
-      /* "forest/_hier_core.pyx":434
+      /* "forest/_hier_core.pyx":544
  *             right_idx = _get_i32(node, _OFF_RIGHT)
  * 
  *             if left_idx < 0 or right_idx < 0:             # <<<<<<<<<<<<<<
@@ -28754,7 +29793,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     }
 
-    /* "forest/_hier_core.pyx":437
+    /* "forest/_hier_core.pyx":547
  *                 break
  * 
  *             left_node = _node_ptr(self._base, self._stride, left_idx)             # <<<<<<<<<<<<<<
@@ -28763,7 +29802,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     __pyx_v_left_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_left_idx);
 
-    /* "forest/_hier_core.pyx":438
+    /* "forest/_hier_core.pyx":548
  * 
  *             left_node = _node_ptr(self._base, self._stride, left_idx)
  *             right_node = _node_ptr(self._base, self._stride, right_idx)             # <<<<<<<<<<<<<<
@@ -28772,7 +29811,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     __pyx_v_right_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_right_idx);
 
-    /* "forest/_hier_core.pyx":440
+    /* "forest/_hier_core.pyx":550
  *             right_node = _node_ptr(self._base, self._stride, right_idx)
  * 
  *             if _get_u8(left_node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
@@ -28782,7 +29821,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
     __pyx_t_1 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_left_node, 24) == 0);
     if (__pyx_t_1) {
 
-      /* "forest/_hier_core.pyx":441
+      /* "forest/_hier_core.pyx":551
  * 
  *             if _get_u8(left_node, _OFF_HAS_AABB) == 0:
  *                 break             # <<<<<<<<<<<<<<
@@ -28791,7 +29830,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
       goto __pyx_L4_break;
 
-      /* "forest/_hier_core.pyx":440
+      /* "forest/_hier_core.pyx":550
  *             right_node = _node_ptr(self._base, self._stride, right_idx)
  * 
  *             if _get_u8(left_node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
@@ -28800,7 +29839,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     }
 
-    /* "forest/_hier_core.pyx":442
+    /* "forest/_hier_core.pyx":552
  *             if _get_u8(left_node, _OFF_HAS_AABB) == 0:
  *                 break
  *             if _get_u8(right_node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
@@ -28810,7 +29849,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
     __pyx_t_1 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_right_node, 24) == 0);
     if (__pyx_t_1) {
 
-      /* "forest/_hier_core.pyx":443
+      /* "forest/_hier_core.pyx":553
  *                 break
  *             if _get_u8(right_node, _OFF_HAS_AABB) == 0:
  *                 break             # <<<<<<<<<<<<<<
@@ -28819,7 +29858,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
       goto __pyx_L4_break;
 
-      /* "forest/_hier_core.pyx":442
+      /* "forest/_hier_core.pyx":552
  *             if _get_u8(left_node, _OFF_HAS_AABB) == 0:
  *                 break
  *             if _get_u8(right_node, _OFF_HAS_AABB) == 0:             # <<<<<<<<<<<<<<
@@ -28828,7 +29867,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     }
 
-    /* "forest/_hier_core.pyx":445
+    /* "forest/_hier_core.pyx":555
  *                 break
  * 
  *             dst = _aabb_ptr(node)             # <<<<<<<<<<<<<<
@@ -28837,7 +29876,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     __pyx_v_dst = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_node);
 
-    /* "forest/_hier_core.pyx":446
+    /* "forest/_hier_core.pyx":556
  * 
  *             dst = _aabb_ptr(node)
  *             a = _aabb_ptr(left_node)             # <<<<<<<<<<<<<<
@@ -28846,129 +29885,266 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     __pyx_v_a = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_left_node);
 
-    /* "forest/_hier_core.pyx":447
+    /* "forest/_hier_core.pyx":557
  *             dst = _aabb_ptr(node)
  *             a = _aabb_ptr(left_node)
  *             b = _aabb_ptr(right_node)             # <<<<<<<<<<<<<<
  * 
- *             #  (early-stop)
+ *             # intersect(old_dst, union(a, b)):
 */
     __pyx_v_b = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_right_node);
 
-    /* "forest/_hier_core.pyx":450
- * 
- *             #  (early-stop)
+    /* "forest/_hier_core.pyx":562
+ *             #   min dims  new = max(old, union)  (tighten lower bound)
+ *             #   max dims  new = min(old, union)  (tighten upper bound)
  *             changed = False             # <<<<<<<<<<<<<<
- *             for i in range(self._aabb_floats):
- *                 if i % 6 < 3:
+ *             if _get_u8(node, _OFF_HAS_AABB):
+ *                 # dst already has a direct-FK AABB  refine via intersect
 */
     __pyx_v_changed = 0;
 
-    /* "forest/_hier_core.pyx":451
- *             #  (early-stop)
+    /* "forest/_hier_core.pyx":563
+ *             #   max dims  new = min(old, union)  (tighten upper bound)
  *             changed = False
- *             for i in range(self._aabb_floats):             # <<<<<<<<<<<<<<
- *                 if i % 6 < 3:
- *                     # min
+ *             if _get_u8(node, _OFF_HAS_AABB):             # <<<<<<<<<<<<<<
+ *                 # dst already has a direct-FK AABB  refine via intersect
+ *                 for i in range(self._aabb_floats):
 */
-    __pyx_t_3 = __pyx_v_self->_aabb_floats;
-    __pyx_t_4 = __pyx_t_3;
-    for (__pyx_t_5 = 0; __pyx_t_5 < __pyx_t_4; __pyx_t_5+=1) {
-      __pyx_v_i = __pyx_t_5;
+    __pyx_t_1 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_node, 24) != 0);
+    if (__pyx_t_1) {
 
-      /* "forest/_hier_core.pyx":452
- *             changed = False
- *             for i in range(self._aabb_floats):
- *                 if i % 6 < 3:             # <<<<<<<<<<<<<<
- *                     # min
- *                     new_val = a[i] if a[i] < b[i] else b[i]
+      /* "forest/_hier_core.pyx":565
+ *             if _get_u8(node, _OFF_HAS_AABB):
+ *                 # dst already has a direct-FK AABB  refine via intersect
+ *                 for i in range(self._aabb_floats):             # <<<<<<<<<<<<<<
+ *                     if i % 6 < 3:
+ *                         # min : union = min(a, b), new = max(old, union)
 */
-      __pyx_t_1 = ((__pyx_v_i % 6) < 3);
-      if (__pyx_t_1) {
+      __pyx_t_3 = __pyx_v_self->_aabb_floats;
+      __pyx_t_4 = __pyx_t_3;
+      for (__pyx_t_5 = 0; __pyx_t_5 < __pyx_t_4; __pyx_t_5+=1) {
+        __pyx_v_i = __pyx_t_5;
 
-        /* "forest/_hier_core.pyx":454
- *                 if i % 6 < 3:
- *                     # min
- *                     new_val = a[i] if a[i] < b[i] else b[i]             # <<<<<<<<<<<<<<
- *                 else:
- *                     # max
+        /* "forest/_hier_core.pyx":566
+ *                 # dst already has a direct-FK AABB  refine via intersect
+ *                 for i in range(self._aabb_floats):
+ *                     if i % 6 < 3:             # <<<<<<<<<<<<<<
+ *                         # min : union = min(a, b), new = max(old, union)
+ *                         union_val = a[i] if a[i] < b[i] else b[i]
 */
-        __pyx_t_1 = ((__pyx_v_a[__pyx_v_i]) < (__pyx_v_b[__pyx_v_i]));
+        __pyx_t_1 = ((__pyx_v_i % 6) < 3);
         if (__pyx_t_1) {
-          __pyx_t_6 = (__pyx_v_a[__pyx_v_i]);
-        } else {
-          __pyx_t_6 = (__pyx_v_b[__pyx_v_i]);
-        }
-        __pyx_v_new_val = __pyx_t_6;
 
-        /* "forest/_hier_core.pyx":452
- *             changed = False
- *             for i in range(self._aabb_floats):
- *                 if i % 6 < 3:             # <<<<<<<<<<<<<<
- *                     # min
- *                     new_val = a[i] if a[i] < b[i] else b[i]
+          /* "forest/_hier_core.pyx":568
+ *                     if i % 6 < 3:
+ *                         # min : union = min(a, b), new = max(old, union)
+ *                         union_val = a[i] if a[i] < b[i] else b[i]             # <<<<<<<<<<<<<<
+ *                         new_val = union_val if union_val > dst[i] else dst[i]
+ *                     else:
 */
-        goto __pyx_L12;
+          __pyx_t_1 = ((__pyx_v_a[__pyx_v_i]) < (__pyx_v_b[__pyx_v_i]));
+          if (__pyx_t_1) {
+            __pyx_t_6 = (__pyx_v_a[__pyx_v_i]);
+          } else {
+            __pyx_t_6 = (__pyx_v_b[__pyx_v_i]);
+          }
+          __pyx_v_union_val = __pyx_t_6;
+
+          /* "forest/_hier_core.pyx":569
+ *                         # min : union = min(a, b), new = max(old, union)
+ *                         union_val = a[i] if a[i] < b[i] else b[i]
+ *                         new_val = union_val if union_val > dst[i] else dst[i]             # <<<<<<<<<<<<<<
+ *                     else:
+ *                         # max : union = max(a, b), new = min(old, union)
+*/
+          __pyx_t_1 = (__pyx_v_union_val > (__pyx_v_dst[__pyx_v_i]));
+          if (__pyx_t_1) {
+            __pyx_t_6 = __pyx_v_union_val;
+          } else {
+            __pyx_t_6 = (__pyx_v_dst[__pyx_v_i]);
+          }
+          __pyx_v_new_val = __pyx_t_6;
+
+          /* "forest/_hier_core.pyx":566
+ *                 # dst already has a direct-FK AABB  refine via intersect
+ *                 for i in range(self._aabb_floats):
+ *                     if i % 6 < 3:             # <<<<<<<<<<<<<<
+ *                         # min : union = min(a, b), new = max(old, union)
+ *                         union_val = a[i] if a[i] < b[i] else b[i]
+*/
+          goto __pyx_L13;
+        }
+
+        /* "forest/_hier_core.pyx":572
+ *                     else:
+ *                         # max : union = max(a, b), new = min(old, union)
+ *                         union_val = a[i] if a[i] > b[i] else b[i]             # <<<<<<<<<<<<<<
+ *                         new_val = union_val if union_val < dst[i] else dst[i]
+ *                     if dst[i] != new_val:
+*/
+        /*else*/ {
+          __pyx_t_1 = ((__pyx_v_a[__pyx_v_i]) > (__pyx_v_b[__pyx_v_i]));
+          if (__pyx_t_1) {
+            __pyx_t_6 = (__pyx_v_a[__pyx_v_i]);
+          } else {
+            __pyx_t_6 = (__pyx_v_b[__pyx_v_i]);
+          }
+          __pyx_v_union_val = __pyx_t_6;
+
+          /* "forest/_hier_core.pyx":573
+ *                         # max : union = max(a, b), new = min(old, union)
+ *                         union_val = a[i] if a[i] > b[i] else b[i]
+ *                         new_val = union_val if union_val < dst[i] else dst[i]             # <<<<<<<<<<<<<<
+ *                     if dst[i] != new_val:
+ *                         dst[i] = new_val
+*/
+          __pyx_t_1 = (__pyx_v_union_val < (__pyx_v_dst[__pyx_v_i]));
+          if (__pyx_t_1) {
+            __pyx_t_6 = __pyx_v_union_val;
+          } else {
+            __pyx_t_6 = (__pyx_v_dst[__pyx_v_i]);
+          }
+          __pyx_v_new_val = __pyx_t_6;
+        }
+        __pyx_L13:;
+
+        /* "forest/_hier_core.pyx":574
+ *                         union_val = a[i] if a[i] > b[i] else b[i]
+ *                         new_val = union_val if union_val < dst[i] else dst[i]
+ *                     if dst[i] != new_val:             # <<<<<<<<<<<<<<
+ *                         dst[i] = new_val
+ *                         changed = True
+*/
+        __pyx_t_1 = ((__pyx_v_dst[__pyx_v_i]) != __pyx_v_new_val);
+        if (__pyx_t_1) {
+
+          /* "forest/_hier_core.pyx":575
+ *                         new_val = union_val if union_val < dst[i] else dst[i]
+ *                     if dst[i] != new_val:
+ *                         dst[i] = new_val             # <<<<<<<<<<<<<<
+ *                         changed = True
+ *             else:
+*/
+          (__pyx_v_dst[__pyx_v_i]) = __pyx_v_new_val;
+
+          /* "forest/_hier_core.pyx":576
+ *                     if dst[i] != new_val:
+ *                         dst[i] = new_val
+ *                         changed = True             # <<<<<<<<<<<<<<
+ *             else:
+ *                 # dst has no prior AABB  just store the union
+*/
+          __pyx_v_changed = 1;
+
+          /* "forest/_hier_core.pyx":574
+ *                         union_val = a[i] if a[i] > b[i] else b[i]
+ *                         new_val = union_val if union_val < dst[i] else dst[i]
+ *                     if dst[i] != new_val:             # <<<<<<<<<<<<<<
+ *                         dst[i] = new_val
+ *                         changed = True
+*/
+        }
       }
 
-      /* "forest/_hier_core.pyx":457
- *                 else:
- *                     # max
- *                     new_val = a[i] if a[i] > b[i] else b[i]             # <<<<<<<<<<<<<<
- *                 if dst[i] != new_val:
- *                     dst[i] = new_val
+      /* "forest/_hier_core.pyx":563
+ *             #   max dims  new = min(old, union)  (tighten upper bound)
+ *             changed = False
+ *             if _get_u8(node, _OFF_HAS_AABB):             # <<<<<<<<<<<<<<
+ *                 # dst already has a direct-FK AABB  refine via intersect
+ *                 for i in range(self._aabb_floats):
 */
-      /*else*/ {
-        __pyx_t_1 = ((__pyx_v_a[__pyx_v_i]) > (__pyx_v_b[__pyx_v_i]));
+      goto __pyx_L10;
+    }
+
+    /* "forest/_hier_core.pyx":579
+ *             else:
+ *                 # dst has no prior AABB  just store the union
+ *                 for i in range(self._aabb_floats):             # <<<<<<<<<<<<<<
+ *                     if i % 6 < 3:
+ *                         new_val = a[i] if a[i] < b[i] else b[i]
+*/
+    /*else*/ {
+      __pyx_t_3 = __pyx_v_self->_aabb_floats;
+      __pyx_t_4 = __pyx_t_3;
+      for (__pyx_t_5 = 0; __pyx_t_5 < __pyx_t_4; __pyx_t_5+=1) {
+        __pyx_v_i = __pyx_t_5;
+
+        /* "forest/_hier_core.pyx":580
+ *                 # dst has no prior AABB  just store the union
+ *                 for i in range(self._aabb_floats):
+ *                     if i % 6 < 3:             # <<<<<<<<<<<<<<
+ *                         new_val = a[i] if a[i] < b[i] else b[i]
+ *                     else:
+*/
+        __pyx_t_1 = ((__pyx_v_i % 6) < 3);
         if (__pyx_t_1) {
-          __pyx_t_6 = (__pyx_v_a[__pyx_v_i]);
-        } else {
-          __pyx_t_6 = (__pyx_v_b[__pyx_v_i]);
-        }
-        __pyx_v_new_val = __pyx_t_6;
-      }
-      __pyx_L12:;
 
-      /* "forest/_hier_core.pyx":458
- *                     # max
- *                     new_val = a[i] if a[i] > b[i] else b[i]
- *                 if dst[i] != new_val:             # <<<<<<<<<<<<<<
- *                     dst[i] = new_val
- *                     changed = True
+          /* "forest/_hier_core.pyx":581
+ *                 for i in range(self._aabb_floats):
+ *                     if i % 6 < 3:
+ *                         new_val = a[i] if a[i] < b[i] else b[i]             # <<<<<<<<<<<<<<
+ *                     else:
+ *                         new_val = a[i] if a[i] > b[i] else b[i]
 */
-      __pyx_t_1 = ((__pyx_v_dst[__pyx_v_i]) != __pyx_v_new_val);
-      if (__pyx_t_1) {
+          __pyx_t_1 = ((__pyx_v_a[__pyx_v_i]) < (__pyx_v_b[__pyx_v_i]));
+          if (__pyx_t_1) {
+            __pyx_t_6 = (__pyx_v_a[__pyx_v_i]);
+          } else {
+            __pyx_t_6 = (__pyx_v_b[__pyx_v_i]);
+          }
+          __pyx_v_new_val = __pyx_t_6;
 
-        /* "forest/_hier_core.pyx":459
- *                     new_val = a[i] if a[i] > b[i] else b[i]
- *                 if dst[i] != new_val:
+          /* "forest/_hier_core.pyx":580
+ *                 # dst has no prior AABB  just store the union
+ *                 for i in range(self._aabb_floats):
+ *                     if i % 6 < 3:             # <<<<<<<<<<<<<<
+ *                         new_val = a[i] if a[i] < b[i] else b[i]
+ *                     else:
+*/
+          goto __pyx_L17;
+        }
+
+        /* "forest/_hier_core.pyx":583
+ *                         new_val = a[i] if a[i] < b[i] else b[i]
+ *                     else:
+ *                         new_val = a[i] if a[i] > b[i] else b[i]             # <<<<<<<<<<<<<<
+ *                     dst[i] = new_val
+ *                 changed = True
+*/
+        /*else*/ {
+          __pyx_t_1 = ((__pyx_v_a[__pyx_v_i]) > (__pyx_v_b[__pyx_v_i]));
+          if (__pyx_t_1) {
+            __pyx_t_6 = (__pyx_v_a[__pyx_v_i]);
+          } else {
+            __pyx_t_6 = (__pyx_v_b[__pyx_v_i]);
+          }
+          __pyx_v_new_val = __pyx_t_6;
+        }
+        __pyx_L17:;
+
+        /* "forest/_hier_core.pyx":584
+ *                     else:
+ *                         new_val = a[i] if a[i] > b[i] else b[i]
  *                     dst[i] = new_val             # <<<<<<<<<<<<<<
- *                     changed = True
+ *                 changed = True
  * 
 */
         (__pyx_v_dst[__pyx_v_i]) = __pyx_v_new_val;
+      }
 
-        /* "forest/_hier_core.pyx":460
- *                 if dst[i] != new_val:
+      /* "forest/_hier_core.pyx":585
+ *                         new_val = a[i] if a[i] > b[i] else b[i]
  *                     dst[i] = new_val
- *                     changed = True             # <<<<<<<<<<<<<<
+ *                 changed = True             # <<<<<<<<<<<<<<
  * 
  *             if changed:
 */
-        __pyx_v_changed = 1;
-
-        /* "forest/_hier_core.pyx":458
- *                     # max
- *                     new_val = a[i] if a[i] > b[i] else b[i]
- *                 if dst[i] != new_val:             # <<<<<<<<<<<<<<
- *                     dst[i] = new_val
- *                     changed = True
-*/
-      }
+      __pyx_v_changed = 1;
     }
+    __pyx_L10:;
 
-    /* "forest/_hier_core.pyx":462
- *                     changed = True
+    /* "forest/_hier_core.pyx":587
+ *                 changed = True
  * 
  *             if changed:             # <<<<<<<<<<<<<<
  *                 _set_u8(node, _OFF_HAS_AABB, 1)
@@ -28976,7 +30152,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
     if (__pyx_v_changed) {
 
-      /* "forest/_hier_core.pyx":463
+      /* "forest/_hier_core.pyx":588
  * 
  *             if changed:
  *                 _set_u8(node, _OFF_HAS_AABB, 1)             # <<<<<<<<<<<<<<
@@ -28985,7 +30161,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
       __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 24, 1);
 
-      /* "forest/_hier_core.pyx":464
+      /* "forest/_hier_core.pyx":589
  *             if changed:
  *                 _set_u8(node, _OFF_HAS_AABB, 1)
  *                 _set_u8(node, _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -28994,17 +30170,17 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
       __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 1);
 
-      /* "forest/_hier_core.pyx":462
- *                     changed = True
+      /* "forest/_hier_core.pyx":587
+ *                 changed = True
  * 
  *             if changed:             # <<<<<<<<<<<<<<
  *                 _set_u8(node, _OFF_HAS_AABB, 1)
  *                 _set_u8(node, _OFF_DIRTY, 1)
 */
-      goto __pyx_L14;
+      goto __pyx_L18;
     }
 
-    /* "forest/_hier_core.pyx":466
+    /* "forest/_hier_core.pyx":591
  *                 _set_u8(node, _OFF_DIRTY, 1)
  *             else:
  *                 break  #             # <<<<<<<<<<<<<<
@@ -29014,9 +30190,9 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
     /*else*/ {
       goto __pyx_L4_break;
     }
-    __pyx_L14:;
+    __pyx_L18:;
 
-    /* "forest/_hier_core.pyx":468
+    /* "forest/_hier_core.pyx":593
  *                 break  #
  * 
  *             idx = _get_i32(node, _OFF_PARENT)             # <<<<<<<<<<<<<<
@@ -29027,18 +30203,18 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
   }
   __pyx_L4_break:;
 
-  /* "forest/_hier_core.pyx":415
+  /* "forest/_hier_core.pyx":520
  *     #
  * 
  *     cdef void _propagate_up_c(self, int start_idx) noexcept:             # <<<<<<<<<<<<<<
- *         """ start_idx  AABB union,  root """
- *         cdef int idx = start_idx
+ *         """ start_idx  AABB refine,  root
+ * 
 */
 
   /* function exit code */
 }
 
-/* "forest/_hier_core.pyx":470
+/* "forest/_hier_core.pyx":595
  *             idx = _get_i32(node, _OFF_PARENT)
  * 
  *     def propagate_up(self, int start_idx):             # <<<<<<<<<<<<<<
@@ -29047,16 +30223,16 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c(struct __pyx
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_53propagate_up(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_55propagate_up(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_52propagate_up, "Python \345\217\257\350\260\203\347\224\250\347\232\204\345\220\221\344\270\212\344\274\240\346\222\255\346\216\245\345\217\243");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_53propagate_up = {"propagate_up", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_53propagate_up, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_52propagate_up};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_53propagate_up(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_54propagate_up, "Python \345\217\257\350\260\203\347\224\250\347\232\204\345\220\221\344\270\212\344\274\240\346\222\255\346\216\245\345\217\243");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_55propagate_up = {"propagate_up", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_55propagate_up, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_54propagate_up};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_55propagate_up(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -29086,32 +30262,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_start_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 470, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 595, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 470, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 595, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "propagate_up", 0) < (0)) __PYX_ERR(0, 470, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "propagate_up", 0) < (0)) __PYX_ERR(0, 595, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("propagate_up", 1, 1, 1, i); __PYX_ERR(0, 470, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("propagate_up", 1, 1, 1, i); __PYX_ERR(0, 595, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 470, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 595, __pyx_L3_error)
     }
-    __pyx_v_start_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_start_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 470, __pyx_L3_error)
+    __pyx_v_start_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_start_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 595, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("propagate_up", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 470, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("propagate_up", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 595, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -29122,7 +30298,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_52propagate_up(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_start_idx);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_54propagate_up(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_start_idx);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -29132,12 +30308,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_52propagate_up(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_start_idx) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_54propagate_up(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_start_idx) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("propagate_up", 0);
 
-  /* "forest/_hier_core.pyx":472
+  /* "forest/_hier_core.pyx":597
  *     def propagate_up(self, int start_idx):
  *         """Python """
  *         self._propagate_up_c(start_idx)             # <<<<<<<<<<<<<<
@@ -29146,7 +30322,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_52propagate_up(struct 
 */
   ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_propagate_up_c(__pyx_v_self, __pyx_v_start_idx);
 
-  /* "forest/_hier_core.pyx":470
+  /* "forest/_hier_core.pyx":595
  *             idx = _get_i32(node, _OFF_PARENT)
  * 
  *     def propagate_up(self, int start_idx):             # <<<<<<<<<<<<<<
@@ -29161,7 +30337,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_52propagate_up(struct 
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":476
+/* "forest/_hier_core.pyx":601
  *     #  /
  * 
  *     cdef void _mark_occupied_c(self, int idx, int forest_box_id) noexcept:             # <<<<<<<<<<<<<<
@@ -29180,40 +30356,40 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "forest/_hier_core.pyx":478
+  /* "forest/_hier_core.pyx":603
  *     cdef void _mark_occupied_c(self, int idx, int forest_box_id) noexcept:
  *         """ subtree_occ / subtree_occ_vol"""
  *         self._occupied[idx] = 1             # <<<<<<<<<<<<<<
  *         self._forest_id[idx] = forest_box_id
  *         self._subtree_occ[idx] += 1
 */
-  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 478, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 603, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
   *((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_1)) )) = 1;
 
-  /* "forest/_hier_core.pyx":479
+  /* "forest/_hier_core.pyx":604
  *         """ subtree_occ / subtree_occ_vol"""
  *         self._occupied[idx] = 1
  *         self._forest_id[idx] = forest_box_id             # <<<<<<<<<<<<<<
  *         self._subtree_occ[idx] += 1
  * 
 */
-  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 479, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 604, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
   *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_1)) )) = __pyx_v_forest_box_id;
 
-  /* "forest/_hier_core.pyx":480
+  /* "forest/_hier_core.pyx":605
  *         self._occupied[idx] = 1
  *         self._forest_id[idx] = forest_box_id
  *         self._subtree_occ[idx] += 1             # <<<<<<<<<<<<<<
  * 
  *         # depth d  root  1/2^d
 */
-  if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 480, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 605, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
   *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_1)) )) += 1;
 
-  /* "forest/_hier_core.pyx":483
+  /* "forest/_hier_core.pyx":608
  * 
  *         # depth d  root  1/2^d
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
@@ -29222,7 +30398,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
 */
   __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":484
+  /* "forest/_hier_core.pyx":609
  *         # depth d  root  1/2^d
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef int depth = _get_i32(node, _OFF_DEPTH)             # <<<<<<<<<<<<<<
@@ -29231,7 +30407,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
 */
   __pyx_v_depth = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 12);
 
-  /* "forest/_hier_core.pyx":485
+  /* "forest/_hier_core.pyx":610
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
  *         cdef int depth = _get_i32(node, _OFF_DEPTH)
  *         cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)             # <<<<<<<<<<<<<<
@@ -29240,18 +30416,18 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
 */
   __pyx_v_vol = ldexp(1.0, (-__pyx_v_depth));
 
-  /* "forest/_hier_core.pyx":486
+  /* "forest/_hier_core.pyx":611
  *         cdef int depth = _get_i32(node, _OFF_DEPTH)
  *         cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)
  *         self._subtree_occ_vol[idx] += vol             # <<<<<<<<<<<<<<
  * 
  *         cdef int pidx = _get_i32(node, _OFF_PARENT)
 */
-  if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 486, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 611, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
   *((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_1)) )) += __pyx_v_vol;
 
-  /* "forest/_hier_core.pyx":488
+  /* "forest/_hier_core.pyx":613
  *         self._subtree_occ_vol[idx] += vol
  * 
  *         cdef int pidx = _get_i32(node, _OFF_PARENT)             # <<<<<<<<<<<<<<
@@ -29260,7 +30436,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
 */
   __pyx_v_pidx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 8);
 
-  /* "forest/_hier_core.pyx":489
+  /* "forest/_hier_core.pyx":614
  * 
  *         cdef int pidx = _get_i32(node, _OFF_PARENT)
  *         while pidx >= 0:             # <<<<<<<<<<<<<<
@@ -29271,29 +30447,29 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
     __pyx_t_2 = (__pyx_v_pidx >= 0);
     if (!__pyx_t_2) break;
 
-    /* "forest/_hier_core.pyx":490
+    /* "forest/_hier_core.pyx":615
  *         cdef int pidx = _get_i32(node, _OFF_PARENT)
  *         while pidx >= 0:
  *             self._subtree_occ[pidx] += 1             # <<<<<<<<<<<<<<
  *             self._subtree_occ_vol[pidx] += vol
  *             node = _node_ptr(self._base, self._stride, pidx)
 */
-    if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 490, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 615, __pyx_L1_error)}
     __pyx_t_1 = __pyx_v_pidx;
     *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_1)) )) += 1;
 
-    /* "forest/_hier_core.pyx":491
+    /* "forest/_hier_core.pyx":616
  *         while pidx >= 0:
  *             self._subtree_occ[pidx] += 1
  *             self._subtree_occ_vol[pidx] += vol             # <<<<<<<<<<<<<<
  *             node = _node_ptr(self._base, self._stride, pidx)
  *             pidx = _get_i32(node, _OFF_PARENT)
 */
-    if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 491, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 616, __pyx_L1_error)}
     __pyx_t_1 = __pyx_v_pidx;
     *((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_1)) )) += __pyx_v_vol;
 
-    /* "forest/_hier_core.pyx":492
+    /* "forest/_hier_core.pyx":617
  *             self._subtree_occ[pidx] += 1
  *             self._subtree_occ_vol[pidx] += vol
  *             node = _node_ptr(self._base, self._stride, pidx)             # <<<<<<<<<<<<<<
@@ -29302,7 +30478,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
 */
     __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_pidx);
 
-    /* "forest/_hier_core.pyx":493
+    /* "forest/_hier_core.pyx":618
  *             self._subtree_occ_vol[pidx] += vol
  *             node = _node_ptr(self._base, self._stride, pidx)
  *             pidx = _get_i32(node, _OFF_PARENT)             # <<<<<<<<<<<<<<
@@ -29312,7 +30488,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
     __pyx_v_pidx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 8);
   }
 
-  /* "forest/_hier_core.pyx":476
+  /* "forest/_hier_core.pyx":601
  *     #  /
  * 
  *     cdef void _mark_occupied_c(self, int idx, int forest_box_id) noexcept:             # <<<<<<<<<<<<<<
@@ -29327,7 +30503,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
   __pyx_L0:;
 }
 
-/* "forest/_hier_core.pyx":495
+/* "forest/_hier_core.pyx":620
  *             pidx = _get_i32(node, _OFF_PARENT)
  * 
  *     def mark_occupied(self, int idx, int forest_box_id=-1):             # <<<<<<<<<<<<<<
@@ -29336,15 +30512,15 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c(struct __py
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_55mark_occupied(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_57mark_occupied(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_55mark_occupied = {"mark_occupied", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_55mark_occupied, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_55mark_occupied(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_57mark_occupied = {"mark_occupied", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_57mark_occupied, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_57mark_occupied(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -29375,48 +30551,48 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_forest_box_id,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 495, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 620, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 495, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 620, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 495, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 620, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "mark_occupied", 0) < (0)) __PYX_ERR(0, 495, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "mark_occupied", 0) < (0)) __PYX_ERR(0, 620, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("mark_occupied", 0, 1, 2, i); __PYX_ERR(0, 495, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("mark_occupied", 0, 1, 2, i); __PYX_ERR(0, 620, __pyx_L3_error) }
       }
     } else {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 495, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 620, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 495, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 620, __pyx_L3_error)
         break;
         default: goto __pyx_L5_argtuple_error;
       }
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 495, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 620, __pyx_L3_error)
     if (values[1]) {
-      __pyx_v_forest_box_id = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_forest_box_id == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 495, __pyx_L3_error)
+      __pyx_v_forest_box_id = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_forest_box_id == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 620, __pyx_L3_error)
     } else {
       __pyx_v_forest_box_id = ((int)-1);
     }
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("mark_occupied", 0, 1, 2, __pyx_nargs); __PYX_ERR(0, 495, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("mark_occupied", 0, 1, 2, __pyx_nargs); __PYX_ERR(0, 620, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -29427,7 +30603,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_54mark_occupied(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx, __pyx_v_forest_box_id);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_56mark_occupied(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx, __pyx_v_forest_box_id);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -29437,21 +30613,21 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_54mark_occupied(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_forest_box_id) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_56mark_occupied(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_forest_box_id) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("mark_occupied", 0);
 
-  /* "forest/_hier_core.pyx":496
+  /* "forest/_hier_core.pyx":621
  * 
  *     def mark_occupied(self, int idx, int forest_box_id=-1):
  *         self._mark_occupied_c(idx, forest_box_id)             # <<<<<<<<<<<<<<
  * 
- *     cdef void _reset_occupation_c(self, int idx) noexcept:
+ *     cdef void _unmark_occupied_c(self, int idx) noexcept:
 */
   ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_mark_occupied_c(__pyx_v_self, __pyx_v_idx, __pyx_v_forest_box_id);
 
-  /* "forest/_hier_core.pyx":495
+  /* "forest/_hier_core.pyx":620
  *             pidx = _get_i32(node, _OFF_PARENT)
  * 
  *     def mark_occupied(self, int idx, int forest_box_id=-1):             # <<<<<<<<<<<<<<
@@ -29466,11 +30642,330 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_54mark_occupied(struct
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":498
+/* "forest/_hier_core.pyx":623
  *         self._mark_occupied_c(idx, forest_box_id)
  * 
+ *     cdef void _unmark_occupied_c(self, int idx) noexcept:             # <<<<<<<<<<<<<<
+ *         """mark_occupied  subtree_occ / subtree_occ_vol """
+ *         if not self._occupied[idx]:
+*/
+
+static void __pyx_f_6forest_10_hier_core_9NodeStore__unmark_occupied_c(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
+  char *__pyx_v_node;
+  int __pyx_v_depth;
+  double __pyx_v_vol;
+  int __pyx_v_pidx;
+  Py_ssize_t __pyx_t_1;
+  int __pyx_t_2;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+
+  /* "forest/_hier_core.pyx":625
+ *     cdef void _unmark_occupied_c(self, int idx) noexcept:
+ *         """mark_occupied  subtree_occ / subtree_occ_vol """
+ *         if not self._occupied[idx]:             # <<<<<<<<<<<<<<
+ *             return
+ *         self._occupied[idx] = 0
+*/
+  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 625, __pyx_L1_error)}
+  __pyx_t_1 = __pyx_v_idx;
+  __pyx_t_2 = (!((*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_1)) ))) != 0));
+  if (__pyx_t_2) {
+
+    /* "forest/_hier_core.pyx":626
+ *         """mark_occupied  subtree_occ / subtree_occ_vol """
+ *         if not self._occupied[idx]:
+ *             return             # <<<<<<<<<<<<<<
+ *         self._occupied[idx] = 0
+ *         self._forest_id[idx] = -1
+*/
+    goto __pyx_L0;
+
+    /* "forest/_hier_core.pyx":625
+ *     cdef void _unmark_occupied_c(self, int idx) noexcept:
+ *         """mark_occupied  subtree_occ / subtree_occ_vol """
+ *         if not self._occupied[idx]:             # <<<<<<<<<<<<<<
+ *             return
+ *         self._occupied[idx] = 0
+*/
+  }
+
+  /* "forest/_hier_core.pyx":627
+ *         if not self._occupied[idx]:
+ *             return
+ *         self._occupied[idx] = 0             # <<<<<<<<<<<<<<
+ *         self._forest_id[idx] = -1
+ * 
+*/
+  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 627, __pyx_L1_error)}
+  __pyx_t_1 = __pyx_v_idx;
+  *((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_1)) )) = 0;
+
+  /* "forest/_hier_core.pyx":628
+ *             return
+ *         self._occupied[idx] = 0
+ *         self._forest_id[idx] = -1             # <<<<<<<<<<<<<<
+ * 
+ *         cdef char* node = _node_ptr(self._base, self._stride, idx)
+*/
+  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 628, __pyx_L1_error)}
+  __pyx_t_1 = __pyx_v_idx;
+  *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_1)) )) = -1;
+
+  /* "forest/_hier_core.pyx":630
+ *         self._forest_id[idx] = -1
+ * 
+ *         cdef char* node = _node_ptr(self._base, self._stride, idx)             # <<<<<<<<<<<<<<
+ *         cdef int depth = _get_i32(node, _OFF_DEPTH)
+ *         cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)
+*/
+  __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_idx);
+
+  /* "forest/_hier_core.pyx":631
+ * 
+ *         cdef char* node = _node_ptr(self._base, self._stride, idx)
+ *         cdef int depth = _get_i32(node, _OFF_DEPTH)             # <<<<<<<<<<<<<<
+ *         cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)
+ * 
+*/
+  __pyx_v_depth = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 12);
+
+  /* "forest/_hier_core.pyx":632
+ *         cdef char* node = _node_ptr(self._base, self._stride, idx)
+ *         cdef int depth = _get_i32(node, _OFF_DEPTH)
+ *         cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)             # <<<<<<<<<<<<<<
+ * 
+ *         self._subtree_occ[idx] -= 1
+*/
+  __pyx_v_vol = ldexp(1.0, (-__pyx_v_depth));
+
+  /* "forest/_hier_core.pyx":634
+ *         cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)
+ * 
+ *         self._subtree_occ[idx] -= 1             # <<<<<<<<<<<<<<
+ *         self._subtree_occ_vol[idx] -= vol
+ * 
+*/
+  if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 634, __pyx_L1_error)}
+  __pyx_t_1 = __pyx_v_idx;
+  *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_1)) )) -= 1;
+
+  /* "forest/_hier_core.pyx":635
+ * 
+ *         self._subtree_occ[idx] -= 1
+ *         self._subtree_occ_vol[idx] -= vol             # <<<<<<<<<<<<<<
+ * 
+ *         cdef int pidx = _get_i32(node, _OFF_PARENT)
+*/
+  if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 635, __pyx_L1_error)}
+  __pyx_t_1 = __pyx_v_idx;
+  *((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_1)) )) -= __pyx_v_vol;
+
+  /* "forest/_hier_core.pyx":637
+ *         self._subtree_occ_vol[idx] -= vol
+ * 
+ *         cdef int pidx = _get_i32(node, _OFF_PARENT)             # <<<<<<<<<<<<<<
+ *         while pidx >= 0:
+ *             self._subtree_occ[pidx] -= 1
+*/
+  __pyx_v_pidx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 8);
+
+  /* "forest/_hier_core.pyx":638
+ * 
+ *         cdef int pidx = _get_i32(node, _OFF_PARENT)
+ *         while pidx >= 0:             # <<<<<<<<<<<<<<
+ *             self._subtree_occ[pidx] -= 1
+ *             self._subtree_occ_vol[pidx] -= vol
+*/
+  while (1) {
+    __pyx_t_2 = (__pyx_v_pidx >= 0);
+    if (!__pyx_t_2) break;
+
+    /* "forest/_hier_core.pyx":639
+ *         cdef int pidx = _get_i32(node, _OFF_PARENT)
+ *         while pidx >= 0:
+ *             self._subtree_occ[pidx] -= 1             # <<<<<<<<<<<<<<
+ *             self._subtree_occ_vol[pidx] -= vol
+ *             node = _node_ptr(self._base, self._stride, pidx)
+*/
+    if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 639, __pyx_L1_error)}
+    __pyx_t_1 = __pyx_v_pidx;
+    *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_1)) )) -= 1;
+
+    /* "forest/_hier_core.pyx":640
+ *         while pidx >= 0:
+ *             self._subtree_occ[pidx] -= 1
+ *             self._subtree_occ_vol[pidx] -= vol             # <<<<<<<<<<<<<<
+ *             node = _node_ptr(self._base, self._stride, pidx)
+ *             pidx = _get_i32(node, _OFF_PARENT)
+*/
+    if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 640, __pyx_L1_error)}
+    __pyx_t_1 = __pyx_v_pidx;
+    *((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_1)) )) -= __pyx_v_vol;
+
+    /* "forest/_hier_core.pyx":641
+ *             self._subtree_occ[pidx] -= 1
+ *             self._subtree_occ_vol[pidx] -= vol
+ *             node = _node_ptr(self._base, self._stride, pidx)             # <<<<<<<<<<<<<<
+ *             pidx = _get_i32(node, _OFF_PARENT)
+ * 
+*/
+    __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_pidx);
+
+    /* "forest/_hier_core.pyx":642
+ *             self._subtree_occ_vol[pidx] -= vol
+ *             node = _node_ptr(self._base, self._stride, pidx)
+ *             pidx = _get_i32(node, _OFF_PARENT)             # <<<<<<<<<<<<<<
+ * 
+ *     def unmark_occupied(self, int idx):
+*/
+    __pyx_v_pidx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 8);
+  }
+
+  /* "forest/_hier_core.pyx":623
+ *         self._mark_occupied_c(idx, forest_box_id)
+ * 
+ *     cdef void _unmark_occupied_c(self, int idx) noexcept:             # <<<<<<<<<<<<<<
+ *         """mark_occupied  subtree_occ / subtree_occ_vol """
+ *         if not self._occupied[idx]:
+*/
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_WriteUnraisable("forest._hier_core.NodeStore._unmark_occupied_c", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __pyx_L0:;
+}
+
+/* "forest/_hier_core.pyx":644
+ *             pidx = _get_i32(node, _OFF_PARENT)
+ * 
+ *     def unmark_occupied(self, int idx):             # <<<<<<<<<<<<<<
+ *         """mark_occupied """
+ *         self._unmark_occupied_c(idx)
+*/
+
+/* Python wrapper */
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_59unmark_occupied(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_58unmark_occupied, "mark_occupied \347\232\204\351\200\206\346\223\215\344\275\234\357\274\232\346\270\205\351\231\244\350\212\202\347\202\271\345\215\240\347\224\250\345\271\266\346\255\243\347\241\256\345\220\221\344\270\212\344\274\240\346\222\255\350\256\241\346\225\260\351\200\222\345\207\217");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_59unmark_occupied = {"unmark_occupied", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_59unmark_occupied, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_58unmark_occupied};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_59unmark_occupied(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  int __pyx_v_idx;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[1] = {0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("unmark_occupied (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_SIZE
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
+    const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 644, __pyx_L3_error)
+    if (__pyx_kwds_len > 0) {
+      switch (__pyx_nargs) {
+        case  1:
+        values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 644, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      const Py_ssize_t kwd_pos_args = __pyx_nargs;
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "unmark_occupied", 0) < (0)) __PYX_ERR(0, 644, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("unmark_occupied", 1, 1, 1, i); __PYX_ERR(0, 644, __pyx_L3_error) }
+      }
+    } else if (unlikely(__pyx_nargs != 1)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 644, __pyx_L3_error)
+    }
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 644, __pyx_L3_error)
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("unmark_occupied", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 644, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_AddTraceback("forest._hier_core.NodeStore.unmark_occupied", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_58unmark_occupied(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
+
+  /* function exit code */
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_58unmark_occupied(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("unmark_occupied", 0);
+
+  /* "forest/_hier_core.pyx":646
+ *     def unmark_occupied(self, int idx):
+ *         """mark_occupied """
+ *         self._unmark_occupied_c(idx)             # <<<<<<<<<<<<<<
+ * 
+ *     cdef void _reset_occupation_c(self, int idx) noexcept:
+*/
+  ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_unmark_occupied_c(__pyx_v_self, __pyx_v_idx);
+
+  /* "forest/_hier_core.pyx":644
+ *             pidx = _get_i32(node, _OFF_PARENT)
+ * 
+ *     def unmark_occupied(self, int idx):             # <<<<<<<<<<<<<<
+ *         """mark_occupied """
+ *         self._unmark_occupied_c(idx)
+*/
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "forest/_hier_core.pyx":648
+ *         self._unmark_occupied_c(idx)
+ * 
  *     cdef void _reset_occupation_c(self, int idx) noexcept:             # <<<<<<<<<<<<<<
- *         """"""
+ *         """ subtree """
  *         self._occupied[idx] = 0
 */
 
@@ -29480,33 +30975,33 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__reset_occupation_c(struct _
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "forest/_hier_core.pyx":500
+  /* "forest/_hier_core.pyx":650
  *     cdef void _reset_occupation_c(self, int idx) noexcept:
- *         """"""
+ *         """ subtree """
  *         self._occupied[idx] = 0             # <<<<<<<<<<<<<<
  *         self._forest_id[idx] = -1
  * 
 */
-  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 500, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 650, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
   *((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_1)) )) = 0;
 
-  /* "forest/_hier_core.pyx":501
- *         """"""
+  /* "forest/_hier_core.pyx":651
+ *         """ subtree """
  *         self._occupied[idx] = 0
  *         self._forest_id[idx] = -1             # <<<<<<<<<<<<<<
  * 
  *     def reset_occupation(self, int idx):
 */
-  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 501, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 651, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
   *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_1)) )) = -1;
 
-  /* "forest/_hier_core.pyx":498
- *         self._mark_occupied_c(idx, forest_box_id)
+  /* "forest/_hier_core.pyx":648
+ *         self._unmark_occupied_c(idx)
  * 
  *     cdef void _reset_occupation_c(self, int idx) noexcept:             # <<<<<<<<<<<<<<
- *         """"""
+ *         """ subtree """
  *         self._occupied[idx] = 0
 */
 
@@ -29517,7 +31012,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__reset_occupation_c(struct _
   __pyx_L0:;
 }
 
-/* "forest/_hier_core.pyx":503
+/* "forest/_hier_core.pyx":653
  *         self._forest_id[idx] = -1
  * 
  *     def reset_occupation(self, int idx):             # <<<<<<<<<<<<<<
@@ -29526,15 +31021,15 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__reset_occupation_c(struct _
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_57reset_occupation(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_61reset_occupation(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_57reset_occupation = {"reset_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_57reset_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_57reset_occupation(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_61reset_occupation = {"reset_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_61reset_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_61reset_occupation(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -29564,32 +31059,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 503, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 653, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 503, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 653, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "reset_occupation", 0) < (0)) __PYX_ERR(0, 503, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "reset_occupation", 0) < (0)) __PYX_ERR(0, 653, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("reset_occupation", 1, 1, 1, i); __PYX_ERR(0, 503, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("reset_occupation", 1, 1, 1, i); __PYX_ERR(0, 653, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 503, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 653, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 503, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 653, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("reset_occupation", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 503, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("reset_occupation", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 653, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -29600,7 +31095,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_56reset_occupation(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_60reset_occupation(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -29610,12 +31105,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_56reset_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_60reset_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("reset_occupation", 0);
 
-  /* "forest/_hier_core.pyx":504
+  /* "forest/_hier_core.pyx":654
  * 
  *     def reset_occupation(self, int idx):
  *         self._reset_occupation_c(idx)             # <<<<<<<<<<<<<<
@@ -29624,7 +31119,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_56reset_occupation(str
 */
   ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_reset_occupation_c(__pyx_v_self, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":503
+  /* "forest/_hier_core.pyx":653
  *         self._forest_id[idx] = -1
  * 
  *     def reset_occupation(self, int idx):             # <<<<<<<<<<<<<<
@@ -29639,7 +31134,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_56reset_occupation(str
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":506
+/* "forest/_hier_core.pyx":656
  *         self._reset_occupation_c(idx)
  * 
  *     def set_forest_id(self, int idx, int fid):             # <<<<<<<<<<<<<<
@@ -29648,16 +31143,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_56reset_occupation(str
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_59set_forest_id(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_63set_forest_id(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_58set_forest_id, "\344\273\205\344\277\256\346\224\271 forest_id \346\240\207\347\255\276\357\274\214\344\270\215\345\275\261\345\223\215 subtree_occ / occupied");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_59set_forest_id = {"set_forest_id", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_59set_forest_id, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_58set_forest_id};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_59set_forest_id(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_62set_forest_id, "\344\273\205\344\277\256\346\224\271 forest_id \346\240\207\347\255\276\357\274\214\344\270\215\345\275\261\345\223\215 subtree_occ / occupied");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_63set_forest_id = {"set_forest_id", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_63set_forest_id, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_62set_forest_id};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_63set_forest_id(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -29688,39 +31183,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,&__pyx_mstate_global->__pyx_n_u_fid,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 506, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 656, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 506, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 656, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 506, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 656, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_forest_id", 0) < (0)) __PYX_ERR(0, 506, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "set_forest_id", 0) < (0)) __PYX_ERR(0, 656, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_forest_id", 1, 2, 2, i); __PYX_ERR(0, 506, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("set_forest_id", 1, 2, 2, i); __PYX_ERR(0, 656, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 506, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 656, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 506, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 656, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 506, __pyx_L3_error)
-    __pyx_v_fid = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_fid == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 506, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 656, __pyx_L3_error)
+    __pyx_v_fid = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_fid == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 656, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_forest_id", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 506, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_forest_id", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 656, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -29731,7 +31226,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_58set_forest_id(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx, __pyx_v_fid);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_62set_forest_id(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx, __pyx_v_fid);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -29741,7 +31236,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_58set_forest_id(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_fid) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_62set_forest_id(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx, int __pyx_v_fid) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   Py_ssize_t __pyx_t_1;
@@ -29750,18 +31245,18 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_58set_forest_id(struct
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("set_forest_id", 0);
 
-  /* "forest/_hier_core.pyx":508
+  /* "forest/_hier_core.pyx":658
  *     def set_forest_id(self, int idx, int fid):
  *         """ forest_id  subtree_occ / occupied"""
  *         self._forest_id[idx] = fid             # <<<<<<<<<<<<<<
  * 
  *     cdef set _collect_forest_ids_c(self, int idx):
 */
-  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 508, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 658, __pyx_L1_error)}
   __pyx_t_1 = __pyx_v_idx;
   *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_1)) )) = __pyx_v_fid;
 
-  /* "forest/_hier_core.pyx":506
+  /* "forest/_hier_core.pyx":656
  *         self._reset_occupation_c(idx)
  * 
  *     def set_forest_id(self, int idx, int fid):             # <<<<<<<<<<<<<<
@@ -29781,7 +31276,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_58set_forest_id(struct
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":510
+/* "forest/_hier_core.pyx":660
  *         self._forest_id[idx] = fid
  * 
  *     cdef set _collect_forest_ids_c(self, int idx):             # <<<<<<<<<<<<<<
@@ -29810,36 +31305,36 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_collect_forest_ids_c", 0);
 
-  /* "forest/_hier_core.pyx":512
+  /* "forest/_hier_core.pyx":662
  *     cdef set _collect_forest_ids_c(self, int idx):
  *         """ forest_id"""
  *         cdef set ids = set()             # <<<<<<<<<<<<<<
  *         cdef list stack = [idx]
  *         cdef int i, left, right, fid
 */
-  __pyx_t_1 = PySet_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 512, __pyx_L1_error)
+  __pyx_t_1 = PySet_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 662, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_ids = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "forest/_hier_core.pyx":513
+  /* "forest/_hier_core.pyx":663
  *         """ forest_id"""
  *         cdef set ids = set()
  *         cdef list stack = [idx]             # <<<<<<<<<<<<<<
  *         cdef int i, left, right, fid
  *         cdef char* node
 */
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 513, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 663, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 513, __pyx_L1_error)
+  __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 663, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 513, __pyx_L1_error);
+  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 663, __pyx_L1_error);
   __pyx_t_1 = 0;
   __pyx_v_stack = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "forest/_hier_core.pyx":517
+  /* "forest/_hier_core.pyx":667
  *         cdef char* node
  * 
  *         while stack:             # <<<<<<<<<<<<<<
@@ -29849,37 +31344,37 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
   while (1) {
     {
       Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_v_stack);
-      if (unlikely(((!CYTHON_ASSUME_SAFE_SIZE) && __pyx_temp < 0))) __PYX_ERR(0, 517, __pyx_L1_error)
+      if (unlikely(((!CYTHON_ASSUME_SAFE_SIZE) && __pyx_temp < 0))) __PYX_ERR(0, 667, __pyx_L1_error)
       __pyx_t_3 = (__pyx_temp != 0);
     }
 
     if (!__pyx_t_3) break;
 
-    /* "forest/_hier_core.pyx":518
+    /* "forest/_hier_core.pyx":668
  * 
  *         while stack:
  *             i = stack.pop()             # <<<<<<<<<<<<<<
  *             fid = self._forest_id[i]
  *             if fid >= 0:
 */
-    __pyx_t_2 = __Pyx_PyList_Pop(__pyx_v_stack); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 518, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyList_Pop(__pyx_v_stack); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 668, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_4 = __Pyx_PyLong_As_int(__pyx_t_2); if (unlikely((__pyx_t_4 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 518, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyLong_As_int(__pyx_t_2); if (unlikely((__pyx_t_4 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 668, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_v_i = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":519
+    /* "forest/_hier_core.pyx":669
  *         while stack:
  *             i = stack.pop()
  *             fid = self._forest_id[i]             # <<<<<<<<<<<<<<
  *             if fid >= 0:
  *                 ids.add(fid)
 */
-    if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 519, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 669, __pyx_L1_error)}
     __pyx_t_5 = __pyx_v_i;
     __pyx_v_fid = (*((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_5)) )));
 
-    /* "forest/_hier_core.pyx":520
+    /* "forest/_hier_core.pyx":670
  *             i = stack.pop()
  *             fid = self._forest_id[i]
  *             if fid >= 0:             # <<<<<<<<<<<<<<
@@ -29889,19 +31384,19 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
     __pyx_t_3 = (__pyx_v_fid >= 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":521
+      /* "forest/_hier_core.pyx":671
  *             fid = self._forest_id[i]
  *             if fid >= 0:
  *                 ids.add(fid)             # <<<<<<<<<<<<<<
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)
 */
-      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_fid); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 521, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_fid); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 671, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_6 = PySet_Add(__pyx_v_ids, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 521, __pyx_L1_error)
+      __pyx_t_6 = PySet_Add(__pyx_v_ids, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 671, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-      /* "forest/_hier_core.pyx":520
+      /* "forest/_hier_core.pyx":670
  *             i = stack.pop()
  *             fid = self._forest_id[i]
  *             if fid >= 0:             # <<<<<<<<<<<<<<
@@ -29910,7 +31405,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
 */
     }
 
-    /* "forest/_hier_core.pyx":522
+    /* "forest/_hier_core.pyx":672
  *             if fid >= 0:
  *                 ids.add(fid)
  *             node = _node_ptr(self._base, self._stride, i)             # <<<<<<<<<<<<<<
@@ -29919,7 +31414,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
 */
     __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_i);
 
-    /* "forest/_hier_core.pyx":523
+    /* "forest/_hier_core.pyx":673
  *                 ids.add(fid)
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)             # <<<<<<<<<<<<<<
@@ -29928,7 +31423,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
 */
     __pyx_v_left = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 0);
 
-    /* "forest/_hier_core.pyx":524
+    /* "forest/_hier_core.pyx":674
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)
  *             right = _get_i32(node, _OFF_RIGHT)             # <<<<<<<<<<<<<<
@@ -29937,7 +31432,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
 */
     __pyx_v_right = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 4);
 
-    /* "forest/_hier_core.pyx":525
+    /* "forest/_hier_core.pyx":675
  *             left = _get_i32(node, _OFF_LEFT)
  *             right = _get_i32(node, _OFF_RIGHT)
  *             if left >= 0:             # <<<<<<<<<<<<<<
@@ -29947,19 +31442,19 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
     __pyx_t_3 = (__pyx_v_left >= 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":526
+      /* "forest/_hier_core.pyx":676
  *             right = _get_i32(node, _OFF_RIGHT)
  *             if left >= 0:
  *                 stack.append(left)             # <<<<<<<<<<<<<<
  *             if right >= 0:
  *                 stack.append(right)
 */
-      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_left); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 526, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_left); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 676, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 526, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 676, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-      /* "forest/_hier_core.pyx":525
+      /* "forest/_hier_core.pyx":675
  *             left = _get_i32(node, _OFF_LEFT)
  *             right = _get_i32(node, _OFF_RIGHT)
  *             if left >= 0:             # <<<<<<<<<<<<<<
@@ -29968,7 +31463,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
 */
     }
 
-    /* "forest/_hier_core.pyx":527
+    /* "forest/_hier_core.pyx":677
  *             if left >= 0:
  *                 stack.append(left)
  *             if right >= 0:             # <<<<<<<<<<<<<<
@@ -29978,19 +31473,19 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
     __pyx_t_3 = (__pyx_v_right >= 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":528
+      /* "forest/_hier_core.pyx":678
  *                 stack.append(left)
  *             if right >= 0:
  *                 stack.append(right)             # <<<<<<<<<<<<<<
  *         return ids
  * 
 */
-      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_right); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 528, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_right); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 678, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 528, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 678, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-      /* "forest/_hier_core.pyx":527
+      /* "forest/_hier_core.pyx":677
  *             if left >= 0:
  *                 stack.append(left)
  *             if right >= 0:             # <<<<<<<<<<<<<<
@@ -30000,7 +31495,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
     }
   }
 
-  /* "forest/_hier_core.pyx":529
+  /* "forest/_hier_core.pyx":679
  *             if right >= 0:
  *                 stack.append(right)
  *         return ids             # <<<<<<<<<<<<<<
@@ -30012,7 +31507,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
   __pyx_r = __pyx_v_ids;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":510
+  /* "forest/_hier_core.pyx":660
  *         self._forest_id[idx] = fid
  * 
  *     cdef set _collect_forest_ids_c(self, int idx):             # <<<<<<<<<<<<<<
@@ -30034,7 +31529,7 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":531
+/* "forest/_hier_core.pyx":681
  *         return ids
  * 
  *     def collect_forest_ids(self, int idx):             # <<<<<<<<<<<<<<
@@ -30043,15 +31538,15 @@ static PyObject *__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c(s
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_61collect_forest_ids(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_65collect_forest_ids(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_61collect_forest_ids = {"collect_forest_ids", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_61collect_forest_ids, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_61collect_forest_ids(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_65collect_forest_ids = {"collect_forest_ids", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_65collect_forest_ids, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_65collect_forest_ids(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -30081,32 +31576,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 531, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 681, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 531, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 681, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "collect_forest_ids", 0) < (0)) __PYX_ERR(0, 531, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "collect_forest_ids", 0) < (0)) __PYX_ERR(0, 681, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("collect_forest_ids", 1, 1, 1, i); __PYX_ERR(0, 531, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("collect_forest_ids", 1, 1, 1, i); __PYX_ERR(0, 681, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 531, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 681, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 531, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 681, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("collect_forest_ids", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 531, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("collect_forest_ids", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 681, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -30117,7 +31612,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_60collect_forest_ids(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_64collect_forest_ids(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -30127,7 +31622,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_60collect_forest_ids(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_64collect_forest_ids(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -30136,7 +31631,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_60collect_forest_ids(s
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("collect_forest_ids", 0);
 
-  /* "forest/_hier_core.pyx":532
+  /* "forest/_hier_core.pyx":682
  * 
  *     def collect_forest_ids(self, int idx):
  *         return self._collect_forest_ids_c(idx)             # <<<<<<<<<<<<<<
@@ -30144,13 +31639,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_60collect_forest_ids(s
  *     cdef void _clear_subtree_occupation_c(self, int idx) noexcept:
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_collect_forest_ids_c(__pyx_v_self, __pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 532, __pyx_L1_error)
+  __pyx_t_1 = ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_collect_forest_ids_c(__pyx_v_self, __pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 682, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":531
+  /* "forest/_hier_core.pyx":681
  *         return ids
  * 
  *     def collect_forest_ids(self, int idx):             # <<<<<<<<<<<<<<
@@ -30169,7 +31664,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_60collect_forest_ids(s
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":534
+/* "forest/_hier_core.pyx":684
  *         return self._collect_forest_ids_c(idx)
  * 
  *     cdef void _clear_subtree_occupation_c(self, int idx) noexcept:             # <<<<<<<<<<<<<<
@@ -30197,24 +31692,24 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_clear_subtree_occupation_c", 0);
 
-  /* "forest/_hier_core.pyx":536
+  /* "forest/_hier_core.pyx":686
  *     cdef void _clear_subtree_occupation_c(self, int idx) noexcept:
  *         """"""
  *         cdef list stack = [idx]             # <<<<<<<<<<<<<<
  *         cdef int i, left, right, pidx
  *         cdef char* node
 */
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 536, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 686, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 536, __pyx_L1_error)
+  __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 686, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 536, __pyx_L1_error);
+  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 686, __pyx_L1_error);
   __pyx_t_1 = 0;
   __pyx_v_stack = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "forest/_hier_core.pyx":541
+  /* "forest/_hier_core.pyx":691
  *         cdef double vol
  * 
  *         while stack:             # <<<<<<<<<<<<<<
@@ -30224,60 +31719,60 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
   while (1) {
     {
       Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_v_stack);
-      if (unlikely(((!CYTHON_ASSUME_SAFE_SIZE) && __pyx_temp < 0))) __PYX_ERR(0, 541, __pyx_L1_error)
+      if (unlikely(((!CYTHON_ASSUME_SAFE_SIZE) && __pyx_temp < 0))) __PYX_ERR(0, 691, __pyx_L1_error)
       __pyx_t_3 = (__pyx_temp != 0);
     }
 
     if (!__pyx_t_3) break;
 
-    /* "forest/_hier_core.pyx":542
+    /* "forest/_hier_core.pyx":692
  * 
  *         while stack:
  *             i = stack.pop()             # <<<<<<<<<<<<<<
  *             if self._occupied[i]:
  *                 self._occupied[i] = 0
 */
-    __pyx_t_2 = __Pyx_PyList_Pop(__pyx_v_stack); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 542, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyList_Pop(__pyx_v_stack); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 692, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_4 = __Pyx_PyLong_As_int(__pyx_t_2); if (unlikely((__pyx_t_4 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 542, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyLong_As_int(__pyx_t_2); if (unlikely((__pyx_t_4 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 692, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_v_i = __pyx_t_4;
 
-    /* "forest/_hier_core.pyx":543
+    /* "forest/_hier_core.pyx":693
  *         while stack:
  *             i = stack.pop()
  *             if self._occupied[i]:             # <<<<<<<<<<<<<<
  *                 self._occupied[i] = 0
  *                 self._forest_id[i] = -1
 */
-    if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 543, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 693, __pyx_L1_error)}
     __pyx_t_5 = __pyx_v_i;
     __pyx_t_3 = ((*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_5)) ))) != 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":544
+      /* "forest/_hier_core.pyx":694
  *             i = stack.pop()
  *             if self._occupied[i]:
  *                 self._occupied[i] = 0             # <<<<<<<<<<<<<<
  *                 self._forest_id[i] = -1
  *                 #
 */
-      if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 544, __pyx_L1_error)}
+      if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 694, __pyx_L1_error)}
       __pyx_t_5 = __pyx_v_i;
       *((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_5)) )) = 0;
 
-      /* "forest/_hier_core.pyx":545
+      /* "forest/_hier_core.pyx":695
  *             if self._occupied[i]:
  *                 self._occupied[i] = 0
  *                 self._forest_id[i] = -1             # <<<<<<<<<<<<<<
  *                 #
  *                 node = _node_ptr(self._base, self._stride, i)
 */
-      if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 545, __pyx_L1_error)}
+      if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 695, __pyx_L1_error)}
       __pyx_t_5 = __pyx_v_i;
       *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_5)) )) = -1;
 
-      /* "forest/_hier_core.pyx":547
+      /* "forest/_hier_core.pyx":697
  *                 self._forest_id[i] = -1
  *                 #
  *                 node = _node_ptr(self._base, self._stride, i)             # <<<<<<<<<<<<<<
@@ -30286,7 +31781,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
       __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_i);
 
-      /* "forest/_hier_core.pyx":548
+      /* "forest/_hier_core.pyx":698
  *                 #
  *                 node = _node_ptr(self._base, self._stride, i)
  *                 vol = ldexp(1.0, -_get_i32(node, _OFF_DEPTH))             # <<<<<<<<<<<<<<
@@ -30295,7 +31790,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
       __pyx_v_vol = ldexp(1.0, (-__pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 12)));
 
-      /* "forest/_hier_core.pyx":550
+      /* "forest/_hier_core.pyx":700
  *                 vol = ldexp(1.0, -_get_i32(node, _OFF_DEPTH))
  *                 #  subtree_occ / subtree_occ_vol
  *                 pidx = _get_i32(node, _OFF_PARENT)             # <<<<<<<<<<<<<<
@@ -30304,7 +31799,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
       __pyx_v_pidx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 8);
 
-      /* "forest/_hier_core.pyx":551
+      /* "forest/_hier_core.pyx":701
  *                 #  subtree_occ / subtree_occ_vol
  *                 pidx = _get_i32(node, _OFF_PARENT)
  *                 while pidx >= 0:             # <<<<<<<<<<<<<<
@@ -30315,29 +31810,29 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
         __pyx_t_3 = (__pyx_v_pidx >= 0);
         if (!__pyx_t_3) break;
 
-        /* "forest/_hier_core.pyx":552
+        /* "forest/_hier_core.pyx":702
  *                 pidx = _get_i32(node, _OFF_PARENT)
  *                 while pidx >= 0:
  *                     self._subtree_occ[pidx] -= 1             # <<<<<<<<<<<<<<
  *                     self._subtree_occ_vol[pidx] -= vol
  *                     node = _node_ptr(self._base, self._stride, pidx)
 */
-        if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 552, __pyx_L1_error)}
+        if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 702, __pyx_L1_error)}
         __pyx_t_5 = __pyx_v_pidx;
         *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_5)) )) -= 1;
 
-        /* "forest/_hier_core.pyx":553
+        /* "forest/_hier_core.pyx":703
  *                 while pidx >= 0:
  *                     self._subtree_occ[pidx] -= 1
  *                     self._subtree_occ_vol[pidx] -= vol             # <<<<<<<<<<<<<<
  *                     node = _node_ptr(self._base, self._stride, pidx)
  *                     pidx = _get_i32(node, _OFF_PARENT)
 */
-        if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 553, __pyx_L1_error)}
+        if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 703, __pyx_L1_error)}
         __pyx_t_5 = __pyx_v_pidx;
         *((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_5)) )) -= __pyx_v_vol;
 
-        /* "forest/_hier_core.pyx":554
+        /* "forest/_hier_core.pyx":704
  *                     self._subtree_occ[pidx] -= 1
  *                     self._subtree_occ_vol[pidx] -= vol
  *                     node = _node_ptr(self._base, self._stride, pidx)             # <<<<<<<<<<<<<<
@@ -30346,7 +31841,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
         __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_pidx);
 
-        /* "forest/_hier_core.pyx":555
+        /* "forest/_hier_core.pyx":705
  *                     self._subtree_occ_vol[pidx] -= vol
  *                     node = _node_ptr(self._base, self._stride, pidx)
  *                     pidx = _get_i32(node, _OFF_PARENT)             # <<<<<<<<<<<<<<
@@ -30356,29 +31851,29 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
         __pyx_v_pidx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 8);
       }
 
-      /* "forest/_hier_core.pyx":556
+      /* "forest/_hier_core.pyx":706
  *                     node = _node_ptr(self._base, self._stride, pidx)
  *                     pidx = _get_i32(node, _OFF_PARENT)
  *                 self._subtree_occ[i] = 0             # <<<<<<<<<<<<<<
  *                 self._subtree_occ_vol[i] = 0.0
  *             node = _node_ptr(self._base, self._stride, i)
 */
-      if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 556, __pyx_L1_error)}
+      if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 706, __pyx_L1_error)}
       __pyx_t_5 = __pyx_v_i;
       *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_5)) )) = 0;
 
-      /* "forest/_hier_core.pyx":557
+      /* "forest/_hier_core.pyx":707
  *                     pidx = _get_i32(node, _OFF_PARENT)
  *                 self._subtree_occ[i] = 0
  *                 self._subtree_occ_vol[i] = 0.0             # <<<<<<<<<<<<<<
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)
 */
-      if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 557, __pyx_L1_error)}
+      if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 707, __pyx_L1_error)}
       __pyx_t_5 = __pyx_v_i;
       *((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_5)) )) = 0.0;
 
-      /* "forest/_hier_core.pyx":543
+      /* "forest/_hier_core.pyx":693
  *         while stack:
  *             i = stack.pop()
  *             if self._occupied[i]:             # <<<<<<<<<<<<<<
@@ -30387,7 +31882,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
     }
 
-    /* "forest/_hier_core.pyx":558
+    /* "forest/_hier_core.pyx":708
  *                 self._subtree_occ[i] = 0
  *                 self._subtree_occ_vol[i] = 0.0
  *             node = _node_ptr(self._base, self._stride, i)             # <<<<<<<<<<<<<<
@@ -30396,7 +31891,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
     __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_i);
 
-    /* "forest/_hier_core.pyx":559
+    /* "forest/_hier_core.pyx":709
  *                 self._subtree_occ_vol[i] = 0.0
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)             # <<<<<<<<<<<<<<
@@ -30405,7 +31900,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
     __pyx_v_left = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 0);
 
-    /* "forest/_hier_core.pyx":560
+    /* "forest/_hier_core.pyx":710
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)
  *             right = _get_i32(node, _OFF_RIGHT)             # <<<<<<<<<<<<<<
@@ -30414,7 +31909,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
     __pyx_v_right = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 4);
 
-    /* "forest/_hier_core.pyx":561
+    /* "forest/_hier_core.pyx":711
  *             left = _get_i32(node, _OFF_LEFT)
  *             right = _get_i32(node, _OFF_RIGHT)
  *             if left >= 0:             # <<<<<<<<<<<<<<
@@ -30424,19 +31919,19 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
     __pyx_t_3 = (__pyx_v_left >= 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":562
+      /* "forest/_hier_core.pyx":712
  *             right = _get_i32(node, _OFF_RIGHT)
  *             if left >= 0:
  *                 stack.append(left)             # <<<<<<<<<<<<<<
  *             if right >= 0:
  *                 stack.append(right)
 */
-      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_left); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 562, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_left); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 712, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 562, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 712, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-      /* "forest/_hier_core.pyx":561
+      /* "forest/_hier_core.pyx":711
  *             left = _get_i32(node, _OFF_LEFT)
  *             right = _get_i32(node, _OFF_RIGHT)
  *             if left >= 0:             # <<<<<<<<<<<<<<
@@ -30445,7 +31940,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
     }
 
-    /* "forest/_hier_core.pyx":563
+    /* "forest/_hier_core.pyx":713
  *             if left >= 0:
  *                 stack.append(left)
  *             if right >= 0:             # <<<<<<<<<<<<<<
@@ -30455,19 +31950,19 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
     __pyx_t_3 = (__pyx_v_right >= 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":564
+      /* "forest/_hier_core.pyx":714
  *                 stack.append(left)
  *             if right >= 0:
  *                 stack.append(right)             # <<<<<<<<<<<<<<
  * 
  *     def clear_subtree_occupation(self, int idx):
 */
-      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_right); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 564, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyLong_From_int(__pyx_v_right); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 714, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 564, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_2); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 714, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-      /* "forest/_hier_core.pyx":563
+      /* "forest/_hier_core.pyx":713
  *             if left >= 0:
  *                 stack.append(left)
  *             if right >= 0:             # <<<<<<<<<<<<<<
@@ -30477,7 +31972,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
     }
   }
 
-  /* "forest/_hier_core.pyx":534
+  /* "forest/_hier_core.pyx":684
  *         return self._collect_forest_ids_c(idx)
  * 
  *     cdef void _clear_subtree_occupation_c(self, int idx) noexcept:             # <<<<<<<<<<<<<<
@@ -30496,7 +31991,7 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
   __Pyx_RefNannyFinishContext();
 }
 
-/* "forest/_hier_core.pyx":566
+/* "forest/_hier_core.pyx":716
  *                 stack.append(right)
  * 
  *     def clear_subtree_occupation(self, int idx):             # <<<<<<<<<<<<<<
@@ -30505,15 +32000,15 @@ static void __pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c(
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_63clear_subtree_occupation(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_67clear_subtree_occupation(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_63clear_subtree_occupation = {"clear_subtree_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_63clear_subtree_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_63clear_subtree_occupation(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_67clear_subtree_occupation = {"clear_subtree_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_67clear_subtree_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_67clear_subtree_occupation(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -30543,32 +32038,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 566, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 716, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 566, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 716, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "clear_subtree_occupation", 0) < (0)) __PYX_ERR(0, 566, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "clear_subtree_occupation", 0) < (0)) __PYX_ERR(0, 716, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("clear_subtree_occupation", 1, 1, 1, i); __PYX_ERR(0, 566, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("clear_subtree_occupation", 1, 1, 1, i); __PYX_ERR(0, 716, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 566, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 716, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 566, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 716, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("clear_subtree_occupation", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 566, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("clear_subtree_occupation", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 716, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -30579,7 +32074,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_62clear_subtree_occupation(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_66clear_subtree_occupation(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -30589,12 +32084,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_62clear_subtree_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_66clear_subtree_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("clear_subtree_occupation", 0);
 
-  /* "forest/_hier_core.pyx":567
+  /* "forest/_hier_core.pyx":717
  * 
  *     def clear_subtree_occupation(self, int idx):
  *         self._clear_subtree_occupation_c(idx)             # <<<<<<<<<<<<<<
@@ -30603,7 +32098,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_62clear_subtree_occupa
 */
   ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_clear_subtree_occupation_c(__pyx_v_self, __pyx_v_idx);
 
-  /* "forest/_hier_core.pyx":566
+  /* "forest/_hier_core.pyx":716
  *                 stack.append(right)
  * 
  *     def clear_subtree_occupation(self, int idx):             # <<<<<<<<<<<<<<
@@ -30618,7 +32113,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_62clear_subtree_occupa
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":569
+/* "forest/_hier_core.pyx":719
  *         self._clear_subtree_occupation_c(idx)
  * 
  *     def reset_all_occupation(self):             # <<<<<<<<<<<<<<
@@ -30627,16 +32122,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_62clear_subtree_occupa
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_65reset_all_occupation(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_69reset_all_occupation(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_64reset_all_occupation, "\351\207\215\347\275\256\346\211\200\346\234\211\350\212\202\347\202\271\347\232\204\345\215\240\347\224\250\347\212\266\346\200\201");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_65reset_all_occupation = {"reset_all_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_65reset_all_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_64reset_all_occupation};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_65reset_all_occupation(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_68reset_all_occupation, "\351\207\215\347\275\256\346\211\200\346\234\211\350\212\202\347\202\271\347\232\204\345\215\240\347\224\250\347\212\266\346\200\201");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_69reset_all_occupation = {"reset_all_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_69reset_all_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_68reset_all_occupation};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_69reset_all_occupation(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -30662,14 +32157,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("reset_all_occupation", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_64reset_all_occupation(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_68reset_all_occupation(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_64reset_all_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_68reset_all_occupation(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
   int __pyx_v_i;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -30682,7 +32177,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_64reset_all_occupation
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("reset_all_occupation", 0);
 
-  /* "forest/_hier_core.pyx":572
+  /* "forest/_hier_core.pyx":722
  *         """"""
  *         cdef int i
  *         for i in range(self.next_idx):             # <<<<<<<<<<<<<<
@@ -30694,52 +32189,52 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_64reset_all_occupation
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "forest/_hier_core.pyx":573
+    /* "forest/_hier_core.pyx":723
  *         cdef int i
  *         for i in range(self.next_idx):
  *             self._occupied[i] = 0             # <<<<<<<<<<<<<<
  *             self._subtree_occ[i] = 0
  *             self._subtree_occ_vol[i] = 0.0
 */
-    if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 573, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 723, __pyx_L1_error)}
     __pyx_t_4 = __pyx_v_i;
     *((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_4)) )) = 0;
 
-    /* "forest/_hier_core.pyx":574
+    /* "forest/_hier_core.pyx":724
  *         for i in range(self.next_idx):
  *             self._occupied[i] = 0
  *             self._subtree_occ[i] = 0             # <<<<<<<<<<<<<<
  *             self._subtree_occ_vol[i] = 0.0
  *             self._forest_id[i] = -1
 */
-    if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 574, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 724, __pyx_L1_error)}
     __pyx_t_4 = __pyx_v_i;
     *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_4)) )) = 0;
 
-    /* "forest/_hier_core.pyx":575
+    /* "forest/_hier_core.pyx":725
  *             self._occupied[i] = 0
  *             self._subtree_occ[i] = 0
  *             self._subtree_occ_vol[i] = 0.0             # <<<<<<<<<<<<<<
  *             self._forest_id[i] = -1
  * 
 */
-    if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 575, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_subtree_occ_vol.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 725, __pyx_L1_error)}
     __pyx_t_4 = __pyx_v_i;
     *((__pyx_t_5numpy_float64_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_float64_t *) __pyx_v_self->_subtree_occ_vol.data) + __pyx_t_4)) )) = 0.0;
 
-    /* "forest/_hier_core.pyx":576
+    /* "forest/_hier_core.pyx":726
  *             self._subtree_occ[i] = 0
  *             self._subtree_occ_vol[i] = 0.0
  *             self._forest_id[i] = -1             # <<<<<<<<<<<<<<
  * 
  *     #   ()
 */
-    if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 576, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_forest_id.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 726, __pyx_L1_error)}
     __pyx_t_4 = __pyx_v_i;
     *((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_forest_id.data) + __pyx_t_4)) )) = -1;
   }
 
-  /* "forest/_hier_core.pyx":569
+  /* "forest/_hier_core.pyx":719
  *         self._clear_subtree_occupation_c(idx)
  * 
  *     def reset_all_occupation(self):             # <<<<<<<<<<<<<<
@@ -30758,9 +32253,9 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_64reset_all_occupation
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
-static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_CoroutineObject *__pyx_generator, CYTHON_UNUSED PyThreadState *__pyx_tstate, PyObject *__pyx_sent_value); /* proto */
+static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_72generator(__pyx_CoroutineObject *__pyx_generator, CYTHON_UNUSED PyThreadState *__pyx_tstate, PyObject *__pyx_sent_value); /* proto */
 
-/* "forest/_hier_core.pyx":580
+/* "forest/_hier_core.pyx":730
  *     #   ()
  * 
  *     def iter_dirty(self):             # <<<<<<<<<<<<<<
@@ -30769,16 +32264,16 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_67iter_dirty(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_71iter_dirty(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_66iter_dirty, "\347\224\237\346\210\220\345\231\250\357\274\232\344\272\247\345\207\272\346\211\200\346\234\211 dirty \350\212\202\347\202\271\347\264\242\345\274\225");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_67iter_dirty = {"iter_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_67iter_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_66iter_dirty};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_67iter_dirty(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_70iter_dirty, "\347\224\237\346\210\220\345\231\250\357\274\232\344\272\247\345\207\272\346\211\200\346\234\211 dirty \350\212\202\347\202\271\347\264\242\345\274\225");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_71iter_dirty = {"iter_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_71iter_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_70iter_dirty};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_71iter_dirty(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -30804,14 +32299,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("iter_dirty", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_66iter_dirty(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_70iter_dirty(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_66iter_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_70iter_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
   struct __pyx_obj_6forest_10_hier_core___pyx_scope_struct__iter_dirty *__pyx_cur_scope;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -30823,7 +32318,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_66iter_dirty(struct __
   if (unlikely(!__pyx_cur_scope)) {
     __pyx_cur_scope = ((struct __pyx_obj_6forest_10_hier_core___pyx_scope_struct__iter_dirty *)Py_None);
     __Pyx_INCREF(Py_None);
-    __PYX_ERR(0, 580, __pyx_L1_error)
+    __PYX_ERR(0, 730, __pyx_L1_error)
   } else {
     __Pyx_GOTREF((PyObject *)__pyx_cur_scope);
   }
@@ -30831,7 +32326,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_66iter_dirty(struct __
   __Pyx_INCREF((PyObject *)__pyx_cur_scope->__pyx_v_self);
   __Pyx_GIVEREF((PyObject *)__pyx_cur_scope->__pyx_v_self);
   {
-    __pyx_CoroutineObject *gen = __Pyx_Generator_New((__pyx_coroutine_body_t) __pyx_gb_6forest_10_hier_core_9NodeStore_68generator, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0]), (PyObject *) __pyx_cur_scope, __pyx_mstate_global->__pyx_n_u_iter_dirty, __pyx_mstate_global->__pyx_n_u_NodeStore_iter_dirty, __pyx_mstate_global->__pyx_n_u_forest__hier_core); if (unlikely(!gen)) __PYX_ERR(0, 580, __pyx_L1_error)
+    __pyx_CoroutineObject *gen = __Pyx_Generator_New((__pyx_coroutine_body_t) __pyx_gb_6forest_10_hier_core_9NodeStore_72generator, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0]), (PyObject *) __pyx_cur_scope, __pyx_mstate_global->__pyx_n_u_iter_dirty, __pyx_mstate_global->__pyx_n_u_NodeStore_iter_dirty, __pyx_mstate_global->__pyx_n_u_forest__hier_core); if (unlikely(!gen)) __PYX_ERR(0, 730, __pyx_L1_error)
     __Pyx_DECREF(__pyx_cur_scope);
     __Pyx_RefNannyFinishContext();
     return (PyObject *) gen;
@@ -30847,7 +32342,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_66iter_dirty(struct __
   return __pyx_r;
 }
 
-static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_CoroutineObject *__pyx_generator, CYTHON_UNUSED PyThreadState *__pyx_tstate, PyObject *__pyx_sent_value) /* generator body */
+static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_72generator(__pyx_CoroutineObject *__pyx_generator, CYTHON_UNUSED PyThreadState *__pyx_tstate, PyObject *__pyx_sent_value) /* generator body */
 {
   struct __pyx_obj_6forest_10_hier_core___pyx_scope_struct__iter_dirty *__pyx_cur_scope = ((struct __pyx_obj_6forest_10_hier_core___pyx_scope_struct__iter_dirty *)__pyx_generator->closure);
   PyObject *__pyx_r = NULL;
@@ -30871,10 +32366,10 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
   __pyx_L3_first_run:;
   if (unlikely(__pyx_sent_value != Py_None)) {
     if (unlikely(__pyx_sent_value)) PyErr_SetString(PyExc_TypeError, "can't send non-None value to a just-started generator");
-    __PYX_ERR(0, 580, __pyx_L1_error)
+    __PYX_ERR(0, 730, __pyx_L1_error)
   }
 
-  /* "forest/_hier_core.pyx":584
+  /* "forest/_hier_core.pyx":734
  *         cdef int i
  *         cdef char* node
  *         for i in range(self.next_idx):             # <<<<<<<<<<<<<<
@@ -30886,7 +32381,7 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_cur_scope->__pyx_v_i = __pyx_t_3;
 
-    /* "forest/_hier_core.pyx":585
+    /* "forest/_hier_core.pyx":735
  *         cdef char* node
  *         for i in range(self.next_idx):
  *             node = _node_ptr(self._base, self._stride, i)             # <<<<<<<<<<<<<<
@@ -30895,7 +32390,7 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
 */
     __pyx_cur_scope->__pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_cur_scope->__pyx_v_self->_base, __pyx_cur_scope->__pyx_v_self->_stride, __pyx_cur_scope->__pyx_v_i);
 
-    /* "forest/_hier_core.pyx":586
+    /* "forest/_hier_core.pyx":736
  *         for i in range(self.next_idx):
  *             node = _node_ptr(self._base, self._stride, i)
  *             if _get_u8(node, _OFF_DIRTY):             # <<<<<<<<<<<<<<
@@ -30905,14 +32400,14 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
     __pyx_t_4 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_cur_scope->__pyx_v_node, 25) != 0);
     if (__pyx_t_4) {
 
-      /* "forest/_hier_core.pyx":587
+      /* "forest/_hier_core.pyx":737
  *             node = _node_ptr(self._base, self._stride, i)
  *             if _get_u8(node, _OFF_DIRTY):
  *                 yield i             # <<<<<<<<<<<<<<
  * 
  *     def clear_all_dirty(self):
 */
-      __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_cur_scope->__pyx_v_i); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 587, __pyx_L1_error)
+      __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_cur_scope->__pyx_v_i); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 737, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __pyx_r = __pyx_t_5;
       __pyx_t_5 = 0;
@@ -30929,9 +32424,9 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
       __pyx_t_1 = __pyx_cur_scope->__pyx_t_0;
       __pyx_t_2 = __pyx_cur_scope->__pyx_t_1;
       __pyx_t_3 = __pyx_cur_scope->__pyx_t_2;
-      if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 587, __pyx_L1_error)
+      if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 737, __pyx_L1_error)
 
-      /* "forest/_hier_core.pyx":586
+      /* "forest/_hier_core.pyx":736
  *         for i in range(self.next_idx):
  *             node = _node_ptr(self._base, self._stride, i)
  *             if _get_u8(node, _OFF_DIRTY):             # <<<<<<<<<<<<<<
@@ -30942,7 +32437,7 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
   }
   CYTHON_MAYBE_UNUSED_VAR(__pyx_cur_scope);
 
-  /* "forest/_hier_core.pyx":580
+  /* "forest/_hier_core.pyx":730
  *     #   ()
  * 
  *     def iter_dirty(self):             # <<<<<<<<<<<<<<
@@ -30970,7 +32465,7 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":589
+/* "forest/_hier_core.pyx":739
  *                 yield i
  * 
  *     def clear_all_dirty(self):             # <<<<<<<<<<<<<<
@@ -30979,16 +32474,16 @@ static PyObject *__pyx_gb_6forest_10_hier_core_9NodeStore_68generator(__pyx_Coro
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_70clear_all_dirty(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_74clear_all_dirty(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_69clear_all_dirty, "\346\270\205\351\231\244\346\211\200\346\234\211\350\212\202\347\202\271\347\232\204 dirty \346\240\207\350\256\260");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_70clear_all_dirty = {"clear_all_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_70clear_all_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_69clear_all_dirty};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_70clear_all_dirty(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_73clear_all_dirty, "\346\270\205\351\231\244\346\211\200\346\234\211\350\212\202\347\202\271\347\232\204 dirty \346\240\207\350\256\260");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_74clear_all_dirty = {"clear_all_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_74clear_all_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_73clear_all_dirty};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_74clear_all_dirty(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -31014,14 +32509,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("clear_all_dirty", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_73clear_all_dirty(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73clear_all_dirty(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
   int __pyx_v_i;
   char *__pyx_v_node;
   PyObject *__pyx_r = NULL;
@@ -31031,7 +32526,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(stru
   int __pyx_t_3;
   __Pyx_RefNannySetupContext("clear_all_dirty", 0);
 
-  /* "forest/_hier_core.pyx":593
+  /* "forest/_hier_core.pyx":743
  *         cdef int i
  *         cdef char* node
  *         for i in range(self.next_idx):             # <<<<<<<<<<<<<<
@@ -31043,7 +32538,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(stru
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "forest/_hier_core.pyx":594
+    /* "forest/_hier_core.pyx":744
  *         cdef char* node
  *         for i in range(self.next_idx):
  *             node = _node_ptr(self._base, self._stride, i)             # <<<<<<<<<<<<<<
@@ -31052,7 +32547,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(stru
 */
     __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_i);
 
-    /* "forest/_hier_core.pyx":595
+    /* "forest/_hier_core.pyx":745
  *         for i in range(self.next_idx):
  *             node = _node_ptr(self._base, self._stride, i)
  *             _set_u8(node, _OFF_DIRTY, 0)             # <<<<<<<<<<<<<<
@@ -31062,7 +32557,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(stru
     __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 0);
   }
 
-  /* "forest/_hier_core.pyx":589
+  /* "forest/_hier_core.pyx":739
  *                 yield i
  * 
  *     def clear_all_dirty(self):             # <<<<<<<<<<<<<<
@@ -31077,7 +32572,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(stru
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":599
+/* "forest/_hier_core.pyx":749
  *     #
  * 
  *     def get_stats(self):             # <<<<<<<<<<<<<<
@@ -31086,16 +32581,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_69clear_all_dirty(stru
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_72get_stats(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_76get_stats(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_71get_stats, "\350\277\224\345\233\236\346\240\221\347\273\237\350\256\241\344\277\241\346\201\257 dict");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_72get_stats = {"get_stats", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_72get_stats, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_71get_stats};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_72get_stats(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_75get_stats, "\350\277\224\345\233\236\346\240\221\347\273\237\350\256\241\344\277\241\346\201\257 dict");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_76get_stats = {"get_stats", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_76get_stats, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_75get_stats};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_76get_stats(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -31121,14 +32616,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("get_stats", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_75get_stats(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_stats(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
   int __pyx_v_n_leaves;
   int __pyx_v_max_depth;
   int __pyx_v_total_depth;
@@ -31150,7 +32645,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_stats", 0);
 
-  /* "forest/_hier_core.pyx":601
+  /* "forest/_hier_core.pyx":751
  *     def get_stats(self):
  *         """ dict"""
  *         cdef int n_leaves = 0             # <<<<<<<<<<<<<<
@@ -31159,7 +32654,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
   __pyx_v_n_leaves = 0;
 
-  /* "forest/_hier_core.pyx":602
+  /* "forest/_hier_core.pyx":752
  *         """ dict"""
  *         cdef int n_leaves = 0
  *         cdef int max_depth = 0             # <<<<<<<<<<<<<<
@@ -31168,7 +32663,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
   __pyx_v_max_depth = 0;
 
-  /* "forest/_hier_core.pyx":603
+  /* "forest/_hier_core.pyx":753
  *         cdef int n_leaves = 0
  *         cdef int max_depth = 0
  *         cdef int total_depth = 0             # <<<<<<<<<<<<<<
@@ -31177,22 +32672,22 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
   __pyx_v_total_depth = 0;
 
-  /* "forest/_hier_core.pyx":604
+  /* "forest/_hier_core.pyx":754
  *         cdef int max_depth = 0
  *         cdef int total_depth = 0
  *         cdef list stack = [0]             # <<<<<<<<<<<<<<
  *         cdef int i, d, left
  *         cdef char* node
 */
-  __pyx_t_1 = PyList_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 604, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 754, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_mstate_global->__pyx_int_0);
   __Pyx_GIVEREF(__pyx_mstate_global->__pyx_int_0);
-  if (__Pyx_PyList_SET_ITEM(__pyx_t_1, 0, __pyx_mstate_global->__pyx_int_0) != (0)) __PYX_ERR(0, 604, __pyx_L1_error);
+  if (__Pyx_PyList_SET_ITEM(__pyx_t_1, 0, __pyx_mstate_global->__pyx_int_0) != (0)) __PYX_ERR(0, 754, __pyx_L1_error);
   __pyx_v_stack = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "forest/_hier_core.pyx":608
+  /* "forest/_hier_core.pyx":758
  *         cdef char* node
  * 
  *         while stack:             # <<<<<<<<<<<<<<
@@ -31202,26 +32697,26 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
   while (1) {
     {
       Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_v_stack);
-      if (unlikely(((!CYTHON_ASSUME_SAFE_SIZE) && __pyx_temp < 0))) __PYX_ERR(0, 608, __pyx_L1_error)
+      if (unlikely(((!CYTHON_ASSUME_SAFE_SIZE) && __pyx_temp < 0))) __PYX_ERR(0, 758, __pyx_L1_error)
       __pyx_t_2 = (__pyx_temp != 0);
     }
 
     if (!__pyx_t_2) break;
 
-    /* "forest/_hier_core.pyx":609
+    /* "forest/_hier_core.pyx":759
  * 
  *         while stack:
  *             i = stack.pop()             # <<<<<<<<<<<<<<
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)
 */
-    __pyx_t_1 = __Pyx_PyList_Pop(__pyx_v_stack); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 609, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyList_Pop(__pyx_v_stack); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 759, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_3 = __Pyx_PyLong_As_int(__pyx_t_1); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 609, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyLong_As_int(__pyx_t_1); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 759, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_v_i = __pyx_t_3;
 
-    /* "forest/_hier_core.pyx":610
+    /* "forest/_hier_core.pyx":760
  *         while stack:
  *             i = stack.pop()
  *             node = _node_ptr(self._base, self._stride, i)             # <<<<<<<<<<<<<<
@@ -31230,7 +32725,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
     __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_self->_base, __pyx_v_self->_stride, __pyx_v_i);
 
-    /* "forest/_hier_core.pyx":611
+    /* "forest/_hier_core.pyx":761
  *             i = stack.pop()
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)             # <<<<<<<<<<<<<<
@@ -31239,7 +32734,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
     __pyx_v_left = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 0);
 
-    /* "forest/_hier_core.pyx":612
+    /* "forest/_hier_core.pyx":762
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)
  *             if left < 0:             # <<<<<<<<<<<<<<
@@ -31249,7 +32744,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
     __pyx_t_2 = (__pyx_v_left < 0);
     if (__pyx_t_2) {
 
-      /* "forest/_hier_core.pyx":613
+      /* "forest/_hier_core.pyx":763
  *             left = _get_i32(node, _OFF_LEFT)
  *             if left < 0:
  *                 n_leaves += 1             # <<<<<<<<<<<<<<
@@ -31258,7 +32753,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
       __pyx_v_n_leaves = (__pyx_v_n_leaves + 1);
 
-      /* "forest/_hier_core.pyx":614
+      /* "forest/_hier_core.pyx":764
  *             if left < 0:
  *                 n_leaves += 1
  *                 d = _get_i32(node, _OFF_DEPTH)             # <<<<<<<<<<<<<<
@@ -31267,7 +32762,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
       __pyx_v_d = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 12);
 
-      /* "forest/_hier_core.pyx":615
+      /* "forest/_hier_core.pyx":765
  *                 n_leaves += 1
  *                 d = _get_i32(node, _OFF_DEPTH)
  *                 total_depth += d             # <<<<<<<<<<<<<<
@@ -31276,7 +32771,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
       __pyx_v_total_depth = (__pyx_v_total_depth + __pyx_v_d);
 
-      /* "forest/_hier_core.pyx":616
+      /* "forest/_hier_core.pyx":766
  *                 d = _get_i32(node, _OFF_DEPTH)
  *                 total_depth += d
  *                 if d > max_depth:             # <<<<<<<<<<<<<<
@@ -31286,7 +32781,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
       __pyx_t_2 = (__pyx_v_d > __pyx_v_max_depth);
       if (__pyx_t_2) {
 
-        /* "forest/_hier_core.pyx":617
+        /* "forest/_hier_core.pyx":767
  *                 total_depth += d
  *                 if d > max_depth:
  *                     max_depth = d             # <<<<<<<<<<<<<<
@@ -31295,7 +32790,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
         __pyx_v_max_depth = __pyx_v_d;
 
-        /* "forest/_hier_core.pyx":616
+        /* "forest/_hier_core.pyx":766
  *                 d = _get_i32(node, _OFF_DEPTH)
  *                 total_depth += d
  *                 if d > max_depth:             # <<<<<<<<<<<<<<
@@ -31304,7 +32799,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
       }
 
-      /* "forest/_hier_core.pyx":612
+      /* "forest/_hier_core.pyx":762
  *             node = _node_ptr(self._base, self._stride, i)
  *             left = _get_i32(node, _OFF_LEFT)
  *             if left < 0:             # <<<<<<<<<<<<<<
@@ -31314,7 +32809,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
       goto __pyx_L5;
     }
 
-    /* "forest/_hier_core.pyx":619
+    /* "forest/_hier_core.pyx":769
  *                     max_depth = d
  *             else:
  *                 stack.append(left)             # <<<<<<<<<<<<<<
@@ -31322,27 +32817,27 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
  * 
 */
     /*else*/ {
-      __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_left); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 619, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_left); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 769, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_4 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_1); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(0, 619, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_1); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(0, 769, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-      /* "forest/_hier_core.pyx":620
+      /* "forest/_hier_core.pyx":770
  *             else:
  *                 stack.append(left)
  *                 stack.append(_get_i32(node, _OFF_RIGHT))             # <<<<<<<<<<<<<<
  * 
  *         cdef float avg = 0.0
 */
-      __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 4)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 620, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 4)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 770, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_4 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_1); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(0, 620, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyList_Append(__pyx_v_stack, __pyx_t_1); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(0, 770, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     }
     __pyx_L5:;
   }
 
-  /* "forest/_hier_core.pyx":622
+  /* "forest/_hier_core.pyx":772
  *                 stack.append(_get_i32(node, _OFF_RIGHT))
  * 
  *         cdef float avg = 0.0             # <<<<<<<<<<<<<<
@@ -31351,7 +32846,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
   __pyx_v_avg = 0.0;
 
-  /* "forest/_hier_core.pyx":623
+  /* "forest/_hier_core.pyx":773
  * 
  *         cdef float avg = 0.0
  *         if n_leaves > 0:             # <<<<<<<<<<<<<<
@@ -31361,7 +32856,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
   __pyx_t_2 = (__pyx_v_n_leaves > 0);
   if (__pyx_t_2) {
 
-    /* "forest/_hier_core.pyx":624
+    /* "forest/_hier_core.pyx":774
  *         cdef float avg = 0.0
  *         if n_leaves > 0:
  *             avg = <float>total_depth / n_leaves             # <<<<<<<<<<<<<<
@@ -31370,7 +32865,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
     __pyx_v_avg = (((float)__pyx_v_total_depth) / ((float)__pyx_v_n_leaves));
 
-    /* "forest/_hier_core.pyx":623
+    /* "forest/_hier_core.pyx":773
  * 
  *         cdef float avg = 0.0
  *         if n_leaves > 0:             # <<<<<<<<<<<<<<
@@ -31379,7 +32874,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
   }
 
-  /* "forest/_hier_core.pyx":626
+  /* "forest/_hier_core.pyx":776
  *             avg = <float>total_depth / n_leaves
  * 
  *         return {             # <<<<<<<<<<<<<<
@@ -31388,60 +32883,60 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
   __Pyx_XDECREF(__pyx_r);
 
-  /* "forest/_hier_core.pyx":627
+  /* "forest/_hier_core.pyx":777
  * 
  *         return {
  *             'n_nodes': self.next_idx,             # <<<<<<<<<<<<<<
  *             'n_leaves': n_leaves,
  *             'max_depth': max_depth,
 */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 627, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 777, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_self->next_idx); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 627, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_self->next_idx); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 777, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_n_nodes, __pyx_t_5) < (0)) __PYX_ERR(0, 627, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_n_nodes, __pyx_t_5) < (0)) __PYX_ERR(0, 777, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":628
+  /* "forest/_hier_core.pyx":778
  *         return {
  *             'n_nodes': self.next_idx,
  *             'n_leaves': n_leaves,             # <<<<<<<<<<<<<<
  *             'max_depth': max_depth,
  *             'avg_depth': avg,
 */
-  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_n_leaves); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 628, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_n_leaves); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 778, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_n_leaves, __pyx_t_5) < (0)) __PYX_ERR(0, 627, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_n_leaves, __pyx_t_5) < (0)) __PYX_ERR(0, 777, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":629
+  /* "forest/_hier_core.pyx":779
  *             'n_nodes': self.next_idx,
  *             'n_leaves': n_leaves,
  *             'max_depth': max_depth,             # <<<<<<<<<<<<<<
  *             'avg_depth': avg,
  *         }
 */
-  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_max_depth); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 629, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_max_depth); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 779, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_max_depth, __pyx_t_5) < (0)) __PYX_ERR(0, 627, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_max_depth, __pyx_t_5) < (0)) __PYX_ERR(0, 777, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "forest/_hier_core.pyx":630
+  /* "forest/_hier_core.pyx":780
  *             'n_leaves': n_leaves,
  *             'max_depth': max_depth,
  *             'avg_depth': avg,             # <<<<<<<<<<<<<<
  *         }
  * 
 */
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_avg); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 630, __pyx_L1_error)
+  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_avg); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 780, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_avg_depth, __pyx_t_5) < (0)) __PYX_ERR(0, 627, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_avg_depth, __pyx_t_5) < (0)) __PYX_ERR(0, 777, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":599
+  /* "forest/_hier_core.pyx":749
  *     #
  * 
  *     def get_stats(self):             # <<<<<<<<<<<<<<
@@ -31462,7 +32957,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":635
+/* "forest/_hier_core.pyx":785
  *     #  /
  * 
  *     def get_raw_buffer(self):             # <<<<<<<<<<<<<<
@@ -31471,16 +32966,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_71get_stats(struct __p
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_74get_raw_buffer(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_78get_raw_buffer(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_73get_raw_buffer, "\350\277\224\345\233\236\345\272\225\345\261\202\347\274\223\345\206\262\345\214\272\347\232\204 numpy view (uint8), \347\224\250\344\272\216\346\226\207\344\273\266\345\206\231\345\205\245");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_74get_raw_buffer = {"get_raw_buffer", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_74get_raw_buffer, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_73get_raw_buffer};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_74get_raw_buffer(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_77get_raw_buffer, "\350\277\224\345\233\236\345\272\225\345\261\202\347\274\223\345\206\262\345\214\272\347\232\204 numpy view (uint8), \347\224\250\344\272\216\346\226\207\344\273\266\345\206\231\345\205\245");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_78get_raw_buffer = {"get_raw_buffer", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_78get_raw_buffer, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_77get_raw_buffer};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_78get_raw_buffer(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -31506,14 +33001,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("get_raw_buffer", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_77get_raw_buffer(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77get_raw_buffer(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -31526,7 +33021,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(struc
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_raw_buffer", 0);
 
-  /* "forest/_hier_core.pyx":637
+  /* "forest/_hier_core.pyx":787
  *     def get_raw_buffer(self):
  *         """ numpy view (uint8), """
  *         return np.asarray(self._buf)             # <<<<<<<<<<<<<<
@@ -31535,13 +33030,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(struc
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_2 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 637, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 787, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 637, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 787, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 637, __pyx_L1_error)}
-  __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_self->_buf, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 637, __pyx_L1_error)
+  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 787, __pyx_L1_error)}
+  __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_self->_buf, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 787, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_5 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -31561,14 +33056,14 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(struc
     __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 637, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 787, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":635
+  /* "forest/_hier_core.pyx":785
  *     #  /
  * 
  *     def get_raw_buffer(self):             # <<<<<<<<<<<<<<
@@ -31590,7 +33085,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(struc
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":639
+/* "forest/_hier_core.pyx":789
  *         return np.asarray(self._buf)
  * 
  *     def get_node_bytes(self, int idx):             # <<<<<<<<<<<<<<
@@ -31599,16 +33094,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_73get_raw_buffer(struc
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_76get_node_bytes(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_80get_node_bytes(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_75get_node_bytes, "\350\277\224\345\233\236\345\215\225\344\270\252\350\212\202\347\202\271\347\232\204\345\255\227\350\212\202\345\210\207\347\211\207 (\347\224\250\344\272\216\345\242\236\351\207\217\345\206\231\345\205\245)");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_76get_node_bytes = {"get_node_bytes", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_76get_node_bytes, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_75get_node_bytes};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_76get_node_bytes(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_79get_node_bytes, "\350\277\224\345\233\236\345\215\225\344\270\252\350\212\202\347\202\271\347\232\204\345\255\227\350\212\202\345\210\207\347\211\207 (\347\224\250\344\272\216\345\242\236\351\207\217\345\206\231\345\205\245)");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_80get_node_bytes = {"get_node_bytes", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_80get_node_bytes, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_79get_node_bytes};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_80get_node_bytes(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -31638,32 +33133,32 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_idx,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 639, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 789, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 639, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 789, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_node_bytes", 0) < (0)) __PYX_ERR(0, 639, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_node_bytes", 0) < (0)) __PYX_ERR(0, 789, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_node_bytes", 1, 1, 1, i); __PYX_ERR(0, 639, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_node_bytes", 1, 1, 1, i); __PYX_ERR(0, 789, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 639, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 789, __pyx_L3_error)
     }
-    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 639, __pyx_L3_error)
+    __pyx_v_idx = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_idx == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 789, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_node_bytes", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 639, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_node_bytes", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 789, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -31674,7 +33169,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_75get_node_bytes(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_79get_node_bytes(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_idx);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -31684,7 +33179,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_node_bytes(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_79get_node_bytes(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, int __pyx_v_idx) {
   int __pyx_v_off;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -31699,7 +33194,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_node_bytes(struc
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_node_bytes", 0);
 
-  /* "forest/_hier_core.pyx":641
+  /* "forest/_hier_core.pyx":791
  *     def get_node_bytes(self, int idx):
  *         """ ()"""
  *         cdef int off = idx * self._stride             # <<<<<<<<<<<<<<
@@ -31708,7 +33203,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_node_bytes(struc
 */
   __pyx_v_off = (__pyx_v_idx * __pyx_v_self->_stride);
 
-  /* "forest/_hier_core.pyx":642
+  /* "forest/_hier_core.pyx":792
  *         """ ()"""
  *         cdef int off = idx * self._stride
  *         return bytes(self._buf[off:off + self._stride])             # <<<<<<<<<<<<<<
@@ -31717,7 +33212,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_node_bytes(struc
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_2 = NULL;
-  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 642, __pyx_L1_error)}
+  if (unlikely(!__pyx_v_self->_buf.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 792, __pyx_L1_error)}
   __pyx_t_3.data = __pyx_v_self->_buf.data;
   __pyx_t_3.memview = __pyx_v_self->_buf.memview;
   __PYX_INC_MEMVIEW(&__pyx_t_3, 1);
@@ -31736,10 +33231,10 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_75get_node_bytes(struc
     0,
     1) < 0))
 {
-    __PYX_ERR(0, 642, __pyx_L1_error)
+    __PYX_ERR(0, 792, __pyx_L1_error)
 }
 
-__pyx_t_5 = __pyx_memoryview_fromslice(__pyx_t_3, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 642, __pyx_L1_error)
+__pyx_t_5 = __pyx_memoryview_fromslice(__pyx_t_3, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_uint8_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_uint8_t, 0);; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 792, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_3, 1);
   __pyx_t_3.memview = NULL; __pyx_t_3.data = NULL;
@@ -31749,14 +33244,14 @@ __pyx_t_5 = __pyx_memoryview_fromslice(__pyx_t_3, 1, (PyObject *(*)(char *)) __p
     __pyx_t_1 = __Pyx_PyObject_FastCall((PyObject*)(&PyBytes_Type), __pyx_callargs+__pyx_t_6, (2-__pyx_t_6) | (__pyx_t_6*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
     __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 642, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 792, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":639
+  /* "forest/_hier_core.pyx":789
  *         return np.asarray(self._buf)
  * 
  *     def get_node_bytes(self, int idx):             # <<<<<<<<<<<<<<
@@ -31778,7 +33273,7 @@ __pyx_t_5 = __pyx_memoryview_fromslice(__pyx_t_3, 1, (PyObject *(*)(char *)) __p
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":644
+/* "forest/_hier_core.pyx":794
  *         return bytes(self._buf[off:off + self._stride])
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -31810,7 +33305,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8capacity___get__(stru
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "forest/_hier_core.pyx":646
+  /* "forest/_hier_core.pyx":796
  *     @property
  *     def capacity(self):
  *         return self._cap             # <<<<<<<<<<<<<<
@@ -31818,13 +33313,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8capacity___get__(stru
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 646, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_cap); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 796, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":644
+  /* "forest/_hier_core.pyx":794
  *         return bytes(self._buf[off:off + self._stride])
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -31843,7 +33338,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8capacity___get__(stru
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":648
+/* "forest/_hier_core.pyx":798
  *         return self._cap
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -31875,7 +33370,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6stride___get__(struct
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "forest/_hier_core.pyx":650
+  /* "forest/_hier_core.pyx":800
  *     @property
  *     def stride(self):
  *         return self._stride             # <<<<<<<<<<<<<<
@@ -31883,13 +33378,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6stride___get__(struct
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_stride); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 650, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_stride); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 800, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":648
+  /* "forest/_hier_core.pyx":798
  *         return self._cap
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -31908,7 +33403,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6stride___get__(struct
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":652
+/* "forest/_hier_core.pyx":802
  *         return self._stride
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -31940,7 +33435,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_7n_links___get__(struc
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "forest/_hier_core.pyx":654
+  /* "forest/_hier_core.pyx":804
  *     @property
  *     def n_links(self):
  *         return self._n_links             # <<<<<<<<<<<<<<
@@ -31948,13 +33443,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_7n_links___get__(struc
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_n_links); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 654, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_n_links); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 804, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":652
+  /* "forest/_hier_core.pyx":802
  *         return self._stride
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -31973,7 +33468,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_7n_links___get__(struc
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":656
+/* "forest/_hier_core.pyx":806
  *         return self._n_links
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -32005,7 +33500,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6n_dims___get__(struct
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "forest/_hier_core.pyx":658
+  /* "forest/_hier_core.pyx":808
  *     @property
  *     def n_dims(self):
  *         return self._n_dims             # <<<<<<<<<<<<<<
@@ -32013,13 +33508,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6n_dims___get__(struct
  *     #   (Cython )
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_n_dims); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 658, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->_n_dims); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 808, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":656
+  /* "forest/_hier_core.pyx":806
  *         return self._n_links
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -32038,7 +33533,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6n_dims___get__(struct
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":662
+/* "forest/_hier_core.pyx":812
  *     #   (Cython )
  * 
  *     def descent_loop(self,             # <<<<<<<<<<<<<<
@@ -32047,16 +33542,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_6n_dims___get__(struct
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_78descent_loop(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_82descent_loop(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_77descent_loop, "Cython \345\212\240\351\200\237\347\232\204 find_free_box \344\270\213\350\241\214\345\276\252\347\216\257\343\200\202\n\n        \345\260\206\346\225\264\344\270\252 while \345\276\252\347\216\257\357\274\210\350\212\202\347\202\271\350\256\277\351\227\256\343\200\201\346\203\260\346\200\247\345\210\207\345\210\206\343\200\201FK \350\256\241\347\256\227\343\200\201\347\242\260\346\222\236\346\243\200\346\265\213\357\274\211\n        \345\220\210\345\271\266\345\210\260\345\215\225\346\254\241 Cython \350\260\203\347\224\250\344\270\255\357\274\214\346\266\210\351\231\244\346\257\217\345\261\202 ~30\316\274s \347\232\204 Python \345\274\200\351\224\200\343\200\202\n\n        Returns\n        -------\n        (result_idx, path, fail_code, n_new_nodes, n_fk_calls)\n            fail_code: 0=success, 1=occupied, 2=max_depth, 3=min_edge\n        ");
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_78descent_loop = {"descent_loop", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_78descent_loop, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_77descent_loop};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_78descent_loop(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6forest_10_hier_core_9NodeStore_81descent_loop, "Cython \345\212\240\351\200\237\347\232\204 find_free_box \344\270\213\350\241\214\345\276\252\347\216\257\343\200\202\n\n        \345\260\206\346\225\264\344\270\252 while \345\276\252\347\216\257\357\274\210\350\212\202\347\202\271\350\256\277\351\227\256\343\200\201\346\203\260\346\200\247\345\210\207\345\210\206\343\200\201FK \350\256\241\347\256\227\343\200\201\347\242\260\346\222\236\346\243\200\346\265\213\357\274\211\n        \345\220\210\345\271\266\345\210\260\345\215\225\346\254\241 Cython \350\260\203\347\224\250\344\270\255\357\274\214\346\266\210\351\231\244\346\257\217\345\261\202 ~30\316\274s \347\232\204 Python \345\274\200\351\224\200\343\200\202\n\n        Returns\n        -------\n        (result_idx, path, fail_code, n_new_nodes, n_fk_calls)\n            fail_code: 0=success, 1=occupied, 2=max_depth, 3=min_edge\n        ");
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_82descent_loop = {"descent_loop", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_82descent_loop, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_81descent_loop};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_82descent_loop(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -32105,140 +33600,140 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_seed,&__pyx_mstate_global->__pyx_n_u_obs_packed,&__pyx_mstate_global->__pyx_n_u_alpha_arr,&__pyx_mstate_global->__pyx_n_u_a_arr,&__pyx_mstate_global->__pyx_n_u_d_arr,&__pyx_mstate_global->__pyx_n_u_theta_arr,&__pyx_mstate_global->__pyx_n_u_jtype_arr,&__pyx_mstate_global->__pyx_n_u_has_tool,&__pyx_mstate_global->__pyx_n_u_tool_alpha,&__pyx_mstate_global->__pyx_n_u_tool_a,&__pyx_mstate_global->__pyx_n_u_tool_d,&__pyx_mstate_global->__pyx_n_u_split_dims_arr,&__pyx_mstate_global->__pyx_n_u_n_split_dims,&__pyx_mstate_global->__pyx_n_u_base_ivs,&__pyx_mstate_global->__pyx_n_u_max_depth,&__pyx_mstate_global->__pyx_n_u_min_edge_length,&__pyx_mstate_global->__pyx_n_u_root_plo,&__pyx_mstate_global->__pyx_n_u_root_phi,&__pyx_mstate_global->__pyx_n_u_root_jlo,&__pyx_mstate_global->__pyx_n_u_root_jhi,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 662, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 812, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case 20:
         values[19] = __Pyx_ArgRef_FASTCALL(__pyx_args, 19);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[19])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[19])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 19:
         values[18] = __Pyx_ArgRef_FASTCALL(__pyx_args, 18);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[18])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[18])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 18:
         values[17] = __Pyx_ArgRef_FASTCALL(__pyx_args, 17);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[17])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[17])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 17:
         values[16] = __Pyx_ArgRef_FASTCALL(__pyx_args, 16);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[16])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[16])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 16:
         values[15] = __Pyx_ArgRef_FASTCALL(__pyx_args, 15);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[15])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[15])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 15:
         values[14] = __Pyx_ArgRef_FASTCALL(__pyx_args, 14);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[14])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[14])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 14:
         values[13] = __Pyx_ArgRef_FASTCALL(__pyx_args, 13);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[13])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[13])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 13:
         values[12] = __Pyx_ArgRef_FASTCALL(__pyx_args, 12);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 12:
         values[11] = __Pyx_ArgRef_FASTCALL(__pyx_args, 11);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 11:
         values[10] = __Pyx_ArgRef_FASTCALL(__pyx_args, 10);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 10:
         values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  9:
         values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 662, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 812, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "descent_loop", 0) < (0)) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "descent_loop", 0) < (0)) __PYX_ERR(0, 812, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 20; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("descent_loop", 1, 20, 20, i); __PYX_ERR(0, 662, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("descent_loop", 1, 20, 20, i); __PYX_ERR(0, 812, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 20)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[10] = __Pyx_ArgRef_FASTCALL(__pyx_args, 10);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[11] = __Pyx_ArgRef_FASTCALL(__pyx_args, 11);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[12] = __Pyx_ArgRef_FASTCALL(__pyx_args, 12);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[13] = __Pyx_ArgRef_FASTCALL(__pyx_args, 13);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[13])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[13])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[14] = __Pyx_ArgRef_FASTCALL(__pyx_args, 14);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[14])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[14])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[15] = __Pyx_ArgRef_FASTCALL(__pyx_args, 15);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[15])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[15])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[16] = __Pyx_ArgRef_FASTCALL(__pyx_args, 16);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[16])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[16])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[17] = __Pyx_ArgRef_FASTCALL(__pyx_args, 17);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[17])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[17])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[18] = __Pyx_ArgRef_FASTCALL(__pyx_args, 18);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[18])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[18])) __PYX_ERR(0, 812, __pyx_L3_error)
       values[19] = __Pyx_ArgRef_FASTCALL(__pyx_args, 19);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[19])) __PYX_ERR(0, 662, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[19])) __PYX_ERR(0, 812, __pyx_L3_error)
     }
     __pyx_v_seed = ((PyArrayObject *)values[0]);
     __pyx_v_obs_packed = values[1];
@@ -32247,15 +33742,15 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
     __pyx_v_d_arr = ((PyArrayObject *)values[4]);
     __pyx_v_theta_arr = ((PyArrayObject *)values[5]);
     __pyx_v_jtype_arr = ((PyArrayObject *)values[6]);
-    __pyx_v_has_tool = __Pyx_PyObject_IsTrue(values[7]); if (unlikely((__pyx_v_has_tool == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 670, __pyx_L3_error)
-    __pyx_v_tool_alpha = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_tool_alpha == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 671, __pyx_L3_error)
-    __pyx_v_tool_a = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_tool_a == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 671, __pyx_L3_error)
-    __pyx_v_tool_d = __Pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_tool_d == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 671, __pyx_L3_error)
+    __pyx_v_has_tool = __Pyx_PyObject_IsTrue(values[7]); if (unlikely((__pyx_v_has_tool == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 820, __pyx_L3_error)
+    __pyx_v_tool_alpha = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_tool_alpha == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 821, __pyx_L3_error)
+    __pyx_v_tool_a = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_tool_a == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 821, __pyx_L3_error)
+    __pyx_v_tool_d = __Pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_tool_d == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 821, __pyx_L3_error)
     __pyx_v_split_dims_arr = ((PyArrayObject *)values[11]);
-    __pyx_v_n_split_dims = __Pyx_PyLong_As_int(values[12]); if (unlikely((__pyx_v_n_split_dims == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 673, __pyx_L3_error)
+    __pyx_v_n_split_dims = __Pyx_PyLong_As_int(values[12]); if (unlikely((__pyx_v_n_split_dims == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 823, __pyx_L3_error)
     __pyx_v_base_ivs = values[13];
-    __pyx_v_max_depth = __Pyx_PyLong_As_int(values[14]); if (unlikely((__pyx_v_max_depth == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 675, __pyx_L3_error)
-    __pyx_v_min_edge_length = __Pyx_PyFloat_AsDouble(values[15]); if (unlikely((__pyx_v_min_edge_length == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 676, __pyx_L3_error)
+    __pyx_v_max_depth = __Pyx_PyLong_As_int(values[14]); if (unlikely((__pyx_v_max_depth == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 825, __pyx_L3_error)
+    __pyx_v_min_edge_length = __Pyx_PyFloat_AsDouble(values[15]); if (unlikely((__pyx_v_min_edge_length == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 826, __pyx_L3_error)
     __pyx_v_root_plo = ((PyArrayObject *)values[16]);
     __pyx_v_root_phi = ((PyArrayObject *)values[17]);
     __pyx_v_root_jlo = ((PyArrayObject *)values[18]);
@@ -32263,7 +33758,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("descent_loop", 1, 20, 20, __pyx_nargs); __PYX_ERR(0, 662, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("descent_loop", 1, 20, 20, __pyx_nargs); __PYX_ERR(0, 812, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -32274,18 +33769,18 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_seed), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "seed", 0))) __PYX_ERR(0, 663, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_alpha_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "alpha_arr", 0))) __PYX_ERR(0, 665, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_a_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "a_arr", 0))) __PYX_ERR(0, 666, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_d_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "d_arr", 0))) __PYX_ERR(0, 667, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_theta_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "theta_arr", 0))) __PYX_ERR(0, 668, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_jtype_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "jtype_arr", 0))) __PYX_ERR(0, 669, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_split_dims_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "split_dims_arr", 0))) __PYX_ERR(0, 672, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_plo), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_plo", 0))) __PYX_ERR(0, 677, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_phi), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_phi", 0))) __PYX_ERR(0, 678, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_jlo), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_jlo", 0))) __PYX_ERR(0, 679, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_jhi), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_jhi", 0))) __PYX_ERR(0, 680, __pyx_L1_error)
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_seed, __pyx_v_obs_packed, __pyx_v_alpha_arr, __pyx_v_a_arr, __pyx_v_d_arr, __pyx_v_theta_arr, __pyx_v_jtype_arr, __pyx_v_has_tool, __pyx_v_tool_alpha, __pyx_v_tool_a, __pyx_v_tool_d, __pyx_v_split_dims_arr, __pyx_v_n_split_dims, __pyx_v_base_ivs, __pyx_v_max_depth, __pyx_v_min_edge_length, __pyx_v_root_plo, __pyx_v_root_phi, __pyx_v_root_jlo, __pyx_v_root_jhi);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_seed), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "seed", 0))) __PYX_ERR(0, 813, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_alpha_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "alpha_arr", 0))) __PYX_ERR(0, 815, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_a_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "a_arr", 0))) __PYX_ERR(0, 816, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_d_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "d_arr", 0))) __PYX_ERR(0, 817, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_theta_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "theta_arr", 0))) __PYX_ERR(0, 818, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_jtype_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "jtype_arr", 0))) __PYX_ERR(0, 819, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_split_dims_arr), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "split_dims_arr", 0))) __PYX_ERR(0, 822, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_plo), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_plo", 0))) __PYX_ERR(0, 827, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_phi), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_phi", 0))) __PYX_ERR(0, 828, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_jlo), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_jlo", 0))) __PYX_ERR(0, 829, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_root_jhi), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "root_jhi", 0))) __PYX_ERR(0, 830, __pyx_L1_error)
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_81descent_loop(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v_seed, __pyx_v_obs_packed, __pyx_v_alpha_arr, __pyx_v_a_arr, __pyx_v_d_arr, __pyx_v_theta_arr, __pyx_v_jtype_arr, __pyx_v_has_tool, __pyx_v_tool_alpha, __pyx_v_tool_a, __pyx_v_tool_d, __pyx_v_split_dims_arr, __pyx_v_n_split_dims, __pyx_v_base_ivs, __pyx_v_max_depth, __pyx_v_min_edge_length, __pyx_v_root_plo, __pyx_v_root_phi, __pyx_v_root_jlo, __pyx_v_root_jhi);
 
   /* function exit code */
   goto __pyx_L0;
@@ -32304,7 +33799,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyArrayObject *__pyx_v_seed, PyObject *__pyx_v_obs_packed, PyArrayObject *__pyx_v_alpha_arr, PyArrayObject *__pyx_v_a_arr, PyArrayObject *__pyx_v_d_arr, PyArrayObject *__pyx_v_theta_arr, PyArrayObject *__pyx_v_jtype_arr, int __pyx_v_has_tool, CYTHON_UNUSED double __pyx_v_tool_alpha, CYTHON_UNUSED double __pyx_v_tool_a, CYTHON_UNUSED double __pyx_v_tool_d, PyArrayObject *__pyx_v_split_dims_arr, int __pyx_v_n_split_dims, PyObject *__pyx_v_base_ivs, int __pyx_v_max_depth, double __pyx_v_min_edge_length, PyArrayObject *__pyx_v_root_plo, PyArrayObject *__pyx_v_root_phi, PyArrayObject *__pyx_v_root_jlo, PyArrayObject *__pyx_v_root_jhi) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_81descent_loop(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyArrayObject *__pyx_v_seed, PyObject *__pyx_v_obs_packed, PyArrayObject *__pyx_v_alpha_arr, PyArrayObject *__pyx_v_a_arr, PyArrayObject *__pyx_v_d_arr, PyArrayObject *__pyx_v_theta_arr, PyArrayObject *__pyx_v_jtype_arr, int __pyx_v_has_tool, CYTHON_UNUSED double __pyx_v_tool_alpha, CYTHON_UNUSED double __pyx_v_tool_a, CYTHON_UNUSED double __pyx_v_tool_d, PyArrayObject *__pyx_v_split_dims_arr, int __pyx_v_n_split_dims, PyObject *__pyx_v_base_ivs, int __pyx_v_max_depth, double __pyx_v_min_edge_length, PyArrayObject *__pyx_v_root_plo, PyArrayObject *__pyx_v_root_phi, PyArrayObject *__pyx_v_root_jlo, PyArrayObject *__pyx_v_root_jhi) {
   int __pyx_v_n_joints;
   int __pyx_v_n_dims;
   int __pyx_v_n_links;
@@ -32461,61 +33956,61 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   __pyx_pybuffernd_root_jhi.rcbuffer = &__pyx_pybuffer_root_jhi;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_seed.rcbuffer->pybuffer, (PyObject*)__pyx_v_seed, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_seed.rcbuffer->pybuffer, (PyObject*)__pyx_v_seed, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_seed.diminfo[0].strides = __pyx_pybuffernd_seed.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_seed.diminfo[0].shape = __pyx_pybuffernd_seed.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_alpha_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_alpha_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_alpha_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_alpha_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_alpha_arr.diminfo[0].strides = __pyx_pybuffernd_alpha_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_alpha_arr.diminfo[0].shape = __pyx_pybuffernd_alpha_arr.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_a_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_a_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_a_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_a_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_a_arr.diminfo[0].strides = __pyx_pybuffernd_a_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_a_arr.diminfo[0].shape = __pyx_pybuffernd_a_arr.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_d_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_d_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_d_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_d_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_d_arr.diminfo[0].strides = __pyx_pybuffernd_d_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_d_arr.diminfo[0].shape = __pyx_pybuffernd_d_arr.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_theta_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_theta_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_theta_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_theta_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_theta_arr.diminfo[0].strides = __pyx_pybuffernd_theta_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_theta_arr.diminfo[0].shape = __pyx_pybuffernd_theta_arr.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_jtype_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_jtype_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_ITYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_jtype_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_jtype_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_ITYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_jtype_arr.diminfo[0].strides = __pyx_pybuffernd_jtype_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_jtype_arr.diminfo[0].shape = __pyx_pybuffernd_jtype_arr.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_split_dims_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_split_dims_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_ITYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_split_dims_arr.rcbuffer->pybuffer, (PyObject*)__pyx_v_split_dims_arr, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_ITYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_split_dims_arr.diminfo[0].strides = __pyx_pybuffernd_split_dims_arr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_split_dims_arr.diminfo[0].shape = __pyx_pybuffernd_split_dims_arr.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_plo.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_plo, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_plo.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_plo, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_root_plo.diminfo[0].strides = __pyx_pybuffernd_root_plo.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_root_plo.diminfo[0].shape = __pyx_pybuffernd_root_plo.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_root_plo.diminfo[1].strides = __pyx_pybuffernd_root_plo.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_root_plo.diminfo[1].shape = __pyx_pybuffernd_root_plo.rcbuffer->pybuffer.shape[1]; __pyx_pybuffernd_root_plo.diminfo[2].strides = __pyx_pybuffernd_root_plo.rcbuffer->pybuffer.strides[2]; __pyx_pybuffernd_root_plo.diminfo[2].shape = __pyx_pybuffernd_root_plo.rcbuffer->pybuffer.shape[2];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_phi.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_phi, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_phi.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_phi, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_root_phi.diminfo[0].strides = __pyx_pybuffernd_root_phi.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_root_phi.diminfo[0].shape = __pyx_pybuffernd_root_phi.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_root_phi.diminfo[1].strides = __pyx_pybuffernd_root_phi.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_root_phi.diminfo[1].shape = __pyx_pybuffernd_root_phi.rcbuffer->pybuffer.shape[1]; __pyx_pybuffernd_root_phi.diminfo[2].strides = __pyx_pybuffernd_root_phi.rcbuffer->pybuffer.strides[2]; __pyx_pybuffernd_root_phi.diminfo[2].shape = __pyx_pybuffernd_root_phi.rcbuffer->pybuffer.shape[2];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_jlo.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_jlo, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_jlo.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_jlo, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_root_jlo.diminfo[0].strides = __pyx_pybuffernd_root_jlo.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_root_jlo.diminfo[0].shape = __pyx_pybuffernd_root_jlo.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_root_jlo.diminfo[1].strides = __pyx_pybuffernd_root_jlo.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_root_jlo.diminfo[1].shape = __pyx_pybuffernd_root_jlo.rcbuffer->pybuffer.shape[1]; __pyx_pybuffernd_root_jlo.diminfo[2].strides = __pyx_pybuffernd_root_jlo.rcbuffer->pybuffer.strides[2]; __pyx_pybuffernd_root_jlo.diminfo[2].shape = __pyx_pybuffernd_root_jlo.rcbuffer->pybuffer.shape[2];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_jhi.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_jhi, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 662, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_root_jhi.rcbuffer->pybuffer, (PyObject*)__pyx_v_root_jhi, &__Pyx_TypeInfo_nn___pyx_t_6forest_10_hier_core_DTYPE_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 812, __pyx_L1_error)
   }
   __pyx_pybuffernd_root_jhi.diminfo[0].strides = __pyx_pybuffernd_root_jhi.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_root_jhi.diminfo[0].shape = __pyx_pybuffernd_root_jhi.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_root_jhi.diminfo[1].strides = __pyx_pybuffernd_root_jhi.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_root_jhi.diminfo[1].shape = __pyx_pybuffernd_root_jhi.rcbuffer->pybuffer.shape[1]; __pyx_pybuffernd_root_jhi.diminfo[2].strides = __pyx_pybuffernd_root_jhi.rcbuffer->pybuffer.strides[2]; __pyx_pybuffernd_root_jhi.diminfo[2].shape = __pyx_pybuffernd_root_jhi.rcbuffer->pybuffer.shape[2];
 
-  /* "forest/_hier_core.pyx":692
+  /* "forest/_hier_core.pyx":842
  *             fail_code: 0=success, 1=occupied, 2=max_depth, 3=min_edge
  *         """
  *         cdef int n_joints = alpha_arr.shape[0]             # <<<<<<<<<<<<<<
@@ -32524,7 +34019,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_n_joints = (__pyx_f_5numpy_7ndarray_5shape_shape(((PyArrayObject *)__pyx_v_alpha_arr))[0]);
 
-  /* "forest/_hier_core.pyx":693
+  /* "forest/_hier_core.pyx":843
  *         """
  *         cdef int n_joints = alpha_arr.shape[0]
  *         cdef int n_dims = self._n_dims             # <<<<<<<<<<<<<<
@@ -32534,7 +34029,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   __pyx_t_1 = __pyx_v_self->_n_dims;
   __pyx_v_n_dims = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":694
+  /* "forest/_hier_core.pyx":844
  *         cdef int n_joints = alpha_arr.shape[0]
  *         cdef int n_dims = self._n_dims
  *         cdef int n_links = self._n_links             # <<<<<<<<<<<<<<
@@ -32544,7 +34039,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   __pyx_t_1 = __pyx_v_self->_n_links;
   __pyx_v_n_links = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":695
+  /* "forest/_hier_core.pyx":845
  *         cdef int n_dims = self._n_dims
  *         cdef int n_links = self._n_links
  *         cdef int n_tf = n_joints + 1 + (1 if has_tool else 0)             # <<<<<<<<<<<<<<
@@ -32558,7 +34053,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   }
   __pyx_v_n_tf = ((__pyx_v_n_joints + 1) + __pyx_t_2);
 
-  /* "forest/_hier_core.pyx":696
+  /* "forest/_hier_core.pyx":846
  *         cdef int n_links = self._n_links
  *         cdef int n_tf = n_joints + 1 + (1 if has_tool else 0)
  *         cdef int n_jm = n_joints + (1 if has_tool else 0)             # <<<<<<<<<<<<<<
@@ -32572,7 +34067,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   }
   __pyx_v_n_jm = (__pyx_v_n_joints + __pyx_t_2);
 
-  /* "forest/_hier_core.pyx":697
+  /* "forest/_hier_core.pyx":847
  *         cdef int n_tf = n_joints + 1 + (1 if has_tool else 0)
  *         cdef int n_jm = n_joints + (1 if has_tool else 0)
  *         cdef int prefix_bytes = n_tf * 16 * sizeof(double)             # <<<<<<<<<<<<<<
@@ -32581,7 +34076,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_prefix_bytes = ((__pyx_v_n_tf * 16) * (sizeof(double)));
 
-  /* "forest/_hier_core.pyx":698
+  /* "forest/_hier_core.pyx":848
  *         cdef int n_jm = n_joints + (1 if has_tool else 0)
  *         cdef int prefix_bytes = n_tf * 16 * sizeof(double)
  *         cdef int joints_bytes = n_jm * 16 * sizeof(double)             # <<<<<<<<<<<<<<
@@ -32590,7 +34085,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_joints_bytes = ((__pyx_v_n_jm * 16) * (sizeof(double)));
 
-  /* "forest/_hier_core.pyx":701
+  /* "forest/_hier_core.pyx":851
  * 
  *         #
  *         cdef double* alpha_p = <double*>cnp.PyArray_DATA(alpha_arr)             # <<<<<<<<<<<<<<
@@ -32599,7 +34094,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_alpha_p = ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_alpha_arr)));
 
-  /* "forest/_hier_core.pyx":702
+  /* "forest/_hier_core.pyx":852
  *         #
  *         cdef double* alpha_p = <double*>cnp.PyArray_DATA(alpha_arr)
  *         cdef double* a_p     = <double*>cnp.PyArray_DATA(a_arr)             # <<<<<<<<<<<<<<
@@ -32608,7 +34103,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_a_p = ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_a_arr)));
 
-  /* "forest/_hier_core.pyx":703
+  /* "forest/_hier_core.pyx":853
  *         cdef double* alpha_p = <double*>cnp.PyArray_DATA(alpha_arr)
  *         cdef double* a_p     = <double*>cnp.PyArray_DATA(a_arr)
  *         cdef double* d_p     = <double*>cnp.PyArray_DATA(d_arr)             # <<<<<<<<<<<<<<
@@ -32617,7 +34112,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_d_p = ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_d_arr)));
 
-  /* "forest/_hier_core.pyx":704
+  /* "forest/_hier_core.pyx":854
  *         cdef double* a_p     = <double*>cnp.PyArray_DATA(a_arr)
  *         cdef double* d_p     = <double*>cnp.PyArray_DATA(d_arr)
  *         cdef double* theta_p = <double*>cnp.PyArray_DATA(theta_arr)             # <<<<<<<<<<<<<<
@@ -32626,7 +34121,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_theta_p = ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_theta_arr)));
 
-  /* "forest/_hier_core.pyx":705
+  /* "forest/_hier_core.pyx":855
  *         cdef double* d_p     = <double*>cnp.PyArray_DATA(d_arr)
  *         cdef double* theta_p = <double*>cnp.PyArray_DATA(theta_arr)
  *         cdef int*    jtype_p = <int*>cnp.PyArray_DATA(jtype_arr)             # <<<<<<<<<<<<<<
@@ -32635,7 +34130,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_jtype_p = ((int *)PyArray_DATA(((PyArrayObject *)__pyx_v_jtype_arr)));
 
-  /* "forest/_hier_core.pyx":706
+  /* "forest/_hier_core.pyx":856
  *         cdef double* theta_p = <double*>cnp.PyArray_DATA(theta_arr)
  *         cdef int*    jtype_p = <int*>cnp.PyArray_DATA(jtype_arr)
  *         cdef int*    split_p = <int*>cnp.PyArray_DATA(split_dims_arr)             # <<<<<<<<<<<<<<
@@ -32644,7 +34139,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_split_p = ((int *)PyArray_DATA(((PyArrayObject *)__pyx_v_split_dims_arr)));
 
-  /* "forest/_hier_core.pyx":707
+  /* "forest/_hier_core.pyx":857
  *         cdef int*    jtype_p = <int*>cnp.PyArray_DATA(jtype_arr)
  *         cdef int*    split_p = <int*>cnp.PyArray_DATA(split_dims_arr)
  *         cdef double* seed_p  = <double*>cnp.PyArray_DATA(seed)             # <<<<<<<<<<<<<<
@@ -32653,7 +34148,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_seed_p = ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_seed)));
 
-  /* "forest/_hier_core.pyx":710
+  /* "forest/_hier_core.pyx":860
  * 
  *         #
  *         cdef int n_obs = 0             # <<<<<<<<<<<<<<
@@ -32662,7 +34157,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_n_obs = 0;
 
-  /* "forest/_hier_core.pyx":712
+  /* "forest/_hier_core.pyx":862
  *         cdef int n_obs = 0
  *         cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr_np
  *         cdef float* obs_ptr = NULL             # <<<<<<<<<<<<<<
@@ -32671,7 +34166,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_obs_ptr = NULL;
 
-  /* "forest/_hier_core.pyx":716
+  /* "forest/_hier_core.pyx":866
  *         cdef int oi
  * 
  *         if obs_packed is not None and len(obs_packed) > 0:             # <<<<<<<<<<<<<<
@@ -32684,23 +34179,23 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     __pyx_t_3 = __pyx_t_4;
     goto __pyx_L4_bool_binop_done;
   }
-  __pyx_t_5 = PyObject_Length(__pyx_v_obs_packed); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 716, __pyx_L1_error)
+  __pyx_t_5 = PyObject_Length(__pyx_v_obs_packed); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 866, __pyx_L1_error)
   __pyx_t_4 = (__pyx_t_5 > 0);
   __pyx_t_3 = __pyx_t_4;
   __pyx_L4_bool_binop_done:;
   if (__pyx_t_3) {
 
-    /* "forest/_hier_core.pyx":717
+    /* "forest/_hier_core.pyx":867
  * 
  *         if obs_packed is not None and len(obs_packed) > 0:
  *             n_obs = len(obs_packed)             # <<<<<<<<<<<<<<
  *             obs_arr_np = np.empty(n_obs * 7, dtype=np.float32)
  *             for oi in range(n_obs):
 */
-    __pyx_t_5 = PyObject_Length(__pyx_v_obs_packed); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 717, __pyx_L1_error)
+    __pyx_t_5 = PyObject_Length(__pyx_v_obs_packed); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 867, __pyx_L1_error)
     __pyx_v_n_obs = __pyx_t_5;
 
-    /* "forest/_hier_core.pyx":718
+    /* "forest/_hier_core.pyx":868
  *         if obs_packed is not None and len(obs_packed) > 0:
  *             n_obs = len(obs_packed)
  *             obs_arr_np = np.empty(n_obs * 7, dtype=np.float32)             # <<<<<<<<<<<<<<
@@ -32708,16 +34203,16 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
  *                 obs_tup = <tuple>obs_packed[oi]
 */
     __pyx_t_7 = NULL;
-    __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 718, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 868, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 718, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 868, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __pyx_t_8 = __Pyx_PyLong_From_long((__pyx_v_n_obs * 7)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 718, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyLong_From_long((__pyx_v_n_obs * 7)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 868, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 718, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 868, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_10);
-    __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_float32); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 718, __pyx_L1_error)
+    __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_float32); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 868, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_11);
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __pyx_t_12 = 1;
@@ -32734,19 +34229,19 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     #endif
     {
       PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_7, __pyx_t_8};
-      __pyx_t_10 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 718, __pyx_L1_error)
+      __pyx_t_10 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 868, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_10);
-      if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_11, __pyx_t_10, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 718, __pyx_L1_error)
+      if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_11, __pyx_t_10, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 868, __pyx_L1_error)
       __pyx_t_6 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_9, __pyx_callargs+__pyx_t_12, (2-__pyx_t_12) | (__pyx_t_12*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_10);
       __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
       __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 718, __pyx_L1_error)
+      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 868, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_6);
     }
-    if (!(likely(((__pyx_t_6) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_6, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 718, __pyx_L1_error)
+    if (!(likely(((__pyx_t_6) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_6, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 868, __pyx_L1_error)
     {
       __Pyx_BufFmt_StackElem __pyx_stack[1];
       __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer);
@@ -32762,12 +34257,12 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
         __pyx_t_13 = __pyx_t_14 = __pyx_t_15 = 0;
       }
       __pyx_pybuffernd_obs_arr_np.diminfo[0].strides = __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_obs_arr_np.diminfo[0].shape = __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.shape[0];
-      if (unlikely((__pyx_t_1 < 0))) __PYX_ERR(0, 718, __pyx_L1_error)
+      if (unlikely((__pyx_t_1 < 0))) __PYX_ERR(0, 868, __pyx_L1_error)
     }
     __pyx_v_obs_arr_np = ((PyArrayObject *)__pyx_t_6);
     __pyx_t_6 = 0;
 
-    /* "forest/_hier_core.pyx":719
+    /* "forest/_hier_core.pyx":869
  *             n_obs = len(obs_packed)
  *             obs_arr_np = np.empty(n_obs * 7, dtype=np.float32)
  *             for oi in range(n_obs):             # <<<<<<<<<<<<<<
@@ -32779,14 +34274,14 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     for (__pyx_t_17 = 0; __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
       __pyx_v_oi = __pyx_t_17;
 
-      /* "forest/_hier_core.pyx":720
+      /* "forest/_hier_core.pyx":870
  *             obs_arr_np = np.empty(n_obs * 7, dtype=np.float32)
  *             for oi in range(n_obs):
  *                 obs_tup = <tuple>obs_packed[oi]             # <<<<<<<<<<<<<<
  *                 obs_arr_np[oi * 7]     = <float>(<int>obs_tup[0])
  *                 obs_arr_np[oi * 7 + 1] = <float>obs_tup[1]
 */
-      __pyx_t_6 = __Pyx_GetItemInt(__pyx_v_obs_packed, __pyx_v_oi, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 720, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_GetItemInt(__pyx_v_obs_packed, __pyx_v_oi, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 870, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_6);
       __pyx_t_9 = __pyx_t_6;
       __Pyx_INCREF(__pyx_t_9);
@@ -32794,7 +34289,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       __Pyx_XDECREF_SET(__pyx_v_obs_tup, ((PyObject*)__pyx_t_9));
       __pyx_t_9 = 0;
 
-      /* "forest/_hier_core.pyx":721
+      /* "forest/_hier_core.pyx":871
  *             for oi in range(n_obs):
  *                 obs_tup = <tuple>obs_packed[oi]
  *                 obs_arr_np[oi * 7]     = <float>(<int>obs_tup[0])             # <<<<<<<<<<<<<<
@@ -32803,13 +34298,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (unlikely(__pyx_v_obs_tup == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-        __PYX_ERR(0, 721, __pyx_L1_error)
+        __PYX_ERR(0, 871, __pyx_L1_error)
       }
-      __pyx_t_18 = __Pyx_PyLong_As_int(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 0)); if (unlikely((__pyx_t_18 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 721, __pyx_L1_error)
+      __pyx_t_18 = __Pyx_PyLong_As_int(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 0)); if (unlikely((__pyx_t_18 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 871, __pyx_L1_error)
       __pyx_t_19 = (__pyx_v_oi * 7);
       *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_obs_arr_np.diminfo[0].strides) = ((float)((int)__pyx_t_18));
 
-      /* "forest/_hier_core.pyx":722
+      /* "forest/_hier_core.pyx":872
  *                 obs_tup = <tuple>obs_packed[oi]
  *                 obs_arr_np[oi * 7]     = <float>(<int>obs_tup[0])
  *                 obs_arr_np[oi * 7 + 1] = <float>obs_tup[1]             # <<<<<<<<<<<<<<
@@ -32818,13 +34313,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (unlikely(__pyx_v_obs_tup == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-        __PYX_ERR(0, 722, __pyx_L1_error)
+        __PYX_ERR(0, 872, __pyx_L1_error)
       }
-      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 1)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 722, __pyx_L1_error)
+      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 1)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 872, __pyx_L1_error)
       __pyx_t_19 = ((__pyx_v_oi * 7) + 1);
       *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_obs_arr_np.diminfo[0].strides) = ((float)__pyx_t_20);
 
-      /* "forest/_hier_core.pyx":723
+      /* "forest/_hier_core.pyx":873
  *                 obs_arr_np[oi * 7]     = <float>(<int>obs_tup[0])
  *                 obs_arr_np[oi * 7 + 1] = <float>obs_tup[1]
  *                 obs_arr_np[oi * 7 + 2] = <float>obs_tup[2]             # <<<<<<<<<<<<<<
@@ -32833,13 +34328,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (unlikely(__pyx_v_obs_tup == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-        __PYX_ERR(0, 723, __pyx_L1_error)
+        __PYX_ERR(0, 873, __pyx_L1_error)
       }
-      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 2)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 723, __pyx_L1_error)
+      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 2)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 873, __pyx_L1_error)
       __pyx_t_19 = ((__pyx_v_oi * 7) + 2);
       *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_obs_arr_np.diminfo[0].strides) = ((float)__pyx_t_20);
 
-      /* "forest/_hier_core.pyx":724
+      /* "forest/_hier_core.pyx":874
  *                 obs_arr_np[oi * 7 + 1] = <float>obs_tup[1]
  *                 obs_arr_np[oi * 7 + 2] = <float>obs_tup[2]
  *                 obs_arr_np[oi * 7 + 3] = <float>obs_tup[3]             # <<<<<<<<<<<<<<
@@ -32848,13 +34343,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (unlikely(__pyx_v_obs_tup == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-        __PYX_ERR(0, 724, __pyx_L1_error)
+        __PYX_ERR(0, 874, __pyx_L1_error)
       }
-      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 3)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 724, __pyx_L1_error)
+      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 3)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 874, __pyx_L1_error)
       __pyx_t_19 = ((__pyx_v_oi * 7) + 3);
       *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_obs_arr_np.diminfo[0].strides) = ((float)__pyx_t_20);
 
-      /* "forest/_hier_core.pyx":725
+      /* "forest/_hier_core.pyx":875
  *                 obs_arr_np[oi * 7 + 2] = <float>obs_tup[2]
  *                 obs_arr_np[oi * 7 + 3] = <float>obs_tup[3]
  *                 obs_arr_np[oi * 7 + 4] = <float>obs_tup[4]             # <<<<<<<<<<<<<<
@@ -32863,13 +34358,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (unlikely(__pyx_v_obs_tup == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-        __PYX_ERR(0, 725, __pyx_L1_error)
+        __PYX_ERR(0, 875, __pyx_L1_error)
       }
-      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 4)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 725, __pyx_L1_error)
+      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 4)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 875, __pyx_L1_error)
       __pyx_t_19 = ((__pyx_v_oi * 7) + 4);
       *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_obs_arr_np.diminfo[0].strides) = ((float)__pyx_t_20);
 
-      /* "forest/_hier_core.pyx":726
+      /* "forest/_hier_core.pyx":876
  *                 obs_arr_np[oi * 7 + 3] = <float>obs_tup[3]
  *                 obs_arr_np[oi * 7 + 4] = <float>obs_tup[4]
  *                 obs_arr_np[oi * 7 + 5] = <float>obs_tup[5]             # <<<<<<<<<<<<<<
@@ -32878,13 +34373,13 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (unlikely(__pyx_v_obs_tup == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-        __PYX_ERR(0, 726, __pyx_L1_error)
+        __PYX_ERR(0, 876, __pyx_L1_error)
       }
-      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 5)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 726, __pyx_L1_error)
+      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 5)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 876, __pyx_L1_error)
       __pyx_t_19 = ((__pyx_v_oi * 7) + 5);
       *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_obs_arr_np.diminfo[0].strides) = ((float)__pyx_t_20);
 
-      /* "forest/_hier_core.pyx":727
+      /* "forest/_hier_core.pyx":877
  *                 obs_arr_np[oi * 7 + 4] = <float>obs_tup[4]
  *                 obs_arr_np[oi * 7 + 5] = <float>obs_tup[5]
  *                 obs_arr_np[oi * 7 + 6] = <float>obs_tup[6]             # <<<<<<<<<<<<<<
@@ -32893,14 +34388,14 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (unlikely(__pyx_v_obs_tup == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-        __PYX_ERR(0, 727, __pyx_L1_error)
+        __PYX_ERR(0, 877, __pyx_L1_error)
       }
-      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 6)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 727, __pyx_L1_error)
+      __pyx_t_20 = __Pyx_PyFloat_AsFloat(__Pyx_PyTuple_GET_ITEM(__pyx_v_obs_tup, 6)); if (unlikely((__pyx_t_20 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 877, __pyx_L1_error)
       __pyx_t_19 = ((__pyx_v_oi * 7) + 6);
       *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_obs_arr_np.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_obs_arr_np.diminfo[0].strides) = ((float)__pyx_t_20);
     }
 
-    /* "forest/_hier_core.pyx":728
+    /* "forest/_hier_core.pyx":878
  *                 obs_arr_np[oi * 7 + 5] = <float>obs_tup[5]
  *                 obs_arr_np[oi * 7 + 6] = <float>obs_tup[6]
  *             obs_ptr = <float*>cnp.PyArray_DATA(obs_arr_np)             # <<<<<<<<<<<<<<
@@ -32909,7 +34404,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     __pyx_v_obs_ptr = ((float *)PyArray_DATA(((PyArrayObject *)__pyx_v_obs_arr_np)));
 
-    /* "forest/_hier_core.pyx":716
+    /* "forest/_hier_core.pyx":866
  *         cdef int oi
  * 
  *         if obs_packed is not None and len(obs_packed) > 0:             # <<<<<<<<<<<<<<
@@ -32918,7 +34413,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   }
 
-  /* "forest/_hier_core.pyx":735
+  /* "forest/_hier_core.pyx":885
  *         cdef double fk_jlo[MAX_TF * 16]
  *         cdef double fk_jhi[MAX_TF * 16]
  *         memcpy(fk_plo, <double*>cnp.PyArray_DATA(root_plo), prefix_bytes)             # <<<<<<<<<<<<<<
@@ -32927,7 +34422,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   (void)(memcpy(__pyx_v_fk_plo, ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_root_plo))), __pyx_v_prefix_bytes));
 
-  /* "forest/_hier_core.pyx":736
+  /* "forest/_hier_core.pyx":886
  *         cdef double fk_jhi[MAX_TF * 16]
  *         memcpy(fk_plo, <double*>cnp.PyArray_DATA(root_plo), prefix_bytes)
  *         memcpy(fk_phi, <double*>cnp.PyArray_DATA(root_phi), prefix_bytes)             # <<<<<<<<<<<<<<
@@ -32936,7 +34431,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   (void)(memcpy(__pyx_v_fk_phi, ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_root_phi))), __pyx_v_prefix_bytes));
 
-  /* "forest/_hier_core.pyx":737
+  /* "forest/_hier_core.pyx":887
  *         memcpy(fk_plo, <double*>cnp.PyArray_DATA(root_plo), prefix_bytes)
  *         memcpy(fk_phi, <double*>cnp.PyArray_DATA(root_phi), prefix_bytes)
  *         memcpy(fk_jlo, <double*>cnp.PyArray_DATA(root_jlo), joints_bytes)             # <<<<<<<<<<<<<<
@@ -32945,7 +34440,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   (void)(memcpy(__pyx_v_fk_jlo, ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_root_jlo))), __pyx_v_joints_bytes));
 
-  /* "forest/_hier_core.pyx":738
+  /* "forest/_hier_core.pyx":888
  *         memcpy(fk_phi, <double*>cnp.PyArray_DATA(root_phi), prefix_bytes)
  *         memcpy(fk_jlo, <double*>cnp.PyArray_DATA(root_jlo), joints_bytes)
  *         memcpy(fk_jhi, <double*>cnp.PyArray_DATA(root_jhi), joints_bytes)             # <<<<<<<<<<<<<<
@@ -32954,7 +34449,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   (void)(memcpy(__pyx_v_fk_jhi, ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_root_jhi))), __pyx_v_joints_bytes));
 
-  /* "forest/_hier_core.pyx":751
+  /* "forest/_hier_core.pyx":901
  *         cdef double civs_hi[MAX_JOINTS]
  *         cdef int di
  *         for di in range(n_dims):             # <<<<<<<<<<<<<<
@@ -32966,40 +34461,40 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   for (__pyx_t_17 = 0; __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
     __pyx_v_di = __pyx_t_17;
 
-    /* "forest/_hier_core.pyx":752
+    /* "forest/_hier_core.pyx":902
  *         cdef int di
  *         for di in range(n_dims):
  *             ivs_lo[di] = <double>base_ivs[di][0]             # <<<<<<<<<<<<<<
  *             ivs_hi[di] = <double>base_ivs[di][1]
  * 
 */
-    __pyx_t_9 = __Pyx_GetItemInt(__pyx_v_base_ivs, __pyx_v_di, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 752, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_GetItemInt(__pyx_v_base_ivs, __pyx_v_di, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 902, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_6 = __Pyx_GetItemInt(__pyx_t_9, 0, long, 1, __Pyx_PyLong_From_long, 0, 0, 0, 1, __Pyx_ReferenceSharing_OwnStrongReference); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 752, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_GetItemInt(__pyx_t_9, 0, long, 1, __Pyx_PyLong_From_long, 0, 0, 0, 1, __Pyx_ReferenceSharing_OwnStrongReference); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 902, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __pyx_t_21 = __Pyx_PyFloat_AsDouble(__pyx_t_6); if (unlikely((__pyx_t_21 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 752, __pyx_L1_error)
+    __pyx_t_21 = __Pyx_PyFloat_AsDouble(__pyx_t_6); if (unlikely((__pyx_t_21 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 902, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     (__pyx_v_ivs_lo[__pyx_v_di]) = ((double)__pyx_t_21);
 
-    /* "forest/_hier_core.pyx":753
+    /* "forest/_hier_core.pyx":903
  *         for di in range(n_dims):
  *             ivs_lo[di] = <double>base_ivs[di][0]
  *             ivs_hi[di] = <double>base_ivs[di][1]             # <<<<<<<<<<<<<<
  * 
  *         #  AABB
 */
-    __pyx_t_6 = __Pyx_GetItemInt(__pyx_v_base_ivs, __pyx_v_di, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 753, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_GetItemInt(__pyx_v_base_ivs, __pyx_v_di, int, 1, __Pyx_PyLong_From_int, 0, 0, 0, 1, __Pyx_ReferenceSharing_FunctionArgument); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 903, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_9 = __Pyx_GetItemInt(__pyx_t_6, 1, long, 1, __Pyx_PyLong_From_long, 0, 0, 0, 1, __Pyx_ReferenceSharing_OwnStrongReference); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 753, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_GetItemInt(__pyx_t_6, 1, long, 1, __Pyx_PyLong_From_long, 0, 0, 0, 1, __Pyx_ReferenceSharing_OwnStrongReference); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 903, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __pyx_t_21 = __Pyx_PyFloat_AsDouble(__pyx_t_9); if (unlikely((__pyx_t_21 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 753, __pyx_L1_error)
+    __pyx_t_21 = __Pyx_PyFloat_AsDouble(__pyx_t_9); if (unlikely((__pyx_t_21 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 903, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     (__pyx_v_ivs_hi[__pyx_v_di]) = ((double)__pyx_t_21);
   }
 
-  /* "forest/_hier_core.pyx":761
+  /* "forest/_hier_core.pyx":911
  * 
  *         #
  *         cdef int idx = 0             # <<<<<<<<<<<<<<
@@ -33008,7 +34503,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_idx = 0;
 
-  /* "forest/_hier_core.pyx":762
+  /* "forest/_hier_core.pyx":912
  *         #
  *         cdef int idx = 0
  *         cdef char* base = self._base             # <<<<<<<<<<<<<<
@@ -33018,7 +34513,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   __pyx_t_22 = __pyx_v_self->_base;
   __pyx_v_base = __pyx_t_22;
 
-  /* "forest/_hier_core.pyx":763
+  /* "forest/_hier_core.pyx":913
  *         cdef int idx = 0
  *         cdef char* base = self._base
  *         cdef int stride = self._stride             # <<<<<<<<<<<<<<
@@ -33028,7 +34523,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   __pyx_t_1 = __pyx_v_self->_stride;
   __pyx_v_stride = __pyx_t_1;
 
-  /* "forest/_hier_core.pyx":769
+  /* "forest/_hier_core.pyx":919
  *         cdef int depth, dim
  *         cdef double edge, mid, sv
  *         cdef int fail_code = 0             # <<<<<<<<<<<<<<
@@ -33037,7 +34532,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_fail_code = 0;
 
-  /* "forest/_hier_core.pyx":770
+  /* "forest/_hier_core.pyx":920
  *         cdef double edge, mid, sv
  *         cdef int fail_code = 0
  *         cdef int n_new_nodes = 0             # <<<<<<<<<<<<<<
@@ -33046,7 +34541,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_n_new_nodes = 0;
 
-  /* "forest/_hier_core.pyx":771
+  /* "forest/_hier_core.pyx":921
  *         cdef int fail_code = 0
  *         cdef int n_new_nodes = 0
  *         cdef int n_fk_calls = 0             # <<<<<<<<<<<<<<
@@ -33055,19 +34550,19 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   __pyx_v_n_fk_calls = 0;
 
-  /* "forest/_hier_core.pyx":773
+  /* "forest/_hier_core.pyx":923
  *         cdef int n_fk_calls = 0
  *         cdef bint going_left, collide
  *         cdef list path = []             # <<<<<<<<<<<<<<
  *         cdef int k
  * 
 */
-  __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 773, __pyx_L1_error)
+  __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 923, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_v_path = ((PyObject*)__pyx_t_9);
   __pyx_t_9 = 0;
 
-  /* "forest/_hier_core.pyx":777
+  /* "forest/_hier_core.pyx":927
  * 
  *         #
  *         while True:             # <<<<<<<<<<<<<<
@@ -33076,7 +34571,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
   while (1) {
 
-    /* "forest/_hier_core.pyx":778
+    /* "forest/_hier_core.pyx":928
  *         #
  *         while True:
  *             node = _node_ptr(base, stride, idx)             # <<<<<<<<<<<<<<
@@ -33085,19 +34580,19 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_base, __pyx_v_stride, __pyx_v_idx);
 
-    /* "forest/_hier_core.pyx":781
+    /* "forest/_hier_core.pyx":931
  * 
  *             #
  *             if self._occupied[idx]:             # <<<<<<<<<<<<<<
  *                 fail_code = 1; idx = -1; break
  * 
 */
-    if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 781, __pyx_L1_error)}
+    if (unlikely(!__pyx_v_self->_occupied.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 931, __pyx_L1_error)}
     __pyx_t_19 = __pyx_v_idx;
     __pyx_t_3 = ((*((__pyx_t_5numpy_uint8_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_uint8_t *) __pyx_v_self->_occupied.data) + __pyx_t_19)) ))) != 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":782
+      /* "forest/_hier_core.pyx":932
  *             #
  *             if self._occupied[idx]:
  *                 fail_code = 1; idx = -1; break             # <<<<<<<<<<<<<<
@@ -33108,7 +34603,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       __pyx_v_idx = -1;
       goto __pyx_L11_break;
 
-      /* "forest/_hier_core.pyx":781
+      /* "forest/_hier_core.pyx":931
  * 
  *             #
  *             if self._occupied[idx]:             # <<<<<<<<<<<<<<
@@ -33117,19 +34612,19 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     }
 
-    /* "forest/_hier_core.pyx":784
+    /* "forest/_hier_core.pyx":934
  *                 fail_code = 1; idx = -1; break
  * 
  *             path.append(idx)             # <<<<<<<<<<<<<<
  * 
  *             #  +
 */
-    __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 784, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 934, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_23 = __Pyx_PyList_Append(__pyx_v_path, __pyx_t_9); if (unlikely(__pyx_t_23 == ((int)-1))) __PYX_ERR(0, 784, __pyx_L1_error)
+    __pyx_t_23 = __Pyx_PyList_Append(__pyx_v_path, __pyx_t_9); if (unlikely(__pyx_t_23 == ((int)-1))) __PYX_ERR(0, 934, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-    /* "forest/_hier_core.pyx":787
+    /* "forest/_hier_core.pyx":937
  * 
  *             #  +
  *             if _get_u8(node, _OFF_HAS_AABB):             # <<<<<<<<<<<<<<
@@ -33139,7 +34634,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     __pyx_t_3 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_node, 24) != 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":788
+      /* "forest/_hier_core.pyx":938
  *             #  +
  *             if _get_u8(node, _OFF_HAS_AABB):
  *                 aabb_p = _aabb_ptr(node)             # <<<<<<<<<<<<<<
@@ -33148,7 +34643,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_aabb_p = __pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_node);
 
-      /* "forest/_hier_core.pyx":789
+      /* "forest/_hier_core.pyx":939
  *             if _get_u8(node, _OFF_HAS_AABB):
  *                 aabb_p = _aabb_ptr(node)
  *                 collide = False             # <<<<<<<<<<<<<<
@@ -33157,7 +34652,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_collide = 0;
 
-      /* "forest/_hier_core.pyx":790
+      /* "forest/_hier_core.pyx":940
  *                 aabb_p = _aabb_ptr(node)
  *                 collide = False
  *                 if obs_ptr != NULL:             # <<<<<<<<<<<<<<
@@ -33167,7 +34662,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       __pyx_t_3 = (__pyx_v_obs_ptr != NULL);
       if (__pyx_t_3) {
 
-        /* "forest/_hier_core.pyx":791
+        /* "forest/_hier_core.pyx":941
  *                 collide = False
  *                 if obs_ptr != NULL:
  *                     collide = _link_aabbs_collide_flat(aabb_p, obs_ptr, n_obs)             # <<<<<<<<<<<<<<
@@ -33176,7 +34671,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_collide = __pyx_f_6forest_10_hier_core__link_aabbs_collide_flat(__pyx_v_aabb_p, __pyx_v_obs_ptr, __pyx_v_n_obs);
 
-        /* "forest/_hier_core.pyx":790
+        /* "forest/_hier_core.pyx":940
  *                 aabb_p = _aabb_ptr(node)
  *                 collide = False
  *                 if obs_ptr != NULL:             # <<<<<<<<<<<<<<
@@ -33185,7 +34680,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       }
 
-      /* "forest/_hier_core.pyx":792
+      /* "forest/_hier_core.pyx":942
  *                 if obs_ptr != NULL:
  *                     collide = _link_aabbs_collide_flat(aabb_p, obs_ptr, n_obs)
  *                 if not collide and self._subtree_occ[idx] == 0:             # <<<<<<<<<<<<<<
@@ -33198,14 +34693,14 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
         __pyx_t_3 = __pyx_t_4;
         goto __pyx_L16_bool_binop_done;
       }
-      if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 792, __pyx_L1_error)}
+      if (unlikely(!__pyx_v_self->_subtree_occ.memview)) {PyErr_SetString(PyExc_AttributeError,"Memoryview is not initialized");__PYX_ERR(0, 942, __pyx_L1_error)}
       __pyx_t_19 = __pyx_v_idx;
       __pyx_t_4 = ((*((__pyx_t_5numpy_int32_t *) ( /* dim=0 */ ((char *) (((__pyx_t_5numpy_int32_t *) __pyx_v_self->_subtree_occ.data) + __pyx_t_19)) ))) == 0);
       __pyx_t_3 = __pyx_t_4;
       __pyx_L16_bool_binop_done:;
       if (__pyx_t_3) {
 
-        /* "forest/_hier_core.pyx":793
+        /* "forest/_hier_core.pyx":943
  *                     collide = _link_aabbs_collide_flat(aabb_p, obs_ptr, n_obs)
  *                 if not collide and self._subtree_occ[idx] == 0:
  *                     break             # <<<<<<<<<<<<<<
@@ -33214,7 +34709,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         goto __pyx_L11_break;
 
-        /* "forest/_hier_core.pyx":792
+        /* "forest/_hier_core.pyx":942
  *                 if obs_ptr != NULL:
  *                     collide = _link_aabbs_collide_flat(aabb_p, obs_ptr, n_obs)
  *                 if not collide and self._subtree_occ[idx] == 0:             # <<<<<<<<<<<<<<
@@ -33223,7 +34718,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       }
 
-      /* "forest/_hier_core.pyx":787
+      /* "forest/_hier_core.pyx":937
  * 
  *             #  +
  *             if _get_u8(node, _OFF_HAS_AABB):             # <<<<<<<<<<<<<<
@@ -33232,7 +34727,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     }
 
-    /* "forest/_hier_core.pyx":795
+    /* "forest/_hier_core.pyx":945
  *                     break
  * 
  *             depth = _get_i32(node, _OFF_DEPTH)             # <<<<<<<<<<<<<<
@@ -33241,7 +34736,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     __pyx_v_depth = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 12);
 
-    /* "forest/_hier_core.pyx":796
+    /* "forest/_hier_core.pyx":946
  * 
  *             depth = _get_i32(node, _OFF_DEPTH)
  *             if depth >= max_depth:             # <<<<<<<<<<<<<<
@@ -33251,7 +34746,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     __pyx_t_3 = (__pyx_v_depth >= __pyx_v_max_depth);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":797
+      /* "forest/_hier_core.pyx":947
  *             depth = _get_i32(node, _OFF_DEPTH)
  *             if depth >= max_depth:
  *                 fail_code = 2; idx = -1; break             # <<<<<<<<<<<<<<
@@ -33262,7 +34757,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       __pyx_v_idx = -1;
       goto __pyx_L11_break;
 
-      /* "forest/_hier_core.pyx":796
+      /* "forest/_hier_core.pyx":946
  * 
  *             depth = _get_i32(node, _OFF_DEPTH)
  *             if depth >= max_depth:             # <<<<<<<<<<<<<<
@@ -33271,7 +34766,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     }
 
-    /* "forest/_hier_core.pyx":799
+    /* "forest/_hier_core.pyx":949
  *                 fail_code = 2; idx = -1; break
  * 
  *             if n_split_dims > 0:             # <<<<<<<<<<<<<<
@@ -33281,7 +34776,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     __pyx_t_3 = (__pyx_v_n_split_dims > 0);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":800
+      /* "forest/_hier_core.pyx":950
  * 
  *             if n_split_dims > 0:
  *                 dim = split_p[depth % n_split_dims]             # <<<<<<<<<<<<<<
@@ -33290,7 +34785,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_dim = (__pyx_v_split_p[(__pyx_v_depth % __pyx_v_n_split_dims)]);
 
-      /* "forest/_hier_core.pyx":799
+      /* "forest/_hier_core.pyx":949
  *                 fail_code = 2; idx = -1; break
  * 
  *             if n_split_dims > 0:             # <<<<<<<<<<<<<<
@@ -33300,7 +34795,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       goto __pyx_L19;
     }
 
-    /* "forest/_hier_core.pyx":802
+    /* "forest/_hier_core.pyx":952
  *                 dim = split_p[depth % n_split_dims]
  *             else:
  *                 dim = depth % n_dims             # <<<<<<<<<<<<<<
@@ -33312,7 +34807,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     }
     __pyx_L19:;
 
-    /* "forest/_hier_core.pyx":804
+    /* "forest/_hier_core.pyx":954
  *                 dim = depth % n_dims
  * 
  *             edge = ivs_hi[dim] - ivs_lo[dim]             # <<<<<<<<<<<<<<
@@ -33321,7 +34816,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     __pyx_v_edge = ((__pyx_v_ivs_hi[__pyx_v_dim]) - (__pyx_v_ivs_lo[__pyx_v_dim]));
 
-    /* "forest/_hier_core.pyx":805
+    /* "forest/_hier_core.pyx":955
  * 
  *             edge = ivs_hi[dim] - ivs_lo[dim]
  *             if min_edge_length > 0 and edge < min_edge_length * 2:             # <<<<<<<<<<<<<<
@@ -33339,7 +34834,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     __pyx_L21_bool_binop_done:;
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":806
+      /* "forest/_hier_core.pyx":956
  *             edge = ivs_hi[dim] - ivs_lo[dim]
  *             if min_edge_length > 0 and edge < min_edge_length * 2:
  *                 fail_code = 3; idx = -1; break             # <<<<<<<<<<<<<<
@@ -33350,7 +34845,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       __pyx_v_idx = -1;
       goto __pyx_L11_break;
 
-      /* "forest/_hier_core.pyx":805
+      /* "forest/_hier_core.pyx":955
  * 
  *             edge = ivs_hi[dim] - ivs_lo[dim]
  *             if min_edge_length > 0 and edge < min_edge_length * 2:             # <<<<<<<<<<<<<<
@@ -33359,7 +34854,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     }
 
-    /* "forest/_hier_core.pyx":808
+    /* "forest/_hier_core.pyx":958
  *                 fail_code = 3; idx = -1; break
  * 
  *             left_idx = _get_i32(node, _OFF_LEFT)             # <<<<<<<<<<<<<<
@@ -33368,7 +34863,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
     __pyx_v_left_idx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 0);
 
-    /* "forest/_hier_core.pyx":810
+    /* "forest/_hier_core.pyx":960
  *             left_idx = _get_i32(node, _OFF_LEFT)
  * 
  *             if left_idx == -1:             # <<<<<<<<<<<<<<
@@ -33378,7 +34873,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     __pyx_t_3 = (__pyx_v_left_idx == -1L);
     if (__pyx_t_3) {
 
-      /* "forest/_hier_core.pyx":812
+      /* "forest/_hier_core.pyx":962
  *             if left_idx == -1:
  *                 #
  *                 mid = (ivs_lo[dim] + ivs_hi[dim]) * 0.5             # <<<<<<<<<<<<<<
@@ -33387,7 +34882,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_mid = (((__pyx_v_ivs_lo[__pyx_v_dim]) + (__pyx_v_ivs_hi[__pyx_v_dim])) * 0.5);
 
-      /* "forest/_hier_core.pyx":814
+      /* "forest/_hier_core.pyx":964
  *                 mid = (ivs_lo[dim] + ivs_hi[dim]) * 0.5
  * 
  *                 self.ensure_capacity(self.next_idx + 2)             # <<<<<<<<<<<<<<
@@ -33396,7 +34891,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_t_6 = ((PyObject *)__pyx_v_self);
       __Pyx_INCREF(__pyx_t_6);
-      __pyx_t_10 = __Pyx_PyLong_From_long((__pyx_v_self->next_idx + 2)); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 814, __pyx_L1_error)
+      __pyx_t_10 = __Pyx_PyLong_From_long((__pyx_v_self->next_idx + 2)); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 964, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_10);
       __pyx_t_12 = 0;
       {
@@ -33404,12 +34899,12 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
         __pyx_t_9 = __Pyx_PyObject_FastCallMethod((PyObject*)__pyx_mstate_global->__pyx_n_u_ensure_capacity, __pyx_callargs+__pyx_t_12, (2-__pyx_t_12) | (1*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
         __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 814, __pyx_L1_error)
+        if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 964, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
       }
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-      /* "forest/_hier_core.pyx":815
+      /* "forest/_hier_core.pyx":965
  * 
  *                 self.ensure_capacity(self.next_idx + 2)
  *                 base = self._base   #             # <<<<<<<<<<<<<<
@@ -33419,7 +34914,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       __pyx_t_22 = __pyx_v_self->_base;
       __pyx_v_base = __pyx_t_22;
 
-      /* "forest/_hier_core.pyx":817
+      /* "forest/_hier_core.pyx":967
  *                 base = self._base   #
  * 
  *                 left_idx = self._alloc_node_c(idx, depth + 1)             # <<<<<<<<<<<<<<
@@ -33428,7 +34923,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_left_idx = ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_alloc_node_c(__pyx_v_self, __pyx_v_idx, (__pyx_v_depth + 1));
 
-      /* "forest/_hier_core.pyx":818
+      /* "forest/_hier_core.pyx":968
  * 
  *                 left_idx = self._alloc_node_c(idx, depth + 1)
  *                 right_idx = self._alloc_node_c(idx, depth + 1)             # <<<<<<<<<<<<<<
@@ -33437,7 +34932,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_right_idx = ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_alloc_node_c(__pyx_v_self, __pyx_v_idx, (__pyx_v_depth + 1));
 
-      /* "forest/_hier_core.pyx":819
+      /* "forest/_hier_core.pyx":969
  *                 left_idx = self._alloc_node_c(idx, depth + 1)
  *                 right_idx = self._alloc_node_c(idx, depth + 1)
  *                 n_new_nodes += 2             # <<<<<<<<<<<<<<
@@ -33446,7 +34941,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_n_new_nodes = (__pyx_v_n_new_nodes + 2);
 
-      /* "forest/_hier_core.pyx":821
+      /* "forest/_hier_core.pyx":971
  *                 n_new_nodes += 2
  * 
  *                 node = _node_ptr(base, stride, idx)             # <<<<<<<<<<<<<<
@@ -33455,7 +34950,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_base, __pyx_v_stride, __pyx_v_idx);
 
-      /* "forest/_hier_core.pyx":822
+      /* "forest/_hier_core.pyx":972
  * 
  *                 node = _node_ptr(base, stride, idx)
  *                 _set_f64(node, _OFF_SPLIT, mid)             # <<<<<<<<<<<<<<
@@ -33464,7 +34959,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_f_6forest_10_hier_core__set_f64(__pyx_v_node, 16, __pyx_v_mid);
 
-      /* "forest/_hier_core.pyx":823
+      /* "forest/_hier_core.pyx":973
  *                 node = _node_ptr(base, stride, idx)
  *                 _set_f64(node, _OFF_SPLIT, mid)
  *                 _set_i32(node, _OFF_LEFT, left_idx)             # <<<<<<<<<<<<<<
@@ -33473,7 +34968,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 0, __pyx_v_left_idx);
 
-      /* "forest/_hier_core.pyx":824
+      /* "forest/_hier_core.pyx":974
  *                 _set_f64(node, _OFF_SPLIT, mid)
  *                 _set_i32(node, _OFF_LEFT, left_idx)
  *                 _set_i32(node, _OFF_RIGHT, right_idx)             # <<<<<<<<<<<<<<
@@ -33482,7 +34977,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_f_6forest_10_hier_core__set_i32(__pyx_v_node, 4, __pyx_v_right_idx);
 
-      /* "forest/_hier_core.pyx":825
+      /* "forest/_hier_core.pyx":975
  *                 _set_i32(node, _OFF_LEFT, left_idx)
  *                 _set_i32(node, _OFF_RIGHT, right_idx)
  *                 _set_u8(node, _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
@@ -33491,7 +34986,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 1);
 
-      /* "forest/_hier_core.pyx":827
+      /* "forest/_hier_core.pyx":977
  *                 _set_u8(node, _OFF_DIRTY, 1)
  * 
  *                 going_left = seed_p[dim] < mid             # <<<<<<<<<<<<<<
@@ -33500,7 +34995,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_going_left = ((__pyx_v_seed_p[__pyx_v_dim]) < __pyx_v_mid);
 
-      /* "forest/_hier_core.pyx":830
+      /* "forest/_hier_core.pyx":980
  * 
  *                 # ,  (tmp  FK)
  *                 if going_left:             # <<<<<<<<<<<<<<
@@ -33509,7 +35004,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (__pyx_v_going_left) {
 
-        /* "forest/_hier_core.pyx":832
+        /* "forest/_hier_core.pyx":982
  *                 if going_left:
  *                     #  right ()
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33518,7 +35013,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (void)(memcpy(__pyx_v_civs_lo, __pyx_v_ivs_lo, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":833
+        /* "forest/_hier_core.pyx":983
  *                     #  right ()
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33527,7 +35022,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (void)(memcpy(__pyx_v_civs_hi, __pyx_v_ivs_hi, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":834
+        /* "forest/_hier_core.pyx":984
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_lo[dim] = mid             # <<<<<<<<<<<<<<
@@ -33536,7 +35031,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (__pyx_v_civs_lo[__pyx_v_dim]) = __pyx_v_mid;
 
-        /* "forest/_hier_core.pyx":835
+        /* "forest/_hier_core.pyx":985
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_lo[dim] = mid
  *                     _incremental_fk_cc(n_joints, has_tool,             # <<<<<<<<<<<<<<
@@ -33545,7 +35040,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__incremental_fk_cc(__pyx_v_n_joints, __pyx_v_has_tool, __pyx_v_fk_plo, __pyx_v_fk_phi, __pyx_v_fk_jlo, __pyx_v_fk_jhi, __pyx_v_alpha_p, __pyx_v_a_p, __pyx_v_d_p, __pyx_v_theta_p, __pyx_v_jtype_p, __pyx_v_civs_lo, __pyx_v_civs_hi, __pyx_v_dim, __pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_tmp_jlo, __pyx_v_tmp_jhi);
 
-        /* "forest/_hier_core.pyx":840
+        /* "forest/_hier_core.pyx":990
  *                         civs_lo, civs_hi, dim,
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)             # <<<<<<<<<<<<<<
@@ -33554,7 +35049,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__extract_compact_cc(__pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_n_links, __pyx_v_aabb_r);
 
-        /* "forest/_hier_core.pyx":841
+        /* "forest/_hier_core.pyx":991
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)
  *                     self._set_aabb_from_buf_c(right_idx, aabb_r)             # <<<<<<<<<<<<<<
@@ -33563,7 +35058,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_set_aabb_from_buf_c(__pyx_v_self, __pyx_v_right_idx, __pyx_v_aabb_r);
 
-        /* "forest/_hier_core.pyx":842
+        /* "forest/_hier_core.pyx":992
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)
  *                     self._set_aabb_from_buf_c(right_idx, aabb_r)
  *                     n_fk_calls += 1             # <<<<<<<<<<<<<<
@@ -33572,7 +35067,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_n_fk_calls = (__pyx_v_n_fk_calls + 1);
 
-        /* "forest/_hier_core.pyx":845
+        /* "forest/_hier_core.pyx":995
  * 
  *                     #  left (, FK  tmp)
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33581,7 +35076,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (void)(memcpy(__pyx_v_civs_lo, __pyx_v_ivs_lo, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":846
+        /* "forest/_hier_core.pyx":996
  *                     #  left (, FK  tmp)
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33590,7 +35085,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (void)(memcpy(__pyx_v_civs_hi, __pyx_v_ivs_hi, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":847
+        /* "forest/_hier_core.pyx":997
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_hi[dim] = mid             # <<<<<<<<<<<<<<
@@ -33599,7 +35094,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (__pyx_v_civs_hi[__pyx_v_dim]) = __pyx_v_mid;
 
-        /* "forest/_hier_core.pyx":848
+        /* "forest/_hier_core.pyx":998
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_hi[dim] = mid
  *                     _incremental_fk_cc(n_joints, has_tool,             # <<<<<<<<<<<<<<
@@ -33608,7 +35103,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__incremental_fk_cc(__pyx_v_n_joints, __pyx_v_has_tool, __pyx_v_fk_plo, __pyx_v_fk_phi, __pyx_v_fk_jlo, __pyx_v_fk_jhi, __pyx_v_alpha_p, __pyx_v_a_p, __pyx_v_d_p, __pyx_v_theta_p, __pyx_v_jtype_p, __pyx_v_civs_lo, __pyx_v_civs_hi, __pyx_v_dim, __pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_tmp_jlo, __pyx_v_tmp_jhi);
 
-        /* "forest/_hier_core.pyx":853
+        /* "forest/_hier_core.pyx":1003
  *                         civs_lo, civs_hi, dim,
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)             # <<<<<<<<<<<<<<
@@ -33617,7 +35112,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__extract_compact_cc(__pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_n_links, __pyx_v_aabb_l);
 
-        /* "forest/_hier_core.pyx":854
+        /* "forest/_hier_core.pyx":1004
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)
  *                     self._set_aabb_from_buf_c(left_idx, aabb_l)             # <<<<<<<<<<<<<<
@@ -33626,7 +35121,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_set_aabb_from_buf_c(__pyx_v_self, __pyx_v_left_idx, __pyx_v_aabb_l);
 
-        /* "forest/_hier_core.pyx":855
+        /* "forest/_hier_core.pyx":1005
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)
  *                     self._set_aabb_from_buf_c(left_idx, aabb_l)
  *                     n_fk_calls += 1             # <<<<<<<<<<<<<<
@@ -33635,7 +35130,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_n_fk_calls = (__pyx_v_n_fk_calls + 1);
 
-        /* "forest/_hier_core.pyx":830
+        /* "forest/_hier_core.pyx":980
  * 
  *                 # ,  (tmp  FK)
  *                 if going_left:             # <<<<<<<<<<<<<<
@@ -33645,7 +35140,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
         goto __pyx_L24;
       }
 
-      /* "forest/_hier_core.pyx":858
+      /* "forest/_hier_core.pyx":1008
  *                 else:
  *                     #  left ()
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33655,7 +35150,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       /*else*/ {
         (void)(memcpy(__pyx_v_civs_lo, __pyx_v_ivs_lo, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":859
+        /* "forest/_hier_core.pyx":1009
  *                     #  left ()
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33664,7 +35159,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (void)(memcpy(__pyx_v_civs_hi, __pyx_v_ivs_hi, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":860
+        /* "forest/_hier_core.pyx":1010
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_hi[dim] = mid             # <<<<<<<<<<<<<<
@@ -33673,7 +35168,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (__pyx_v_civs_hi[__pyx_v_dim]) = __pyx_v_mid;
 
-        /* "forest/_hier_core.pyx":861
+        /* "forest/_hier_core.pyx":1011
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_hi[dim] = mid
  *                     _incremental_fk_cc(n_joints, has_tool,             # <<<<<<<<<<<<<<
@@ -33682,7 +35177,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__incremental_fk_cc(__pyx_v_n_joints, __pyx_v_has_tool, __pyx_v_fk_plo, __pyx_v_fk_phi, __pyx_v_fk_jlo, __pyx_v_fk_jhi, __pyx_v_alpha_p, __pyx_v_a_p, __pyx_v_d_p, __pyx_v_theta_p, __pyx_v_jtype_p, __pyx_v_civs_lo, __pyx_v_civs_hi, __pyx_v_dim, __pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_tmp_jlo, __pyx_v_tmp_jhi);
 
-        /* "forest/_hier_core.pyx":866
+        /* "forest/_hier_core.pyx":1016
  *                         civs_lo, civs_hi, dim,
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)             # <<<<<<<<<<<<<<
@@ -33691,7 +35186,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__extract_compact_cc(__pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_n_links, __pyx_v_aabb_l);
 
-        /* "forest/_hier_core.pyx":867
+        /* "forest/_hier_core.pyx":1017
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)
  *                     self._set_aabb_from_buf_c(left_idx, aabb_l)             # <<<<<<<<<<<<<<
@@ -33700,7 +35195,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_set_aabb_from_buf_c(__pyx_v_self, __pyx_v_left_idx, __pyx_v_aabb_l);
 
-        /* "forest/_hier_core.pyx":868
+        /* "forest/_hier_core.pyx":1018
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_l)
  *                     self._set_aabb_from_buf_c(left_idx, aabb_l)
  *                     n_fk_calls += 1             # <<<<<<<<<<<<<<
@@ -33709,7 +35204,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_n_fk_calls = (__pyx_v_n_fk_calls + 1);
 
-        /* "forest/_hier_core.pyx":871
+        /* "forest/_hier_core.pyx":1021
  * 
  *                     #  right (, FK  tmp)
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33718,7 +35213,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (void)(memcpy(__pyx_v_civs_lo, __pyx_v_ivs_lo, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":872
+        /* "forest/_hier_core.pyx":1022
  *                     #  right (, FK  tmp)
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))             # <<<<<<<<<<<<<<
@@ -33727,7 +35222,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (void)(memcpy(__pyx_v_civs_hi, __pyx_v_ivs_hi, (__pyx_v_n_dims * (sizeof(double)))));
 
-        /* "forest/_hier_core.pyx":873
+        /* "forest/_hier_core.pyx":1023
  *                     memcpy(civs_lo, ivs_lo, n_dims * sizeof(double))
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_lo[dim] = mid             # <<<<<<<<<<<<<<
@@ -33736,7 +35231,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (__pyx_v_civs_lo[__pyx_v_dim]) = __pyx_v_mid;
 
-        /* "forest/_hier_core.pyx":874
+        /* "forest/_hier_core.pyx":1024
  *                     memcpy(civs_hi, ivs_hi, n_dims * sizeof(double))
  *                     civs_lo[dim] = mid
  *                     _incremental_fk_cc(n_joints, has_tool,             # <<<<<<<<<<<<<<
@@ -33745,7 +35240,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__incremental_fk_cc(__pyx_v_n_joints, __pyx_v_has_tool, __pyx_v_fk_plo, __pyx_v_fk_phi, __pyx_v_fk_jlo, __pyx_v_fk_jhi, __pyx_v_alpha_p, __pyx_v_a_p, __pyx_v_d_p, __pyx_v_theta_p, __pyx_v_jtype_p, __pyx_v_civs_lo, __pyx_v_civs_hi, __pyx_v_dim, __pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_tmp_jlo, __pyx_v_tmp_jhi);
 
-        /* "forest/_hier_core.pyx":879
+        /* "forest/_hier_core.pyx":1029
  *                         civs_lo, civs_hi, dim,
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)             # <<<<<<<<<<<<<<
@@ -33754,7 +35249,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_f_6forest_10_hier_core__extract_compact_cc(__pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_n_links, __pyx_v_aabb_r);
 
-        /* "forest/_hier_core.pyx":880
+        /* "forest/_hier_core.pyx":1030
  *                         tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)
  *                     self._set_aabb_from_buf_c(right_idx, aabb_r)             # <<<<<<<<<<<<<<
@@ -33763,36 +35258,86 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_set_aabb_from_buf_c(__pyx_v_self, __pyx_v_right_idx, __pyx_v_aabb_r);
 
-        /* "forest/_hier_core.pyx":881
+        /* "forest/_hier_core.pyx":1031
  *                     _extract_compact_cc(tmp_plo, tmp_phi, n_links, aabb_r)
  *                     self._set_aabb_from_buf_c(right_idx, aabb_r)
  *                     n_fk_calls += 1             # <<<<<<<<<<<<<<
  * 
- *                 # Union AABB on parent
+ *                 # Refine AABB on parent: intersect(old, union(left, right))
 */
         __pyx_v_n_fk_calls = (__pyx_v_n_fk_calls + 1);
       }
       __pyx_L24:;
 
-      /* "forest/_hier_core.pyx":884
+      /* "forest/_hier_core.pyx":1034
  * 
- *                 # Union AABB on parent
+ *                 # Refine AABB on parent: intersect(old, union(left, right))
  *                 _union_aabb_buf_c(aabb_l, aabb_r, n_links, aabb_u)             # <<<<<<<<<<<<<<
- *                 self._set_aabb_from_buf_c(idx, aabb_u)
- * 
+ *                 node = _node_ptr(base, stride, idx)
+ *                 if _get_u8(node, _OFF_HAS_AABB):
 */
       __pyx_f_6forest_10_hier_core__union_aabb_buf_c(__pyx_v_aabb_l, __pyx_v_aabb_r, __pyx_v_n_links, __pyx_v_aabb_u);
 
-      /* "forest/_hier_core.pyx":885
- *                 # Union AABB on parent
+      /* "forest/_hier_core.pyx":1035
+ *                 # Refine AABB on parent: intersect(old, union(left, right))
  *                 _union_aabb_buf_c(aabb_l, aabb_r, n_links, aabb_u)
- *                 self._set_aabb_from_buf_c(idx, aabb_u)             # <<<<<<<<<<<<<<
+ *                 node = _node_ptr(base, stride, idx)             # <<<<<<<<<<<<<<
+ *                 if _get_u8(node, _OFF_HAS_AABB):
+ *                     # Parent already has direct-FK AABB  refine via intersect
+*/
+      __pyx_v_node = __pyx_f_6forest_10_hier_core__node_ptr(__pyx_v_base, __pyx_v_stride, __pyx_v_idx);
+
+      /* "forest/_hier_core.pyx":1036
+ *                 _union_aabb_buf_c(aabb_l, aabb_r, n_links, aabb_u)
+ *                 node = _node_ptr(base, stride, idx)
+ *                 if _get_u8(node, _OFF_HAS_AABB):             # <<<<<<<<<<<<<<
+ *                     # Parent already has direct-FK AABB  refine via intersect
+ *                     _refine_aabb_buf_c(_aabb_ptr(node), aabb_u, n_links)
+*/
+      __pyx_t_3 = (__pyx_f_6forest_10_hier_core__get_u8(__pyx_v_node, 24) != 0);
+      if (__pyx_t_3) {
+
+        /* "forest/_hier_core.pyx":1038
+ *                 if _get_u8(node, _OFF_HAS_AABB):
+ *                     # Parent already has direct-FK AABB  refine via intersect
+ *                     _refine_aabb_buf_c(_aabb_ptr(node), aabb_u, n_links)             # <<<<<<<<<<<<<<
+ *                     _set_u8(node, _OFF_DIRTY, 1)
+ *                 else:
+*/
+        __pyx_f_6forest_10_hier_core__refine_aabb_buf_c(__pyx_f_6forest_10_hier_core__aabb_ptr(__pyx_v_node), __pyx_v_aabb_u, __pyx_v_n_links);
+
+        /* "forest/_hier_core.pyx":1039
+ *                     # Parent already has direct-FK AABB  refine via intersect
+ *                     _refine_aabb_buf_c(_aabb_ptr(node), aabb_u, n_links)
+ *                     _set_u8(node, _OFF_DIRTY, 1)             # <<<<<<<<<<<<<<
+ *                 else:
+ *                     self._set_aabb_from_buf_c(idx, aabb_u)
+*/
+        __pyx_f_6forest_10_hier_core__set_u8(__pyx_v_node, 25, 1);
+
+        /* "forest/_hier_core.pyx":1036
+ *                 _union_aabb_buf_c(aabb_l, aabb_r, n_links, aabb_u)
+ *                 node = _node_ptr(base, stride, idx)
+ *                 if _get_u8(node, _OFF_HAS_AABB):             # <<<<<<<<<<<<<<
+ *                     # Parent already has direct-FK AABB  refine via intersect
+ *                     _refine_aabb_buf_c(_aabb_ptr(node), aabb_u, n_links)
+*/
+        goto __pyx_L25;
+      }
+
+      /* "forest/_hier_core.pyx":1041
+ *                     _set_u8(node, _OFF_DIRTY, 1)
+ *                 else:
+ *                     self._set_aabb_from_buf_c(idx, aabb_u)             # <<<<<<<<<<<<<<
  * 
  *                 # FK  =
 */
-      ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_set_aabb_from_buf_c(__pyx_v_self, __pyx_v_idx, __pyx_v_aabb_u);
+      /*else*/ {
+        ((struct __pyx_vtabstruct_6forest_10_hier_core_NodeStore *)__pyx_v_self->__pyx_vtab)->_set_aabb_from_buf_c(__pyx_v_self, __pyx_v_idx, __pyx_v_aabb_u);
+      }
+      __pyx_L25:;
 
-      /* "forest/_hier_core.pyx":888
+      /* "forest/_hier_core.pyx":1044
  * 
  *                 # FK  =
  *                 memcpy(fk_plo, tmp_plo, prefix_bytes)             # <<<<<<<<<<<<<<
@@ -33801,7 +35346,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       (void)(memcpy(__pyx_v_fk_plo, __pyx_v_tmp_plo, __pyx_v_prefix_bytes));
 
-      /* "forest/_hier_core.pyx":889
+      /* "forest/_hier_core.pyx":1045
  *                 # FK  =
  *                 memcpy(fk_plo, tmp_plo, prefix_bytes)
  *                 memcpy(fk_phi, tmp_phi, prefix_bytes)             # <<<<<<<<<<<<<<
@@ -33810,7 +35355,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       (void)(memcpy(__pyx_v_fk_phi, __pyx_v_tmp_phi, __pyx_v_prefix_bytes));
 
-      /* "forest/_hier_core.pyx":890
+      /* "forest/_hier_core.pyx":1046
  *                 memcpy(fk_plo, tmp_plo, prefix_bytes)
  *                 memcpy(fk_phi, tmp_phi, prefix_bytes)
  *                 memcpy(fk_jlo, tmp_jlo, joints_bytes)             # <<<<<<<<<<<<<<
@@ -33819,7 +35364,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       (void)(memcpy(__pyx_v_fk_jlo, __pyx_v_tmp_jlo, __pyx_v_joints_bytes));
 
-      /* "forest/_hier_core.pyx":891
+      /* "forest/_hier_core.pyx":1047
  *                 memcpy(fk_phi, tmp_phi, prefix_bytes)
  *                 memcpy(fk_jlo, tmp_jlo, joints_bytes)
  *                 memcpy(fk_jhi, tmp_jhi, joints_bytes)             # <<<<<<<<<<<<<<
@@ -33828,7 +35373,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       (void)(memcpy(__pyx_v_fk_jhi, __pyx_v_tmp_jhi, __pyx_v_joints_bytes));
 
-      /* "forest/_hier_core.pyx":893
+      /* "forest/_hier_core.pyx":1049
  *                 memcpy(fk_jhi, tmp_jhi, joints_bytes)
  * 
  *                 if going_left:             # <<<<<<<<<<<<<<
@@ -33837,7 +35382,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       if (__pyx_v_going_left) {
 
-        /* "forest/_hier_core.pyx":894
+        /* "forest/_hier_core.pyx":1050
  * 
  *                 if going_left:
  *                     ivs_hi[dim] = mid             # <<<<<<<<<<<<<<
@@ -33846,7 +35391,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (__pyx_v_ivs_hi[__pyx_v_dim]) = __pyx_v_mid;
 
-        /* "forest/_hier_core.pyx":895
+        /* "forest/_hier_core.pyx":1051
  *                 if going_left:
  *                     ivs_hi[dim] = mid
  *                     idx = left_idx             # <<<<<<<<<<<<<<
@@ -33855,17 +35400,17 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_idx = __pyx_v_left_idx;
 
-        /* "forest/_hier_core.pyx":893
+        /* "forest/_hier_core.pyx":1049
  *                 memcpy(fk_jhi, tmp_jhi, joints_bytes)
  * 
  *                 if going_left:             # <<<<<<<<<<<<<<
  *                     ivs_hi[dim] = mid
  *                     idx = left_idx
 */
-        goto __pyx_L25;
+        goto __pyx_L26;
       }
 
-      /* "forest/_hier_core.pyx":897
+      /* "forest/_hier_core.pyx":1053
  *                     idx = left_idx
  *                 else:
  *                     ivs_lo[dim] = mid             # <<<<<<<<<<<<<<
@@ -33875,7 +35420,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       /*else*/ {
         (__pyx_v_ivs_lo[__pyx_v_dim]) = __pyx_v_mid;
 
-        /* "forest/_hier_core.pyx":898
+        /* "forest/_hier_core.pyx":1054
  *                 else:
  *                     ivs_lo[dim] = mid
  *                     idx = right_idx             # <<<<<<<<<<<<<<
@@ -33884,9 +35429,9 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_idx = __pyx_v_right_idx;
       }
-      __pyx_L25:;
+      __pyx_L26:;
 
-      /* "forest/_hier_core.pyx":810
+      /* "forest/_hier_core.pyx":960
  *             left_idx = _get_i32(node, _OFF_LEFT)
  * 
  *             if left_idx == -1:             # <<<<<<<<<<<<<<
@@ -33896,7 +35441,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       goto __pyx_L23;
     }
 
-    /* "forest/_hier_core.pyx":902
+    /* "forest/_hier_core.pyx":1058
  *             else:
  *                 #
  *                 sv = _get_f64(node, _OFF_SPLIT)             # <<<<<<<<<<<<<<
@@ -33906,7 +35451,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
     /*else*/ {
       __pyx_v_sv = __pyx_f_6forest_10_hier_core__get_f64(__pyx_v_node, 16);
 
-      /* "forest/_hier_core.pyx":903
+      /* "forest/_hier_core.pyx":1059
  *                 #
  *                 sv = _get_f64(node, _OFF_SPLIT)
  *                 right_idx = _get_i32(node, _OFF_RIGHT)             # <<<<<<<<<<<<<<
@@ -33915,7 +35460,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_v_right_idx = __pyx_f_6forest_10_hier_core__get_i32(__pyx_v_node, 4);
 
-      /* "forest/_hier_core.pyx":905
+      /* "forest/_hier_core.pyx":1061
  *                 right_idx = _get_i32(node, _OFF_RIGHT)
  * 
  *                 if seed_p[dim] < sv:             # <<<<<<<<<<<<<<
@@ -33925,7 +35470,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       __pyx_t_3 = ((__pyx_v_seed_p[__pyx_v_dim]) < __pyx_v_sv);
       if (__pyx_t_3) {
 
-        /* "forest/_hier_core.pyx":906
+        /* "forest/_hier_core.pyx":1062
  * 
  *                 if seed_p[dim] < sv:
  *                     ivs_hi[dim] = sv             # <<<<<<<<<<<<<<
@@ -33934,7 +35479,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         (__pyx_v_ivs_hi[__pyx_v_dim]) = __pyx_v_sv;
 
-        /* "forest/_hier_core.pyx":907
+        /* "forest/_hier_core.pyx":1063
  *                 if seed_p[dim] < sv:
  *                     ivs_hi[dim] = sv
  *                     idx = left_idx             # <<<<<<<<<<<<<<
@@ -33943,17 +35488,17 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_idx = __pyx_v_left_idx;
 
-        /* "forest/_hier_core.pyx":905
+        /* "forest/_hier_core.pyx":1061
  *                 right_idx = _get_i32(node, _OFF_RIGHT)
  * 
  *                 if seed_p[dim] < sv:             # <<<<<<<<<<<<<<
  *                     ivs_hi[dim] = sv
  *                     idx = left_idx
 */
-        goto __pyx_L26;
+        goto __pyx_L27;
       }
 
-      /* "forest/_hier_core.pyx":909
+      /* "forest/_hier_core.pyx":1065
  *                     idx = left_idx
  *                 else:
  *                     ivs_lo[dim] = sv             # <<<<<<<<<<<<<<
@@ -33963,7 +35508,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
       /*else*/ {
         (__pyx_v_ivs_lo[__pyx_v_dim]) = __pyx_v_sv;
 
-        /* "forest/_hier_core.pyx":910
+        /* "forest/_hier_core.pyx":1066
  *                 else:
  *                     ivs_lo[dim] = sv
  *                     idx = right_idx             # <<<<<<<<<<<<<<
@@ -33972,9 +35517,9 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
         __pyx_v_idx = __pyx_v_right_idx;
       }
-      __pyx_L26:;
+      __pyx_L27:;
 
-      /* "forest/_hier_core.pyx":913
+      /* "forest/_hier_core.pyx":1069
  * 
  *                 #  FK:
  *                 _incremental_fk_cc(n_joints, has_tool,             # <<<<<<<<<<<<<<
@@ -33983,7 +35528,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       __pyx_f_6forest_10_hier_core__incremental_fk_cc(__pyx_v_n_joints, __pyx_v_has_tool, __pyx_v_fk_plo, __pyx_v_fk_phi, __pyx_v_fk_jlo, __pyx_v_fk_jhi, __pyx_v_alpha_p, __pyx_v_a_p, __pyx_v_d_p, __pyx_v_theta_p, __pyx_v_jtype_p, __pyx_v_ivs_lo, __pyx_v_ivs_hi, __pyx_v_dim, __pyx_v_tmp_plo, __pyx_v_tmp_phi, __pyx_v_tmp_jlo, __pyx_v_tmp_jhi);
 
-      /* "forest/_hier_core.pyx":918
+      /* "forest/_hier_core.pyx":1074
  *                     ivs_lo, ivs_hi, dim,
  *                     tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                 memcpy(fk_plo, tmp_plo, prefix_bytes)             # <<<<<<<<<<<<<<
@@ -33992,7 +35537,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       (void)(memcpy(__pyx_v_fk_plo, __pyx_v_tmp_plo, __pyx_v_prefix_bytes));
 
-      /* "forest/_hier_core.pyx":919
+      /* "forest/_hier_core.pyx":1075
  *                     tmp_plo, tmp_phi, tmp_jlo, tmp_jhi)
  *                 memcpy(fk_plo, tmp_plo, prefix_bytes)
  *                 memcpy(fk_phi, tmp_phi, prefix_bytes)             # <<<<<<<<<<<<<<
@@ -34001,7 +35546,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       (void)(memcpy(__pyx_v_fk_phi, __pyx_v_tmp_phi, __pyx_v_prefix_bytes));
 
-      /* "forest/_hier_core.pyx":920
+      /* "forest/_hier_core.pyx":1076
  *                 memcpy(fk_plo, tmp_plo, prefix_bytes)
  *                 memcpy(fk_phi, tmp_phi, prefix_bytes)
  *                 memcpy(fk_jlo, tmp_jlo, joints_bytes)             # <<<<<<<<<<<<<<
@@ -34010,7 +35555,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
 */
       (void)(memcpy(__pyx_v_fk_jlo, __pyx_v_tmp_jlo, __pyx_v_joints_bytes));
 
-      /* "forest/_hier_core.pyx":921
+      /* "forest/_hier_core.pyx":1077
  *                 memcpy(fk_phi, tmp_phi, prefix_bytes)
  *                 memcpy(fk_jlo, tmp_jlo, joints_bytes)
  *                 memcpy(fk_jhi, tmp_jhi, joints_bytes)             # <<<<<<<<<<<<<<
@@ -34023,33 +35568,33 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   }
   __pyx_L11_break:;
 
-  /* "forest/_hier_core.pyx":923
+  /* "forest/_hier_core.pyx":1079
  *                 memcpy(fk_jhi, tmp_jhi, joints_bytes)
  * 
  *         return (idx, path, fail_code, n_new_nodes, n_fk_calls)             # <<<<<<<<<<<<<<
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 923, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyLong_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1079, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_fail_code); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 923, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyLong_From_int(__pyx_v_fail_code); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 1079, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_n_new_nodes); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 923, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_n_new_nodes); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 1079, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_11 = __Pyx_PyLong_From_int(__pyx_v_n_fk_calls); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 923, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_PyLong_From_int(__pyx_v_n_fk_calls); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1079, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_8 = PyTuple_New(5); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 923, __pyx_L1_error)
+  __pyx_t_8 = PyTuple_New(5); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1079, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_GIVEREF(__pyx_t_9);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 923, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 1079, __pyx_L1_error);
   __Pyx_INCREF(__pyx_v_path);
   __Pyx_GIVEREF(__pyx_v_path);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_v_path) != (0)) __PYX_ERR(0, 923, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_v_path) != (0)) __PYX_ERR(0, 1079, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_10);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 2, __pyx_t_10) != (0)) __PYX_ERR(0, 923, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 2, __pyx_t_10) != (0)) __PYX_ERR(0, 1079, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_6);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 3, __pyx_t_6) != (0)) __PYX_ERR(0, 923, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 3, __pyx_t_6) != (0)) __PYX_ERR(0, 1079, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_11);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 4, __pyx_t_11) != (0)) __PYX_ERR(0, 923, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 4, __pyx_t_11) != (0)) __PYX_ERR(0, 1079, __pyx_L1_error);
   __pyx_t_9 = 0;
   __pyx_t_10 = 0;
   __pyx_t_6 = 0;
@@ -34058,7 +35603,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "forest/_hier_core.pyx":662
+  /* "forest/_hier_core.pyx":812
  *     #   (Cython )
  * 
  *     def descent_loop(self,             # <<<<<<<<<<<<<<
@@ -34116,7 +35661,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_77descent_loop(struct 
   return __pyx_r;
 }
 
-/* "forest/_hier_core.pyx":89
+/* "forest/_hier_core.pyx":153
  *         int _aabb_floats         # n_links * 6
  *         int _cap                 #
  *         public int next_idx      #             # <<<<<<<<<<<<<<
@@ -34148,7 +35693,7 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_8next_idx___get__(stru
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->next_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_self->next_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 153, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -34186,7 +35731,7 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore_8next_idx_2__set__(struct __
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __pyx_t_1 = __Pyx_PyLong_As_int(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_As_int(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 153, __pyx_L1_error)
   __pyx_v_self->next_idx = __pyx_t_1;
 
   /* function exit code */
@@ -34206,15 +35751,15 @@ static int __pyx_pf_6forest_10_hier_core_9NodeStore_8next_idx_2__set__(struct __
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_80__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_84__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_80__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_80__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_80__reduce_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_84__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_84__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_84__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -34240,14 +35785,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("__reduce_cython__", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_79__reduce_cython__(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_83__reduce_cython__(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_79__reduce_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_83__reduce_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self) {
   PyObject *__pyx_v_state = 0;
   PyObject *__pyx_v__dict = 0;
   int __pyx_v_use_setstate;
@@ -34585,15 +36130,15 @@ static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_79__reduce_cython__(st
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_82__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_86__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_82__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_82__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_82__setstate_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6forest_10_hier_core_9NodeStore_86__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_86__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6forest_10_hier_core_9NodeStore_86__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -34659,7 +36204,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_81__setstate_cython__(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_6forest_10_hier_core_9NodeStore_85__setstate_cython__(((struct __pyx_obj_6forest_10_hier_core_NodeStore *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -34669,7 +36214,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_81__setstate_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_6forest_10_hier_core_9NodeStore_85__setstate_cython__(struct __pyx_obj_6forest_10_hier_core_NodeStore *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -35163,21 +36708,23 @@ static PyMethodDef __pyx_methods_6forest_10_hier_core_NodeStore[] = {
   {"get_forest_id", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_47get_forest_id, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {"forest_ids_array", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_49forest_ids_array, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_48forest_ids_array},
   {"link_aabbs_collide", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_51link_aabbs_collide, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_50link_aabbs_collide},
-  {"propagate_up", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_53propagate_up, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_52propagate_up},
-  {"mark_occupied", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_55mark_occupied, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"reset_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_57reset_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"set_forest_id", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_59set_forest_id, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_58set_forest_id},
-  {"collect_forest_ids", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_61collect_forest_ids, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"clear_subtree_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_63clear_subtree_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"reset_all_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_65reset_all_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_64reset_all_occupation},
-  {"iter_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_67iter_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_66iter_dirty},
-  {"clear_all_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_70clear_all_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_69clear_all_dirty},
-  {"get_stats", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_72get_stats, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_71get_stats},
-  {"get_raw_buffer", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_74get_raw_buffer, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_73get_raw_buffer},
-  {"get_node_bytes", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_76get_node_bytes, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_75get_node_bytes},
-  {"descent_loop", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_78descent_loop, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_77descent_loop},
-  {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_80__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_82__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"subtree_collide_check", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_53subtree_collide_check, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_52subtree_collide_check},
+  {"propagate_up", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_55propagate_up, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_54propagate_up},
+  {"mark_occupied", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_57mark_occupied, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"unmark_occupied", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_59unmark_occupied, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_58unmark_occupied},
+  {"reset_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_61reset_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"set_forest_id", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_63set_forest_id, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_62set_forest_id},
+  {"collect_forest_ids", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_65collect_forest_ids, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"clear_subtree_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_67clear_subtree_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"reset_all_occupation", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_69reset_all_occupation, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_68reset_all_occupation},
+  {"iter_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_71iter_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_70iter_dirty},
+  {"clear_all_dirty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_74clear_all_dirty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_73clear_all_dirty},
+  {"get_stats", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_76get_stats, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_75get_stats},
+  {"get_raw_buffer", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_78get_raw_buffer, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_77get_raw_buffer},
+  {"get_node_bytes", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_80get_node_bytes, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_79get_node_bytes},
+  {"descent_loop", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_82descent_loop, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6forest_10_hier_core_9NodeStore_81descent_loop},
+  {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_84__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6forest_10_hier_core_9NodeStore_86__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -36355,19 +37902,20 @@ static int __Pyx_modinit_type_init_code(__pyx_mstatetype *__pyx_mstate) {
   __pyx_vtable_6forest_10_hier_core_NodeStore._union_aabb_c = (void (*)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, float *, float *, float *))__pyx_f_6forest_10_hier_core_9NodeStore__union_aabb_c;
   __pyx_vtable_6forest_10_hier_core_NodeStore._propagate_up_c = (void (*)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int))__pyx_f_6forest_10_hier_core_9NodeStore__propagate_up_c;
   __pyx_vtable_6forest_10_hier_core_NodeStore._mark_occupied_c = (void (*)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int, int))__pyx_f_6forest_10_hier_core_9NodeStore__mark_occupied_c;
+  __pyx_vtable_6forest_10_hier_core_NodeStore._unmark_occupied_c = (void (*)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int))__pyx_f_6forest_10_hier_core_9NodeStore__unmark_occupied_c;
   __pyx_vtable_6forest_10_hier_core_NodeStore._reset_occupation_c = (void (*)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int))__pyx_f_6forest_10_hier_core_9NodeStore__reset_occupation_c;
   __pyx_vtable_6forest_10_hier_core_NodeStore._collect_forest_ids_c = (PyObject *(*)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int))__pyx_f_6forest_10_hier_core_9NodeStore__collect_forest_ids_c;
   __pyx_vtable_6forest_10_hier_core_NodeStore._clear_subtree_occupation_c = (void (*)(struct __pyx_obj_6forest_10_hier_core_NodeStore *, int))__pyx_f_6forest_10_hier_core_9NodeStore__clear_subtree_occupation_c;
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6forest_10_hier_core_NodeStore_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore)) __PYX_ERR(0, 73, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6forest_10_hier_core_NodeStore_spec, __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 73, __pyx_L1_error)
+  __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6forest_10_hier_core_NodeStore_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore)) __PYX_ERR(0, 137, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6forest_10_hier_core_NodeStore_spec, __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 137, __pyx_L1_error)
   #else
   __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore = &__pyx_type_6forest_10_hier_core_NodeStore;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 73, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 137, __pyx_L1_error)
   #endif
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore);
@@ -36377,20 +37925,20 @@ static int __Pyx_modinit_type_init_code(__pyx_mstatetype *__pyx_mstate) {
     __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore->tp_getattro = PyObject_GenericGetAttr;
   }
   #endif
-  if (__Pyx_SetVtable(__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_vtabptr_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 73, __pyx_L1_error)
-  if (__Pyx_MergeVtables(__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 73, __pyx_L1_error)
-  if (PyObject_SetAttr(__pyx_m, __pyx_mstate_global->__pyx_n_u_NodeStore, (PyObject *) __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 73, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject *) __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 73, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_vtabptr_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 137, __pyx_L1_error)
+  if (__Pyx_MergeVtables(__pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 137, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_mstate_global->__pyx_n_u_NodeStore, (PyObject *) __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 137, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_mstate->__pyx_ptype_6forest_10_hier_core_NodeStore) < (0)) __PYX_ERR(0, 137, __pyx_L1_error)
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6forest_10_hier_core___pyx_scope_struct__iter_dirty_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty)) __PYX_ERR(0, 580, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6forest_10_hier_core___pyx_scope_struct__iter_dirty_spec, __pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty) < (0)) __PYX_ERR(0, 580, __pyx_L1_error)
+  __pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6forest_10_hier_core___pyx_scope_struct__iter_dirty_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty)) __PYX_ERR(0, 730, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6forest_10_hier_core___pyx_scope_struct__iter_dirty_spec, __pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty) < (0)) __PYX_ERR(0, 730, __pyx_L1_error)
   #else
   __pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty = &__pyx_type_6forest_10_hier_core___pyx_scope_struct__iter_dirty;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty) < (0)) __PYX_ERR(0, 580, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty) < (0)) __PYX_ERR(0, 730, __pyx_L1_error)
   #endif
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6forest_10_hier_core___pyx_scope_struct__iter_dirty);
@@ -37505,575 +39053,605 @@ __Pyx_RefNannySetupContext("PyInit__hier_core", 0);
 */
   __pyx_t_9 = __pyx_f_5numpy_import_array(); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 19, __pyx_L1_error)
 
-  /* "forest/_hier_core.pyx":154
+  /* "forest/_hier_core.pyx":218
  *         self._n_non_zero = count
  * 
  *     def attach_buffer(self, cnp.uint8_t[::1] buf, int cap):             # <<<<<<<<<<<<<<
  *         """ (mmap ), """
  *         self._buf = buf
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_3attach_buffer, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_attach_buffer, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 154, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_3attach_buffer, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_attach_buffer, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 218, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_attach_buffer, __pyx_t_4) < (0)) __PYX_ERR(0, 154, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_attach_buffer, __pyx_t_4) < (0)) __PYX_ERR(0, 218, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":167
+  /* "forest/_hier_core.pyx":231
  *     #
  * 
  *     def ensure_capacity(self, int needed):             # <<<<<<<<<<<<<<
  *         """ 2 """
  *         if needed <= self._cap:
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_5ensure_capacity, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_ensure_capacity, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[2])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 167, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_5ensure_capacity, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_ensure_capacity, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[2])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 231, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_ensure_capacity, __pyx_t_4) < (0)) __PYX_ERR(0, 167, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_ensure_capacity, __pyx_t_4) < (0)) __PYX_ERR(0, 231, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":221
+  /* "forest/_hier_core.pyx":285
  *         return idx
  * 
  *     def alloc_node(self, int parent, int depth):             # <<<<<<<<<<<<<<
  *         """"""
  *         cdef int idx = self.next_idx
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_7alloc_node, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_alloc_node, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[3])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 221, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_7alloc_node, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_alloc_node, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[3])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 285, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_alloc_node, __pyx_t_4) < (0)) __PYX_ERR(0, 221, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_alloc_node, __pyx_t_4) < (0)) __PYX_ERR(0, 285, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":237
+  /* "forest/_hier_core.pyx":301
  *     #   (Python )
  * 
  *     def get_left(self, int idx):             # <<<<<<<<<<<<<<
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_9get_left, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_left, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[4])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 237, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_9get_left, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_left, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[4])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 301, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_left, __pyx_t_4) < (0)) __PYX_ERR(0, 237, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_left, __pyx_t_4) < (0)) __PYX_ERR(0, 301, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":240
+  /* "forest/_hier_core.pyx":304
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT)
  * 
  *     def set_left(self, int idx, int val):             # <<<<<<<<<<<<<<
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_LEFT, val)
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_11set_left, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_left, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[5])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 240, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_11set_left, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_left, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[5])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 304, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_left, __pyx_t_4) < (0)) __PYX_ERR(0, 240, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_left, __pyx_t_4) < (0)) __PYX_ERR(0, 304, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":244
+  /* "forest/_hier_core.pyx":308
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_right(self, int idx):             # <<<<<<<<<<<<<<
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_13get_right, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_right, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[6])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_13get_right, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_right, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[6])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 308, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_right, __pyx_t_4) < (0)) __PYX_ERR(0, 244, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_right, __pyx_t_4) < (0)) __PYX_ERR(0, 308, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":247
+  /* "forest/_hier_core.pyx":311
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT)
  * 
  *     def set_right(self, int idx, int val):             # <<<<<<<<<<<<<<
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_RIGHT, val)
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_15set_right, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_right, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[7])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 247, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_15set_right, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_right, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[7])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 311, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_right, __pyx_t_4) < (0)) __PYX_ERR(0, 247, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_right, __pyx_t_4) < (0)) __PYX_ERR(0, 311, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":251
+  /* "forest/_hier_core.pyx":315
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_parent(self, int idx):             # <<<<<<<<<<<<<<
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_17get_parent, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_parent, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[8])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 251, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_17get_parent, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_parent, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[8])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_parent, __pyx_t_4) < (0)) __PYX_ERR(0, 251, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_parent, __pyx_t_4) < (0)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":254
+  /* "forest/_hier_core.pyx":318
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT)
  * 
  *     def get_depth(self, int idx):             # <<<<<<<<<<<<<<
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_19get_depth, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_depth, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[9])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 254, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_19get_depth, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_depth, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[9])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 318, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_depth, __pyx_t_4) < (0)) __PYX_ERR(0, 254, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_depth, __pyx_t_4) < (0)) __PYX_ERR(0, 318, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":257
+  /* "forest/_hier_core.pyx":321
  *         return _get_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH)
  * 
  *     def get_split_val(self, int idx):             # <<<<<<<<<<<<<<
  *         return _get_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_21get_split_val, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_split_val, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[10])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 257, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_21get_split_val, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_split_val, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[10])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 321, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_split_val, __pyx_t_4) < (0)) __PYX_ERR(0, 257, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_split_val, __pyx_t_4) < (0)) __PYX_ERR(0, 321, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":260
+  /* "forest/_hier_core.pyx":324
  *         return _get_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT)
  * 
  *     def set_split_val(self, int idx, double val):             # <<<<<<<<<<<<<<
  *         _set_f64(_node_ptr(self._base, self._stride, idx), _OFF_SPLIT, val)
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_23set_split_val, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_split_val, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[11])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 260, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_23set_split_val, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_split_val, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[11])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 324, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_split_val, __pyx_t_4) < (0)) __PYX_ERR(0, 260, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_split_val, __pyx_t_4) < (0)) __PYX_ERR(0, 324, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":264
+  /* "forest/_hier_core.pyx":328
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, 1)
  * 
  *     def get_has_aabb(self, int idx):             # <<<<<<<<<<<<<<
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_25get_has_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_has_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[12])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 264, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_25get_has_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_has_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[12])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 328, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_has_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 264, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_has_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 328, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":267
+  /* "forest/_hier_core.pyx":331
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB)
  * 
  *     def set_has_aabb(self, int idx, unsigned char val):             # <<<<<<<<<<<<<<
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB, val)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_27set_has_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_has_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[13])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 267, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_27set_has_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_has_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[13])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 331, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_has_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 267, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_has_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 331, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":270
+  /* "forest/_hier_core.pyx":334
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_HAS_AABB, val)
  * 
  *     def set_parent(self, int idx, int val):             # <<<<<<<<<<<<<<
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT, val)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_29set_parent, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_parent, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[14])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 270, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_29set_parent, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_parent, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[14])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 334, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_parent, __pyx_t_4) < (0)) __PYX_ERR(0, 270, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_parent, __pyx_t_4) < (0)) __PYX_ERR(0, 334, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":273
+  /* "forest/_hier_core.pyx":337
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_PARENT, val)
  * 
  *     def set_depth(self, int idx, int val):             # <<<<<<<<<<<<<<
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH, val)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_31set_depth, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_depth, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[15])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 273, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_31set_depth, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_depth, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[15])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 337, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_depth, __pyx_t_4) < (0)) __PYX_ERR(0, 273, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_depth, __pyx_t_4) < (0)) __PYX_ERR(0, 337, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":276
+  /* "forest/_hier_core.pyx":340
  *         _set_i32(_node_ptr(self._base, self._stride, idx), _OFF_DEPTH, val)
  * 
  *     def get_dirty(self, int idx):             # <<<<<<<<<<<<<<
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_33get_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[16])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 276, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_33get_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[16])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 340, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 276, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 340, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":279
+  /* "forest/_hier_core.pyx":343
  *         return _get_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY)
  * 
  *     def set_dirty(self, int idx, unsigned char val):             # <<<<<<<<<<<<<<
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, val)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_35set_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[17])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 279, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_35set_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[17])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 343, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 279, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 343, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":282
+  /* "forest/_hier_core.pyx":346
  *         _set_u8(_node_ptr(self._base, self._stride, idx), _OFF_DIRTY, val)
  * 
  *     def get_aabb(self, int idx):             # <<<<<<<<<<<<<<
  *         """ AABB  numpy view (n_links, 6), float32"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_37get_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[18])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 282, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_37get_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[18])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 346, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 282, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 346, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":293
+  /* "forest/_hier_core.pyx":357
  *             2, dims, cnp.NPY_FLOAT32, <void*>p)
  * 
  *     def set_aabb(self, int idx, cnp.ndarray[cnp.float32_t, ndim=2] aabb):             # <<<<<<<<<<<<<<
  *         """ AABB  dirty"""
  *         cdef char* node = _node_ptr(self._base, self._stride, idx)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_39set_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[19])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 293, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_39set_aabb, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_aabb, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[19])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 357, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 293, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_aabb, __pyx_t_4) < (0)) __PYX_ERR(0, 357, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":313
+  /* "forest/_hier_core.pyx":377
  *     #
  * 
  *     def is_occupied(self, int idx):             # <<<<<<<<<<<<<<
  *         return self._occupied[idx] != 0
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_41is_occupied, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_is_occupied, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[20])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 313, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_41is_occupied, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_is_occupied, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[20])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 377, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_is_occupied, __pyx_t_4) < (0)) __PYX_ERR(0, 313, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_is_occupied, __pyx_t_4) < (0)) __PYX_ERR(0, 377, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":316
+  /* "forest/_hier_core.pyx":380
  *         return self._occupied[idx] != 0
  * 
  *     def get_subtree_occ(self, int idx):             # <<<<<<<<<<<<<<
  *         return self._subtree_occ[idx]
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_43get_subtree_occ, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_subtree_occ, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[21])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 316, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_43get_subtree_occ, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_subtree_occ, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[21])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 380, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_subtree_occ, __pyx_t_4) < (0)) __PYX_ERR(0, 316, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_subtree_occ, __pyx_t_4) < (0)) __PYX_ERR(0, 380, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":319
+  /* "forest/_hier_core.pyx":383
  *         return self._subtree_occ[idx]
  * 
  *     def get_subtree_occ_vol(self, int idx):             # <<<<<<<<<<<<<<
  *         """ ( root )"""
  *         return self._subtree_occ_vol[idx]
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_45get_subtree_occ_vol, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_subtree_occ_vol, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[22])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_45get_subtree_occ_vol, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_subtree_occ_vol, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[22])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 383, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_subtree_occ_vol, __pyx_t_4) < (0)) __PYX_ERR(0, 319, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_subtree_occ_vol, __pyx_t_4) < (0)) __PYX_ERR(0, 383, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":323
+  /* "forest/_hier_core.pyx":387
  *         return self._subtree_occ_vol[idx]
  * 
  *     def get_forest_id(self, int idx):             # <<<<<<<<<<<<<<
  *         return self._forest_id[idx]
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_47get_forest_id, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_forest_id, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[23])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 323, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_47get_forest_id, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_forest_id, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[23])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 387, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_forest_id, __pyx_t_4) < (0)) __PYX_ERR(0, 323, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_forest_id, __pyx_t_4) < (0)) __PYX_ERR(0, 387, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":326
+  /* "forest/_hier_core.pyx":390
  *         return self._forest_id[idx]
  * 
  *     def forest_ids_array(self):             # <<<<<<<<<<<<<<
  *         """ forest_id  NumPy  ([:next_idx] ).
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_49forest_ids_array, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_forest_ids_array, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[24])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 326, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_49forest_ids_array, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_forest_ids_array, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[24])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 390, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_forest_ids_array, __pyx_t_4) < (0)) __PYX_ERR(0, 326, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_forest_ids_array, __pyx_t_4) < (0)) __PYX_ERR(0, 390, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":383
+  /* "forest/_hier_core.pyx":447
  *         return False
  * 
  *     def link_aabbs_collide(self, int idx, object obs_packed):             # <<<<<<<<<<<<<<
  *         """Python """
  *         if obs_packed is None:
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_51link_aabbs_collide, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_link_aabbs_collide, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[25])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 383, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_51link_aabbs_collide, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_link_aabbs_collide, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[25])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 447, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_link_aabbs_collide, __pyx_t_4) < (0)) __PYX_ERR(0, 383, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_link_aabbs_collide, __pyx_t_4) < (0)) __PYX_ERR(0, 447, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":470
+  /* "forest/_hier_core.pyx":455
+ *         return self._link_aabbs_collide_c(aabb, obs_packed)
+ * 
+ *     def subtree_collide_check(             # <<<<<<<<<<<<<<
+ *         self, int idx, object obs_packed, int promotion_depth,
+ *     ):
+*/
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_53subtree_collide_check, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_subtree_collide_check, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[26])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 455, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
+  PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
+  #endif
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_subtree_collide_check, __pyx_t_4) < (0)) __PYX_ERR(0, 455, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "forest/_hier_core.pyx":595
  *             idx = _get_i32(node, _OFF_PARENT)
  * 
  *     def propagate_up(self, int start_idx):             # <<<<<<<<<<<<<<
  *         """Python """
  *         self._propagate_up_c(start_idx)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_53propagate_up, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_propagate_up, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[26])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 470, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_55propagate_up, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_propagate_up, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[27])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 595, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_propagate_up, __pyx_t_4) < (0)) __PYX_ERR(0, 470, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_propagate_up, __pyx_t_4) < (0)) __PYX_ERR(0, 595, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":495
+  /* "forest/_hier_core.pyx":620
  *             pidx = _get_i32(node, _OFF_PARENT)
  * 
  *     def mark_occupied(self, int idx, int forest_box_id=-1):             # <<<<<<<<<<<<<<
  *         self._mark_occupied_c(idx, forest_box_id)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_55mark_occupied, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_mark_occupied, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[27])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 495, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_57mark_occupied, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_mark_occupied, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[28])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 620, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_4, __pyx_mstate_global->__pyx_tuple[0]);
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_mark_occupied, __pyx_t_4) < (0)) __PYX_ERR(0, 495, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_mark_occupied, __pyx_t_4) < (0)) __PYX_ERR(0, 620, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":503
+  /* "forest/_hier_core.pyx":644
+ *             pidx = _get_i32(node, _OFF_PARENT)
+ * 
+ *     def unmark_occupied(self, int idx):             # <<<<<<<<<<<<<<
+ *         """mark_occupied """
+ *         self._unmark_occupied_c(idx)
+*/
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_59unmark_occupied, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_unmark_occupied, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[29])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 644, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
+  PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
+  #endif
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_unmark_occupied, __pyx_t_4) < (0)) __PYX_ERR(0, 644, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "forest/_hier_core.pyx":653
  *         self._forest_id[idx] = -1
  * 
  *     def reset_occupation(self, int idx):             # <<<<<<<<<<<<<<
  *         self._reset_occupation_c(idx)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_57reset_occupation, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_reset_occupation, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[28])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 503, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_61reset_occupation, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_reset_occupation, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[30])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 653, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_reset_occupation, __pyx_t_4) < (0)) __PYX_ERR(0, 503, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_reset_occupation, __pyx_t_4) < (0)) __PYX_ERR(0, 653, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":506
+  /* "forest/_hier_core.pyx":656
  *         self._reset_occupation_c(idx)
  * 
  *     def set_forest_id(self, int idx, int fid):             # <<<<<<<<<<<<<<
  *         """ forest_id  subtree_occ / occupied"""
  *         self._forest_id[idx] = fid
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_59set_forest_id, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_forest_id, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[29])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 506, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_63set_forest_id, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_set_forest_id, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[31])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 656, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_forest_id, __pyx_t_4) < (0)) __PYX_ERR(0, 506, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_set_forest_id, __pyx_t_4) < (0)) __PYX_ERR(0, 656, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":531
+  /* "forest/_hier_core.pyx":681
  *         return ids
  * 
  *     def collect_forest_ids(self, int idx):             # <<<<<<<<<<<<<<
  *         return self._collect_forest_ids_c(idx)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_61collect_forest_ids, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_collect_forest_ids, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[30])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 531, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_65collect_forest_ids, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_collect_forest_ids, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[32])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 681, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_collect_forest_ids, __pyx_t_4) < (0)) __PYX_ERR(0, 531, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_collect_forest_ids, __pyx_t_4) < (0)) __PYX_ERR(0, 681, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":566
+  /* "forest/_hier_core.pyx":716
  *                 stack.append(right)
  * 
  *     def clear_subtree_occupation(self, int idx):             # <<<<<<<<<<<<<<
  *         self._clear_subtree_occupation_c(idx)
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_63clear_subtree_occupation, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_clear_subtree_occupati, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[31])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 566, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_67clear_subtree_occupation, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_clear_subtree_occupati, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[33])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 716, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_clear_subtree_occupation, __pyx_t_4) < (0)) __PYX_ERR(0, 566, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_clear_subtree_occupation, __pyx_t_4) < (0)) __PYX_ERR(0, 716, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":569
+  /* "forest/_hier_core.pyx":719
  *         self._clear_subtree_occupation_c(idx)
  * 
  *     def reset_all_occupation(self):             # <<<<<<<<<<<<<<
  *         """"""
  *         cdef int i
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_65reset_all_occupation, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_reset_all_occupation, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[32])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 569, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_69reset_all_occupation, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_reset_all_occupation, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[34])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 719, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_reset_all_occupation, __pyx_t_4) < (0)) __PYX_ERR(0, 569, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_reset_all_occupation, __pyx_t_4) < (0)) __PYX_ERR(0, 719, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":580
+  /* "forest/_hier_core.pyx":730
  *     #   ()
  * 
  *     def iter_dirty(self):             # <<<<<<<<<<<<<<
  *         """ dirty """
  *         cdef int i
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_67iter_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_iter_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 580, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_71iter_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_iter_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 730, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_iter_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 580, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_iter_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 730, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":589
+  /* "forest/_hier_core.pyx":739
  *                 yield i
  * 
  *     def clear_all_dirty(self):             # <<<<<<<<<<<<<<
  *         """ dirty """
  *         cdef int i
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_70clear_all_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_clear_all_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[33])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 589, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_74clear_all_dirty, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_clear_all_dirty, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[35])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 739, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_clear_all_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 589, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_clear_all_dirty, __pyx_t_4) < (0)) __PYX_ERR(0, 739, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":599
+  /* "forest/_hier_core.pyx":749
  *     #
  * 
  *     def get_stats(self):             # <<<<<<<<<<<<<<
  *         """ dict"""
  *         cdef int n_leaves = 0
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_72get_stats, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_stats, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[34])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 599, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_76get_stats, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_stats, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[36])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 749, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_stats, __pyx_t_4) < (0)) __PYX_ERR(0, 599, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_stats, __pyx_t_4) < (0)) __PYX_ERR(0, 749, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":635
+  /* "forest/_hier_core.pyx":785
  *     #  /
  * 
  *     def get_raw_buffer(self):             # <<<<<<<<<<<<<<
  *         """ numpy view (uint8), """
  *         return np.asarray(self._buf)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_74get_raw_buffer, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_raw_buffer, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[35])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 635, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_78get_raw_buffer, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_raw_buffer, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[37])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 785, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_raw_buffer, __pyx_t_4) < (0)) __PYX_ERR(0, 635, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_raw_buffer, __pyx_t_4) < (0)) __PYX_ERR(0, 785, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":639
+  /* "forest/_hier_core.pyx":789
  *         return np.asarray(self._buf)
  * 
  *     def get_node_bytes(self, int idx):             # <<<<<<<<<<<<<<
  *         """ ()"""
  *         cdef int off = idx * self._stride
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_76get_node_bytes, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_node_bytes, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[36])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 639, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_80get_node_bytes, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_get_node_bytes, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[38])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 789, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_node_bytes, __pyx_t_4) < (0)) __PYX_ERR(0, 639, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_get_node_bytes, __pyx_t_4) < (0)) __PYX_ERR(0, 789, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "forest/_hier_core.pyx":662
+  /* "forest/_hier_core.pyx":812
  *     #   (Cython )
  * 
  *     def descent_loop(self,             # <<<<<<<<<<<<<<
  *         cnp.ndarray[DTYPE_t, ndim=1] seed,
  *         object obs_packed,
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_78descent_loop, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_descent_loop, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[37])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 662, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_82descent_loop, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore_descent_loop, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[39])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 812, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_descent_loop, __pyx_t_4) < (0)) __PYX_ERR(0, 662, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6forest_10_hier_core_NodeStore, __pyx_mstate_global->__pyx_n_u_descent_loop, __pyx_t_4) < (0)) __PYX_ERR(0, 812, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "(tree fragment)":1
@@ -38081,7 +39659,7 @@ __Pyx_RefNannySetupContext("PyInit__hier_core", 0);
  *     cdef tuple state
  *     cdef object _dict
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_80__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore___reduce_cython, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[38])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_84__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore___reduce_cython, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[40])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -38095,7 +39673,7 @@ __Pyx_RefNannySetupContext("PyInit__hier_core", 0);
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     __pyx_unpickle_NodeStore__set_state(self, __pyx_state)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_82__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore___setstate_cython, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[39])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 16, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_9NodeStore_86__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_NodeStore___setstate_cython, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[41])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -38110,7 +39688,7 @@ __Pyx_RefNannySetupContext("PyInit__hier_core", 0);
  *     cdef object __pyx_result
  *     __Pyx_CheckUnpickleChecksum(__pyx_checksum, 0x0b734ed, 0xaab1462, 0xe4f2fa7, b'_aabb_floats, _base, _buf, _cap, _forest_id, _n_dims, _n_links, _n_non_zero, _non_zero_links, _occupied, _range_end, _range_start, _stride, _subtree_occ, _subtree_occ_vol, next_idx')
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_1__pyx_unpickle_NodeStore, 0, __pyx_mstate_global->__pyx_n_u_pyx_unpickle_NodeStore, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[40])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6forest_10_hier_core_1__pyx_unpickle_NodeStore, 0, __pyx_mstate_global->__pyx_n_u_pyx_unpickle_NodeStore, NULL, __pyx_mstate_global->__pyx_n_u_forest__hier_core, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[42])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -38263,31 +39841,31 @@ static int __Pyx_InitCachedConstants(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitConstants(__pyx_mstatetype *__pyx_mstate) {
   CYTHON_UNUSED_VAR(__pyx_mstate);
   {
-    const struct { const unsigned int length: 11; } index[] = {{2},{68},{35},{54},{37},{60},{24},{52},{26},{34},{29},{33},{45},{22},{15},{179},{37},{30},{32},{1},{1},{1},{1},{1},{8},{5},{6},{15},{23},{25},{7},{6},{2},{6},{35},{9},{30},{50},{39},{34},{8},{25},{20},{32},{22},{14},{30},{37},{5},{8},{9},{27},{29},{20},{23},{25},{34},{28},{22},{25},{26},{18},{19},{19},{23},{22},{18},{24},{20},{24},{19},{23},{19},{25},{29},{21},{20},{28},{23},{22},{30},{26},{18},{19},{19},{23},{22},{18},{20},{19},{23},{20},{8},{15},{5},{3},{4},{6},{6},{6},{6},{3},{10},{15},{9},{7},{7},{18},{13},{3},{9},{4},{8},{3},{1},{3},{7},{7},{9},{17},{15},{24},{18},{5},{18},{7},{5},{1},{5},{3},{5},{12},{2},{8},{5},{3},{4},{3},{5},{15},{4},{5},{6},{15},{9},{5},{9},{3},{6},{6},{6},{6},{5},{7},{7},{17},{13},{16},{6},{7},{4},{8},{8},{9},{9},{13},{12},{8},{14},{10},{14},{9},{13},{9},{15},{19},{12},{10},{8},{1},{2},{3},{10},{5},{5},{13},{11},{5},{8},{10},{6},{6},{12},{9},{7},{1},{4},{8},{18},{8},{13},{9},{7},{3},{15},{4},{10},{6},{10},{4},{8},{8},{7},{11},{7},{5},{12},{4},{4},{8},{6},{4},{6},{7},{7},{7},{7},{7},{8},{7},{8},{4},{4},{2},{5},{3},{10},{10},{7},{7},{3},{2},{8},{1},{4},{6},{4},{3},{12},{12},{14},{12},{11},{10},{19},{24},{14},{12},{10},{17},{13},{8},{20},{16},{9},{8},{8},{8},{8},{4},{6},{4},{4},{8},{9},{9},{13},{12},{8},{12},{10},{9},{13},{10},{12},{19},{5},{4},{14},{7},{3},{5},{5},{9},{5},{4},{4},{6},{6},{2},{8},{9},{7},{5},{7},{7},{7},{7},{6},{10},{6},{11},{5},{6},{6},{12},{3},{5},{6},{1},{17},{5},{17},{2},{83},{69},{12},{12},{25},{48},{25},{48},{303},{12},{186},{62},{45},{113},{1740},{13},{56},{25},{25},{15},{23},{13},{115},{36},{14},{14},{17},{13},{25},{25},{241},{55},{11},{1}};
-    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (3589 bytes) */
-const char* const cstring = "BZh91AY&SY\256\026Aj\000\003\034\377\377\377\377\377\377\377\377\377\377\277\377\377\373\277\377\377\377@@@@@@@@@@@@@\000@\000`\016\275\335\367@w\275\272\221VSf\203@Y\275h\tP\035\026aT[\274\332\300\001\000J\021\005$\365\007\250\036SF\200\323\311\251\264 \3656\017S`\3254P\361&mM<\246\223\324\336\251\352\017P\365\001\372\246\323M4\302jyOH4&\200 \251\370\223h&\246\325=O\312\203\324zA\246\215\032\r\000\000\000\03244\000\000\000=G\250\r\004\246\201%2\t\017H\332\215\032i\352z\236\240\304\031=F\232\0004\r4\001\2404\003M\014\203F\203@\r\244h$\325*\233Q\372D\014\203M\000\000\003\023\021\220\320\000\320\000\014\206\215\000\311\243@\006\2004\001\006\000\t\200\002\030\230&\000\000\214\000\2310L\230\000\021\221\211\210\300C\000\000\t\022\004\002\010h\320&\230T\360Q\350\215\006\200\032\001\240\320\r\000\000\000\320\000\000\000\377@+\312\207I\235\246j\322\265\375\235\tY%r\030lT\031\352\312\375\375\340~&PtX\240\333c\242\242j:L\234\312\206\206\"q\002\014]\341,O\037o\325\371y|\357\273\216\331\221R\273\000\244\3479\316t\375:=/\223/\343kZ\326\265\337\360.\231\364\372>\336l\265\014\240t\234\356\236R\305\274\t)\"\371\223\362)\317\004\252,\314\333c\006\306\306\322CA`\262\n*1\031\021\005\005\010\312\244\250\n\340\027\005\3019\207]\324\362\3435,i\212\305\266\233@\332\033I\260\324\005\326\271\2022$\027\340v\341\353,\032i\325\222\300\242\021p\306\014\273M\006\306\333\001\264\306\204\330\233+_4\250\2136-\021\333\217lj\226\210\032P\224\020=\001\204A\264$MJ2\274\301\310\261R\305\253ec\302\014mp]\251-i\211\025`?]R\334+;\263\024\315j\252\n\225\250\253\247\260\276\311\\1\334\213\202\342\224\321V!\303\274Z\363\000\3148(\253e\211\211\2120\310+V\335\254\026\260\031\207\016\027Y+\3206\020\020\305\\-\264\326\025jC;\303\211\235\022\353>|\327Uk6\215\321\236\272\2300p\235\233\077\077\240p\236\021\336\343\267\327r\357\026\004\261]|\232\255\273\177\037\003\345\277\224o>5\025u\334G\243|\3078m\324\204\177\267L#\025\177X%GQ\037\243\375r\272\013\016*r=\230=\365\206\326\030\220\262\240\266!\247\033\241h\224x\271""\2431*2\321D\031n#n\351q2\306w\315\222x\301:P\236 $v\213RzJ\327e\215x_o\252;_|\370\341\353<\036\023\270\361 ^\032\202\231\343\035\nB\267\004\016\220\356\23528\031\302\006\222\373\274\\\264A\201\216>Y\026\331\366\002\326(\251u\202JD\227_\223\361o\3000\303\313\210L82\313\277\322\\\215w:\006\335a\345$\022\256\356L$zU\271~\314\215\274\201\331\327\346G\177\277\242\202\223\225\206\035\314\020o\253w\245\254\335=n\254\335\233\226h\033T\035\333\025J%-\342\253%\324\205\270XU\313\217\313!\302\212\030\306r@\236g+\351\312\206\246\314\370\220r\017w6m+\260\216\016Rhk\357\014\2442`\316\035\251\371I\224\205\221x\316p\365M\316\311\276E\036\225\371\006H\237\262\330.h\373\217+\275-\204l\021\210\267e2\246I\201A\204\341Z\022O0\366\024\026\230\224\327)\341\026\266,\240\301x^\037\255\320\354\364\373C\311\257,\227\202\320f\031e\351\371=\377\037\267\334da\200\031\316d\314x\021\273?N\325\n\200\200<0\204A\007u\025y\324\273>fLJ\026\000\312\247^\234ZWi0|\3338sw,\034|\344\275\231\334p>{6#\2374\224\304\246\346\262E*nV;\033|Uh\303{\227\227Q\350\000\"\022\345:\245$\311\215\204\333s\200'\253\252\225S\370\277\242\377u\247(\204_w\004,\020\311khP\265c\003\200\r\001\245\007\001e\"\360:\243\204.\326\244\262\013y\265\313\200%jW\202\004\340B$\335\034\226\002\320\244\246\354\235\257?\315\204w\316\023\212H\300\327\300\275L\321\241\026\226\367B\245F\207J\r\302Im\216\373#\232q\260#S6\244M^\315[\273\227\245\232\t\313j\272\246\2317\026\014\017A\334\355q\032\234\235\316\0348\225\260\211\212\245\354\200\217\311\214H\301\240\245\317\362\301\234\370b#\003\306\344\032\271-=\231\0251Cj|r\016\326a{\236\261\001\307|Q\021\266\031\327\203\024\004\233Yl\030\306*5\323\"\202\204+\240 /x\335\225\002\254\233\014\310\255\035\360\353\027\301yphKt\271\260\331,\2422\0146k\253\230\265\244\270\276\005\332\323{\036\227\314\274\305\220\366\037\253\266F\236%\317\321\320^\326\320\331\307\250\3166\353+\373n\r\241\305\346\327\004\016\003\316\214\025\001\342\033Q\254\311_\257T\2678h\330`\213\267\017\204/\362:\035'F\232\207\202\206w\215\204Q""\3542\010kL$j\327\310e\216+\017P\324\344I\243\273\320\033\360\371\021\343\005\004\305\330\033\377\3521sD_\000I)2\253\252wl$\211\353\2305\r]\206\003\\\352\016\302\316p\240\024\241\276t\032c\230\270\350Q\016P\273\357!\031\354\327\307\325\273>\2344 \226*\034\205\313\256\001Z\332\"{86\230\0230-\007E\240c,\351\352\363:$\372\257\361c\024\245\376)\031\371\306\362H\255dl\204\215C\033\033[1\021B\301\316o\014\354\206\217R\367\0049)\034\004\023c}\246Q\335\216\356\353\271\013\330\2046\014-\025\244C\321Y\205M\235\352\022\320\031x\355b.\275\242\263\355e\244M4\311\001\355&\2549\320\220J#ugsEp\250mG^Y\375\033\311=\221\317\031\315\277\024\226\372\316\273\255\271!\033\334\201\".\033\342\213\023'2WVQ\024Ip\222\325\254\267\272\243DY\203,\300\342\320\250\324z\206\333L%fP\360\220in\264JM\3009FUk\\z\2359\221\013*3\262\024\237\022\023\302\200\r\371\022\ry\\:\000\312\214$\275\313\223[%A(\002\335\205\005\340\305\016I\023\200\003\207\264\330\246\r\304\021\227,+\224\362\346\351\330rfWt\032\302Sv\231\027\275\225!\240s\216\033\364J\305UUUU\025\021U\212\252\244\320\224\243mVobY e\307+;\307\364t\355\361\207Xu\366\361\007\266\343\340\300\203_\"\003\000Z\365\264\316\325S;\271w\306C\277\346N`k\242\r}t\243\277\002,_\210\304\261\305\245\251\357\"\355\rX>\247\320\366:9\275os\207\312\341\354gM09Q\223\216\023\327k\330\250\270\216\0373Dd>\261\346\031\004)56\022^9\304Cr\005\326\207\274/\362\371\374|\265\334r\340\177\032\233\350h5\002\352\221\303\340\224\221V\256\013\314O\356\333\033\244\213\321\303\232\312|\213\272\332\230\271\263p\r]]T\230\330_B\270\351\335\034\225\017.t&\365+\322cu\274F\241\201pb\251\221\336\357V\234\2758%\252yT\302\373\375\231\231\250\265\361\326\367\352\337\212:\272:\326uJ8\242\270\366\034&\nC2\016G67\227U\216\263\330toz8\205\266R$\315Y\342\023\317Xy\243\350\240Z\345\201BKs\036\304\030P\360A\002\244\263n\3006\262.u\221\002 \273\244\"\177 @\206\330\251%\030\206\342\r\210\0270\261+q\030\355\333kDEw\236\206ok\256\260\020\206\363\0017[\257W:3%\316\024\\r\301H\204\314\356\227WN\337m\264\331|""68\267d\2454\020\364\216\223\265\242E\254q\304h\325\022j\354zL\200\341\221M\020\007\206\245\325 \220\317\311L\373\320\337\352\353\211\023\0325)#]\341\314\315:\333cc#Z\276.\024\n\346^0\243\232d\233\347\212\337\253in\376\332\006LXn\23340\325\336\313\206\324\262\032K\213\0370B\"\026\341\250\266!}\307.&\371q\233V\267\220\265H\303\2524\202\023\006K\321 U\016\000\300\270/c\322wd8\004\254\333HlrH\253\264\212\204\215iA2\232\263M\215\206\001|\033*pr\231sr\255Y*v\234\271\324\326\034\2078\366\353\251%\340f[o\025\316u\3274\303\300\310\332\250\260,\024\224lJ\025hO\223CGl5W--\333l\271\035\326b\206<\0179\253I)\366?\037Ws\366\2107C>\3137p3\304]\3714R\273G\0220U(x3v\373\215\024\311\215a\007z\007\253\242r\205\nD\222\342\344qd$H\344:\215\373\304]\233f\"\235\323\266H\343\305\363\325\"\257K\322\2216J^Gk\213E\t\366\364iW\231kL\351\275\"Ll\234L\223\223QP/\222\\\342\343G\035\017\016\3507\014\272#\035\256\261W-\tK\315Vp\327\263yp]\354\203\264\030N\371J2\313L\327\275\025\024\256\216\024\030\342\372\004\254\362\036\371\264\3273\203\020\3563\265\2039\355sfKL\200\255\300\224<9\222\202\3541SRg\014\346\004\331\315\242n\002\312\200\026\252\2521\023\033\246\203\007c+\273\204\310\211\310\250\021|\264/\236t\3479\244>'\271\255c\t\360\033I\314\275\305Ll9%\315\034\321\021\3033\016\014\254\357\304M\204\306\225F\211\001K\255\211@\300h \272\000\030c\004s\3530\253@\331j\343+\250\306\320J\367\005\350\317\317\265&GB8l\233\325\226\251X\334o\335fHe\332H\246\t]%\301\211\036\001H\253\270\351\275]\347}v\202\021i\333u\340\201\014\326\254\0044\202x\003\255\275\037n0n\210\277j)3\014o\256\266\021\020N~M\033\224\247\326\035\302\354:\021\340\232\307\263r?\346\000\205D(l\3222\227\021\202\312\3359\"{\0236\323\003j:\301\344Z\023|\220i\005\352\230w\030\325\215w\263\217E\233\3277\216\330\255\203\277\215\367\347\302\243\250\360-7\336Q\017\325\351\326j\311\006#\003\021\275u:\326\302\206\2074g+\356\201|\352\023\n\300\306\2700Fb1\026}\2347\214{\243\276v\037\006\224\033S\"\023f1N\t\240\334\207}\240\024\t\3212+\005\202\300B\316V""\336f Y\301s\036\0044H\211\010\246\201e&\376|\216{\371\320q\237u\277u31\016\352\274\027\305S\316&*\371\255\365\007\266|`\230nnb\372\230LI;J\201b\321(\014\244&l\024\031\247\234\"\316\024\020^>\361\234\273\355\203\250\375\177\331N\372\206\021\314\302c\007\226\312\247\023H\267=\261\307o\237\275\265\320\374\321\227\264/\202TcM\333j#y4\217+\366\325\031\354\340\27365\367\036Kml1\214(*\335f\007\316\326\010\266\337%\310^b!!\372\017\364\002\346\021\335r\273\236*\236\204\272U5\301\231\202\267\202\240(\0314\017\214ax\367\320w\324\214\024d\2749\333\374*\202\352\033\\\246y\206i@\227\014@\350\n\375xM\264w\302x6\2277\223\323P7\363CH\340\340\311\333m\t\235\313\261:M'\202\372^tn\t#\030\027+/6g\013\243\267~\345{\204\341E\210\"Q\350N\271Y\271\\S(fP\313\253$t\245\021\312\017\001\211QR\332\275\267g9\034k\210\261\251U\347\243\201[4\254\353X)\351\366jX\325dq =\320\031\343\300\253\364\273b\032Nt\002\277@;Bj9\025\231!\270\205\032\210\256\364Z\320A\345\226W\305\030t\341;R\352\212\234\345VC\000KN\204\240MR\376\"\323h\251\305\246l\356I\367\253?\320j*\\\036\342;\372\t\002\035\350\354\350QO\310\204,\301\240\304H3\343X\201\333\236D\365j\316\001\206\252\343D\025\203\004e\030\364\"\226\302\272*\215#\025\342W[M\346\200W\265\262DU\3122C\330\224$\007\321\335^\265\003\\\201\342\316\262\n\021\241=k^C\252\203\357}\317\211@^\345\215#\223\304\016Mmo\2467\232\020\326\242\204\205D\026\n\023Sr\252i\nm\206m\000\345\r\201)\376\367\302\331=\200\2618r\315s3/\303\327\266\271\341\2275\3002\356[\014\214\234\212\3030.\232\242\032\271\001\355uq\213\035^\331\337\022\3570\335N\242\026mj\t\274;\tW\233\244\026\205\364\361;\030\241\330\007\007\233\017\023\273\211\247\213\262\251\262\235%\303\321\320\303\346\016\217\004\364N\236\357\263\317\\\037\303\003\0041S?\010\317\3410\341_\035\313\300^K\337\007\276\235\222\310|\337\037_\n\237\343\036\217\034\216\350\255\215<}w\370\230G\265\221*n\247\212\356\231\350\306+\026U)\200xri\351:\n,\232\244TB\267\210\035\311\263\307\273L\246\261+\021\225\3458\227RF\024\277:\232%\3164T\022\2644""+B\250m\t\225u\024\305]\247\204\242\022\227\014'\014\002\nT^0Q\200\034\034(0\017PB\032\010v\264\325)\341\305\344<\342\236\236\347\014\270\232irGI!\032\316V3,\243,\312!\210\254\327t\361i\317\374]\311\024\341BB\270Y\005\250";
-    PyObject *data = __Pyx_DecompressString(cstring, 3589, 2);
+    const struct { const unsigned int length: 11; } index[] = {{2},{68},{35},{54},{37},{60},{24},{52},{26},{34},{29},{33},{45},{22},{15},{179},{37},{30},{32},{1},{1},{1},{1},{1},{8},{5},{6},{15},{23},{25},{7},{6},{2},{6},{35},{9},{30},{50},{39},{34},{8},{25},{20},{32},{22},{14},{30},{37},{5},{8},{9},{27},{29},{20},{23},{25},{34},{28},{22},{25},{26},{18},{19},{19},{23},{22},{18},{24},{20},{24},{19},{23},{19},{25},{29},{21},{20},{28},{23},{22},{30},{26},{18},{19},{19},{23},{22},{18},{20},{19},{23},{31},{25},{20},{8},{15},{5},{3},{4},{6},{6},{6},{6},{3},{10},{15},{9},{7},{7},{18},{13},{3},{9},{4},{8},{3},{1},{3},{7},{7},{9},{17},{15},{24},{18},{5},{18},{7},{5},{1},{5},{3},{5},{12},{2},{8},{5},{3},{4},{3},{5},{15},{4},{5},{6},{15},{9},{5},{9},{3},{6},{6},{6},{6},{5},{7},{7},{17},{13},{16},{6},{7},{4},{8},{8},{9},{9},{13},{12},{8},{14},{10},{14},{9},{13},{9},{15},{19},{12},{10},{8},{1},{2},{3},{10},{5},{5},{13},{11},{5},{8},{10},{6},{6},{12},{9},{7},{1},{4},{8},{18},{8},{13},{9},{7},{3},{15},{4},{10},{6},{10},{4},{8},{8},{7},{11},{7},{5},{12},{4},{4},{8},{6},{4},{6},{7},{7},{7},{7},{7},{8},{7},{8},{4},{4},{2},{5},{3},{7},{10},{10},{7},{7},{3},{2},{8},{1},{4},{6},{4},{3},{12},{15},{12},{14},{12},{11},{10},{19},{24},{14},{12},{10},{17},{13},{8},{20},{16},{9},{8},{8},{8},{8},{4},{6},{4},{4},{8},{9},{9},{13},{12},{8},{12},{10},{9},{13},{10},{12},{19},{5},{4},{14},{7},{3},{5},{5},{9},{5},{4},{4},{6},{6},{21},{2},{8},{9},{7},{5},{7},{7},{7},{7},{6},{10},{6},{11},{5},{15},{6},{6},{12},{3},{5},{6},{1},{17},{5},{17},{2},{83},{69},{12},{12},{25},{48},{25},{48},{303},{12},{186},{62},{45},{113},{1790},{13},{56},{309},{12},{25},{25},{15},{23},{13},{115},{36},{14},{14},{17},{13},{25},{25},{241},{55},{11},{1}};
+    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (3744 bytes) */
+const char* const cstring = "BZh91AY&SY%Si\032\000\003f\377\377\377\377\377\377\377\377\377\377\277\377\377\373\277\377\377\377@@@@@@@@@@@@@\000@\000`\017\177v\336\207{7\273uk#\024\315\202\326\215L\362p\250)S\242\314!V\347\246\305\000\010\002P\204*\217\311OI\223'\224i\352\001\247\223H\365134h\306\t5C4M\223S\315\023S\304FOP\365\017S\311=2O\0226\231A(A1\0012\000\230\232hT\323\305=OQ\246F\217S\324\000\3654h\006\207\250\000\014\232h\000\001\3524\320\002S@\212h\243I\210h\320\320\310\321\223@h\320h4\000\000\000\r\001\240\000\000\000d\001)\352SU=\252z\236\241\246\203M\000\000\003\324d\000\000\000\000\0324\0322\032\003@\001\240\032\000\203\000\004\300\001\014L\023\000\000F\000L\230&L\000\010\310\304\304`!\200\000\004\211\002\001&\215\014\2024\323&\2012\206\203\324i\240\320\000\032\000\000\000\006\200\000\r\001\247\254\200\274\334\357\037,k\226\234\023=\035\370\025\030\260\021\365\232m\203_\253\374\177\317\365\352\240\376\232X\345\261,\3071\216Z\211\247\217\355\241\321\231\032\030\2111\002\014]\341+\343\207o\323\336\361x\377\235\317G2\252%\345\345\350U\251R\245J\225*\357\352k\376\236\336\3572\020\204!\027 \234\253\313\251\255\270\343\314\343\017\267Z\366\271\013\026\357\240$\213\346O\306\247<\022\250\263\315\266\3060QE\205\010\024\026\004b\005\025\030F!\020X6\204\306\351rW\001\315\202A0\274)@\351\276\236]\354\350\023\316+\232\315\266\233B\033Ch\033\013 \270\245\315\010\310\222/\300\352\303\311`\323MY\006\005\020\213\2060j\3554\033L`6\233m\t\2616V\276\274\250\2136\226\210\352\307\2525KD\r(\024\020=\375A\023\222\034&H\010%\246cf\243D@\024Y\203\027\206\3031\3242I$\233,\251L3(\212\212\210\204\231\200\363dNI)Z#\360H\203\021#\021#w\237}\222\270c.E\301r\312\265\321Z!\3030\005\206\366\315\000/F\313+\257Y\231\231\243-\021Z\266\355`\261`3\014\260.\262W\240l !\215zc\214\326\307\026\360\2506<8\231\321N\266l\327uV\265\353\333b\332+\033\251$;\014\211So\000\341<\243\276\007\177\213\375\352\361sd\206\253\343\357\267\232\254\\\017\222\254\203^D\242\257\201\304_.lPo\344\322\237\372\215c9\357\376\262kV\324_\247\354\370>""\303\345\345\2637\334\225U\\B\341\315+\355'i\323\3777\013aG#H\320\225\031\330\2103\270\216e\322\343\347\032\337L\247\214\023\266\207\022\220Lv\213RzJ\327e\215v>\276\351\324\373\207\301\017'g|\353<\002\027~\240\246W\010{-\360\365\000\201\322\035\323\246R\272\315a#Q\216\274\305\313D\026\021\361\356\270\252\277\254,X\242\245\326D\224\211.\237\027\344\335\200a\207\223\020\304T\014\230\263\227\002H`w\340\031f\017\236\361\340\370\352\331G\037:\312\250\237\276\323-\210u\363\3607WN\245\005'+\014;\315\010<\347N|\367/[_\021\316\203\204\t\013`JRV\251J%.\215]\251u!N\026\025r\344G\276K\214Q#\030\326K\004\374|\257\213456\221\017\215\222\022\322z\272\365\335\226\021\305\314\232\270\033\3432\031`\304<\007\357\231t\302\326S\264\261=\r\207\017|\363\231C\323\277 \311\023\363k\027$}\347\225\332\275=d\244\221\210\270\262\231S$\300\240\302p\352\312D9RQP\250U\212mVn$\325_]J\005\212\331\373\257\235\374z\264\357\036-\354\220d\273-\006ae\236N\357\217W\213IaJ\001k\307\217J\362CIo\222\250\204@`\250r\023\020\217U\276\235\230\355\330\352\312Io\007[]\335\032\340\230\364(\276\366\376\376\317\023\217c\337\266N\333\025\222\3747v4j\255\251YJ\343\007Q%\354\327n\253\317s\233\322|\r\034\274\355|Wp\014\300n99\357P@\330M\2678\002z\373\224*\247\362\177]\376\226\234\300\221}\334\020\260D\260\351\240\360\037n\331,\202\001\004\224B\373'R\036b\312X\365=\036P~K\010\2778\217\203]\235\206\3572#q88M\317G\254t{\317\211\351\313\247\255ed\332\212\026w\237\331[@e\267\244\325R\243W\367\006\341$\270\003\277\004so\0350\215\2556\240\232\276\r[\273\227\266\322\tP\267-\233 \333\354J 4;\305\235\247\316\241\341B\312t\351\343\032<\215f\246@G\346\306$`\320R\347\371\340\316{\"#\003\302\344\032\266\332z\362*b\206\323\3658\\\035\237(\324\371\204W)\2634/\025K\263\271\340\325\301\330I\316s\332\021\255\022O\0311``\232\327+ \021Q\352\026\215\030,\331b\323bd\202\341\332]\272\231\235c5\201L\330E^&\010\211\243\307,\021W2\3357\223+Q\2271\373z\334]\355S\243~\362j\230\206mW\226\2668\021\376\022\014CG\2024@V\0175\250\220\005\2541C\000\261'""\205\356\322\254\242f(\204\264\213\234'\335X\034\r\367^-\021\224\342k\"\217Y\220CZa#V\366\323,qXz\206\247\"M\035~\220\337\177\304\217\010(%\233~\034F\376#\0274E\365bII\232\272\302\270v\204\245\305\275`\3327}h\016\351\254\355T\346\n\001J\033\246Pi\216`q\320\242\034\241w\036B\026\346\303WN\233xR\341\207V\214\256\023n\014\"UU\310?6X\224\036P*c}\255\"\006@\351\343\314\347\223\350\277\301\214R\227\370$\031\371\346\342H\255dk\204\215C\033\033Z\361\005B\301\314\267\006vCG\251{\202\034\224\216\002\t\261\263\250\312:\361\342\353\273i{\004\206\323\033\013Ei\020\364Vh\251\257\267BZ\0025\013\030\037:\223\027<\004b\td\310\200;Yl\nh\200\207~r\346\346\212\341\025\r\364t\345\237\325\274\223\327\034\321\234\333\360In\254\353\305n$$nr\022a\362%\315\276\t&H\315\303\305\022#pbR[\273\325\322X\321\026d\316\200\342\325Q\264\317P\334\304\302Vf\036\0374\335\r\032i[\266\2719\331\252\265\321^\272\320z\201}\252\267\312\312\374\254\225\017\001j\320\322\205I\211\366\205K\\\215\224_\243\223\251aI\t\276V\031\nX\264i\254\220;\376wc\3243\2145\233Y$\217\263w\014\306\273K\027Re\002\2525\320\233-\315\202X\006\223\227\263v\254*\252\252\252\250\250\212\254*\252\221tL\253\026(\334\304d`\023\036f\323\211\345Xu\367\003\250:\216\275\001\341\325\225\0060\326\200\240aS\360U\301\357U\307\335e:\037\027\317\256\260\345c\034\273\324\2379\"k\253Y\2555\353\202p]\203J\342\372/J\357\\\313\005{\336|N\037#\207\255\235\252`r#'\033\017a\275\255Qp\255\236]\021\220\372G\230d\020\244\324\323\t/\014\342!\271!t\241\356\013\374\236n>J\361\034\230\037\316\246\352\032\r\020.\211\033;%$U\253\205y\211\352\266\306\351\"\364l\315e=\253\256\332\230\271sp\r]]T\230\330_B\270\351\327\033j\036L\350M\352W\200\306\353x\205\342\201 \255!a\307\214a\267\205\021/}\221)9\372\005\245\345Sn\245\331~\312\320\350\347\351Y\325(\341\212\343\3351\330b\246\014\220msi\274\272\013\035'\262\347\334\364q\t\213\2349K\355\254\037n\001\340\027|\002\251%\010\016M*T\3463\330\271\330\222\026Sf\371\020\271\023\303|\302`x\231\022\254\304\220\355\233\321\254s,P\204""\303\027&\264\303Y\257\267\267\010\023.\312l\273\237\323\312\353\201\220\351p\220\345\034\237\030\322\304Kz\002)\251\365\243\206E/\233\272xe\341\254\3156U\025\252\346\347=\001\224\271\270\035j\210\317\270\366&n\3414\203\373*j\320;\364J\331\202\242\r\215\254P\333\305\266\364\313\237\231t\320x\250^\263&\215\354\003\225\232\273m\261\261\221U|\\(\025\314\274aG4\311*\3644g~%\\\261\200X\242SK\324\270\245\357\343fwB\244\025\000\321_\267\004A\2314\212\215Ua9\033k6;Q\212`\266\001x\342\235-s\014\212\n\216\364H\025C\2000.\013\330\364\235\331\016\001+6\3016\234\222*\355\"\240\343\004F\036B\373QTU\n\004\330\315*\214\266\226n\332\227\332\220\3536\335\022\260\332s\017\177z\244\227c2\337\274W9\327zi\207c#}Q`XT\224kJ\025hOn\206\216\330j\256ZZ\275W\345\265\337sJ\030\361<\366\255$\247\335~\036\216\267\355\2307\214\316p@\341\214\361\027}\355\024\256\323v\321\206\252\247\222'N\026\343bd\306\341\207n\007\253\236r\205\nD\222\342\334\342\311$H\334t\034\233\204]\233f N\351\333$q\342\371\252\221W\245\351H\233%/\023\265\301h\240\347\325\217kK9\025\264\316\325\351\022i\262q2NME@\276Is\013j[Q\266\247\177\216\0161\032\235\366n\225\275\\\264%/5[\003\177b\337[\227|\020v\203\t\3372\211J\363\234lWAr\236\213\r\233*\260k\227J\363X+\366\304s.*\2708\334\275\261\205h\3734\t\206tyQ\027RO\354R\3305k-\312\025\273\320\261\264\211\251\2018\333j\223gi\301\262\273p\337\364\023\"'\"\274WBS\302\232\210\226\221\314r\310|O\215\255c\t\3548\t\314\275\305L,9%\313\034\261\021\3033\r\231Y\337\210\233\t\215*\215\022\002\227[\022\201\200\320At\0000\306\010\346\3370\253@\331j\343+\250\306\320J\367\005\350\317\315jL\216tl\262oVZ\245c\214\344\342\263$2W8\205\021$\340\312\264\\\343\3232\205\370\255\274\257\212\345v\002\023\202\341\216@\210m\301\362%\274\n\200\356d\325a[\032Y\247\212\020yJ\347\034\024\031\230{\373\267*\271\317\346\034\304\346oC\265\351_^\231\377\274\340\226\241b\273\240\324\236U\023T:4M{[gZ\207kF\361\275)\340?\2321\320'j\211\330Y\025\0258\334\336\212\233\023wr\252\323\021g\306\373\223\341Q\320v-7^Q\017\307""\247J\325\222\014F\006#{\325:V\265CC\215\255t\344\302y <\"\302\212\231Q\013D+\022\323\236y\212.\226\344s<p\200\332\231\020\2331\212pM\007\022=\347(\256U\275\245\250\324\265\010\324y{\336\317hmp\3671\200\316\367Fgf\326\344\351\245~^\217\330\376\034\036+\3578\216\246f!\335W\034|UM+\245X\352\353\363F\000_\251\335\201\2021-\033y\277a\";J\201i\224\220b`\213\200D\030\352\350#\202\\A\"\0167`\342'\322n\372E0\000\304CUP\277\027\221D\371\303\321mG/\023\243\300D\336u\327\0173\372;\377\267\277\260\214\246h\276Y\022Nu^\024\211\371\363O\301Os\022\321\2500\215\345\2738\333\211\362\367\246\304ClA\231\302\252\002KQX%ql^\263\310\361IE*\305\237 7\245W\276\013\3160\323\026\223\262\031\336.\257\261l\227\237{ @~\\h\017\315\223\016\271H\027t\354\230HL\330\307v\326\224\210b\241[\306\215\\G\302\010\214\240\252\341Pe\002\035\217>C&9\220+<\254\273:\274\252\3412\240\211\033\203\202<\215\307\\\260\356?\014R\245\2116\337!R'\004q8Ep+\253\344\331\260\343q\273mU\312\367\t\302\213\000\202\217B\022\265{\\Y+aB\325\211\234\275\014\343\274l^B@s,\233\322S\310\217\307\273nd\034\221\226\021\177\\\264\002~\344\240\372l\223u-L\257\211\2267\221\203\334P3\307\2016\306\265\2123\034\352\002{\320\357\t\232\344Va\204\221\242\243u\013Y\250\256\275l\340\241\345\266W\302 \303\236\313J\351\211\234\345VC\234%\016\236@2e_\310[Y\304\2563\231\250\364\331\337\230\377\220n+S\255\366\202;h$\n|\021e\334\265\352\233\256\2059t\265,A\006|d\031A\333\332)\320\234\266\003\r=\326\200P\014\021\022\366eE\321UJe\236$\210^x\220\022\212#u\216>YB\235\235\202\"\334c_\255\266\220#\007\313\244\275YF\273IF\365\274\260P\215\tiZq\335E\267\355\370_\005\001~\373Y\207\233\215A\311\247\247\332\211\347\331N\234\262\2453\363\326\225)P\312\232k\253)2\223x\204\261t\026`\273\006\010\t?\365dN\020\272L\351BV\017VU\334\232\373\270\330\313p1\2622t\200v\225\320\255\217Zp\256\032\346\200\206\205`\317\372\260:\330\207[\253\021\254&\277\321\236+\227\021\013}\374\341<\343\257\325q9:a\232/;\013\241\334\303\016\340<9pp\256\341fa\371\025<\211\323\\\026\355\\\301""\324\016\227\005\251l\247\305g\336\350\255\361\370\363o\203\250\227/\313\234&\025=/\367G\003i\003h6\276O\215>\354\313\210vz\365\275\311\366qf\336\215\3372\332\356\342\277SF)\244Q\320\036\257\212\017\270\314\250\320#\216\030\262\251L\003\303\223OI\320Qd\325\"\242\025\274@\356L\331\337=\246SX\305;\306o7X\247U\205LT\24711s\364\333ET7\2217\004\245\234\352\211\0338\224]E1Wi\341(\204\245\303\t\303\001N\tQx\301F\000pp\240\300=A\t\231\340N\326\232\245<8\273\367\234S\323\334\342P\367\333\355\322\344\216\222B9\367/V\254i\021:\245\016\303\326\227T\361i\333\377\027rE8P\220%Si\032";
+    PyObject *data = __Pyx_DecompressString(cstring, 3744, 2);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (3495 bytes) */
-const char* const cstring = "x\332\345WIw\333\326\025\266d\305\241b\331\246\024\312\226\355\330\201<\311N\035%t\\\307\216\207\036\312\226m\265M\032yP\222\366\2448\217\300#\t\013\004@\014\022\351&9^r\211%\226Xb\211%\227Zf\311%\227\374\t\376\t\375\356{\034%:m7\355\242\347\220\270\027o\274\303w\007|\245\024LS\321\215*\267<\303\266<\305q\271\306u\303*\017\007\225\313\272R\r<_)r\305\260t^\347\272\302,]\261l_\361L\003\313\327\202R\211\273\312\216\301w\025\335\346\236\230\342u\307\366\270\342\371\256\241s\357!\263\024\3332\033\212\346r\346s\205)E\271\311\2570_1<E\263-\337(\007v\340\341\022\245\312\253\266\333X\305.:\212y\236Q\266\024\337V\260Y\377T\234#W\320\225\275E\275\203w]\303gE\223\367\026H\241J\256]\375\255\275B-e\327\360+\212\337p\270\262\322\033\367]fyB\215\341\026\271\014;\014\230\312\037\261\335\243Q\203\031\322\010r\321z\325\361\033\212Wa8\332\017\034\010W\262]Ek\370\025\333Ze\256\313\032\033B\000;\360\025\273\244\024\355\300\322=\345*\253\343\224\313\372\265\215\203wI\343\007\216c\273>\3277\254\035f\032\360\222\255\363\353dx,\206\223V\264\025\005\367\254\3402Rd\345\272R\306\256\376b)\016l-\256\271\367\265Pp\213\024\204\010\337\3300\245p\315C!%\351\243s\323(r\027F\206\t\311\255\270D\370\317R\276]\377\366\323\233\267o\nX\270\374\025\256\367 ]Q3\3419\300\201t\n\014\323\307ed^oU\331()\r;P,\0161\341V\007\353F7\370\025n)\036\367\211QV\204/\230\017\275Ul\0076Wzv5v8\355~\314L\217\257\376e\314x\020\271\0070\246i\334\353[\363\271\317\035\245\312\032\302~\300\363k\356\332CC\277\264\004rp$\320\270\303]\000\303\347Uz\267\213\244\324\352\203\225k\177`\272\256Zd\036RV\201\205>\257k\266i\2228p\314*+j\367F\260L\213\244\260\017\366\017\367!\364@7<\272\227\213\333\313\232r\225\334T\026\350!\r(\030y\335\347\226/Bc\030\227\206'\267\350$\245g\274\346\312\275\373\312\347\007\260e\331p]\211\005\246\257\250\252\313\365@\343\252\252\350\201P\324\262\255O\341\312\035\203\231\230\325\014\313\360U\325\n\252NcU\325l\227\257V\261\317\020\347(%f\230\322_F\225\2007\272,\2502D\305\376\025=\273=\360\\\3553\210\305=\3773""\265bpW\356q\032\365{2=\350cv:8F0\036\230kl~|\324*{v\340j\374A0\360$3M[\023\031G\350\2403\237\255N\230\225\321@'\366\022\326j\341\371\303\215\215u\3234\034\317\360\276Ad=\367!\364\200Y\035\330R\332ZUG\247\200]\017\220\2354)\256\004\202\364\221\263\230\3573\255\242J\304\016\2075\2233W\305\006\025J\372\215\375\023\010\030\337\345\\\2655-pD|\214\254\220\220T\245\325UC\037\252\260\n\3554\240I5m\333\031\216\002T\201\013\201\231\3034c\364\262\341\021\252\260\341p\246\314}\225\261bq|D\347\216_\33174.>\r\rN\035\037\2560o\302\221&/\371\343#d?\265\330\360\2717>\3560\027\252\215\217\271l\367\200i\305\270Q\256\354[\3529&\002\000\tr\3370|\271\357\242\021\343\277sB\335\261G\0162<\351)\203\217\350\214\320u\367\233\3074\254ma\004O%7\032\243H\2512w{\3021\216k;\254L\200\013F\\\n\013\223\207\200\237I\020\221\263\223f\274\003~\365\016\372\325;\350Wo\262_\275\211~\365\016\370\325\233\340?\357\240\237\274Q?\251\352\267\215:\376\217P\215\324o\220&\237\361\322s^\013\270\245q*f\253\303\272\306\004|q\003\304\240\277j\212\247x\007F\350\031 {\017\343\263\237\034z\340a\246S\221g\010\0065K\204\003\363\032\226f\330\2108\027\365\333\260\2707\026\315l\247\214\2374^\221y\234\376\252\261\343aVC\254i`\221\022\0051md`\252\200\252\332g\000(J\356\364:\226\n\336\225\0004`\007\307\243P\272L\303]\332\266f\242}9\230\rz\300\322P-}\0244h\242\253\216\020r4;\350\206\212\373\260Q\022\224\036\374<\335\363u\252\343\342\241\022\254E\226\347z\231s\352t`{Xo_>\341\250\026\242y\340\256k\273T(TZU2\364\322\266\372\252b\320\323\264\361t\004\357\2007Y\331+\2316\363\277\270!\310\255\233R\376\325a\r\351)T\264\353Pj\177\242\302;\252R\257\373)\005\260\235Z\n,MU\373yk\220\255\0069j,3\215\346\243~\026\032\317=\303\2143\236g\006\331e,\247\0142\311\27641!k\010\031e\005Q\3136\352\232\270\234\204\361m\3334\014\335\320\353\252*\213,(u\217\206\005;\2217\006@\034I8\262C\350\265\t\303\234#\301'\261\367\n\327\370\236\324\353\225\360,\214(\031g\233n\247?\254R?\230\236T\265\312\2009u,9UY]\032\027\2553\365\315UC\257b\021\241\004\312XeL\330b""\253\255\007&\250\245\022\266,\025\316\247\030\004\367\252\212\277\220\312\302\016\266\303\211\342r\020\213\357\n7\020+\211]\304C\232Z\236\343\227,V\245s\345S\350\205f\241J='\327Uq\204x@M\"\000*\021\000\222\010\264 B\346\0224(\366\310\216\205$CwZ\216\350\177\200}\\M\207\250\226C\034\340\276\315u\301\371.\021t\374v\251d\033\266\251\213\363\034Z!Q\203\240\2558\266\203\217\256\222Q\227\246\037\315\344\252\212\026I\325*\\\333\366\202\252|\0036\321\221I\276\007\020b\205\237\004\027X\216\241\301a\352\272\325\3373\030\032$Q9\276#\276\224(\333\324\002fJC\r[\304\003\r\316`\200\327\211-\033\036\2004\251\306\354\257,\"\024\010:\256m\373\024\354\222\232\266\240N\357\335\241L\305u\372\253\216\307\315\022\332[\275_\212\006\005hPv\306\212\315h\211\351\027\026\321\205\365\334?,-\203\2022VF\360\322\353\221Gz7uB\037'\372D\362\342\020j\344{\371\346\240\317\305rx\313g\256/\036\244\2658\001\266r<\337vz\355\245\357\006\370H\332QU\232\301\263\302}Q[$\003=]{\327\257:d,AL\233\210#\337`)J\003*\223O*G\202\323}|'\231\322N\001\342\3466\034\017i\002\007]/\017Pw\372\352@c\374\002.\036^\235\276\202z1)\003\214\006\274\366\314\355\326T'3\327\236;\027mF<\316\277)\274)t3g\242kq>~\224d\322\231\364\217-\326\351\r\024\210\371]\374c\272\234\346\211\275\024Y\311Z\202\351\343M\326\014\302\365h\276\2239\321\254\205GB;\336\354\263f\274<\361\310\245h6\236\217\227\337\03694{\254Yh\276\014/\205\030\235\023\354r'\263\320^\270\236\024:s'\232\215\350x\\N6\337\024\204\234J<\025\317\367\370\253\311T\"\370l8\025\236\216\226\243\233Q=\366\223\257\322\255\326\375_\247&O\334\335cR\262\331h\036\nTb=\371$}\334\272\276\307&\257\277\267W{\347\304;\017\352f\2166\277\014/\206/`\221\271c\235\314\307b\327\255t\201\354\366Q\364(>\022\027\223\031\250\207\227\247\361\032\266\n;\334iM\267\256\354Mu\346N\206\245h-\022\202\272\341G\3213l\257\311\365s\315\247\241 \033\341wQ!z\021/\306,\256\215m^\014\267\242\033\321\246\334\234\013\177\210\212q\006\206\312%\233\264\357\353h\276\233\271\375o\255m\317}\024A\225\273\255\033\255\255\275""\374\310\342l8\ro\031\221\033/%\363\311%B\200\364\214<\371r\253F*h\321I\254\230\177\207\034\337D\313]\251\r\231K\336\025m\022\017\246\2239G\367|\034\325\010f\313Q\376m\346\320\354\211&\353\314e\303\367\244U?\014\357\010\375\227p\340_\323\032\r\334\216\362\321\343x\2310\023\204k@S\226\216\312\346\302\247X\271\025\347;Y:0\373ax#|\026\326:9\0228\273(\354\270\331\3511\337\307\233q)\201\024\247\t\314G\233w\304As\013\341J\364Q\374,\256u3\263\235\271S\241\037\301\036K\021,H\353\350\361\246 \221\274\036.\206L\316g\303\017 \373\357\343)b\217\311\370\002\333\316.\003\370\227\343\032\r\037\2252cwf\337\356\t\n\346\303\307\321\365X\340k2\016z\370\350\n?/D\267\304=;\311\263\244\326s\347ZT\212\013\361\313\344J:\235.\367\2746\035_\201[\026\223R\272\2262\351\232\013\321:\266^I\016K\314B\272{\207f\317E\033\361V\222O\n2\364\261\364,\302\241&#y!\276\021?O\336K\376\336\312\313\201\017\343\365\344<\304\316(\361{0\234\227\\\240\215#/d.%\372)\271\337\232j\315\223\257\377%\333H\216\245\233$\342\030\333[@\307\235!l\237\217\030\331r\256y7,G/\343K\261\006\214^O\213\310ss\271\360aX\223^\223\326\271\222L'\027\223\255\364F\272I\3368\022r\370\003\2309\023\255\304g\204\256Y\302\337\027\300\356l\262\224.\246\345\326&\222\327`p:\276\000=O\245\357\2475\234\377?\030F\234m\307\347\022\226\324\336\036\027!\322\254\207?\305\367\323\251\364l\253 \023\363\1774\360\366\014\301\360qxY\332i!\\\016oEK\"\316/&\233\t\2330\3646{hv)\254\rP!\310\333\271C\263\347\0071\014\237\210\210\"\307|\320\207\366V|;\311\303m\307\262M?\374\n\341!\002\366a\264K\036\353\302\033\357\223\014r\301.\242b\207\242\364tt:^\246P\2069(\224o\303&\254\223;\337>\177+ei\275\325\370u\212\206o\206\365\310\217o\306?\247\205\364e\353bk\263\223[\354\316\r3\001R\304N\370\034\032\216\336x\242\371\263\310\272\331\223@\316&\"e-f\335l/\027w!\365-d\372\313\310i'\221\215a\234\023\355\023\037\343m\001\367\004\311Z{\365A\253\2707~\342)\210QC\262g]Q\307f\220N\263\247H\021\244\202\033\"\230\036\247\027R\014\346\332\271K\010\314\027\311\031\001\305\254\3100""\335,\005\330/\2601Oo\265\026\020YY\252\035\307\341\355\000\225\346\002\334G\031\215\216l\240*\236\214\353\210\363,\262\022\022\357OI\276\317\376#Y\036\033=\005\263\036\211\314d\271\233=G\306\000\232\026\204#\346sa\276\233#\234\335\211\237&O\204$\373_\317\">\236\300\200\271+\3107\257\323\371\316\222\202\254\236I\247:K\313\310A<\271\223\026\210=\215K\005\271\206\222\227[\201\301f\323\323\255k(#\271\245\366\322\247\320i\033A\235\273 \032\200\305\263\377\245;_!b\376\037\356\034\261\355\374\005\244\271\253\311\325\364\032\341\0078\273\206\270\275\234P\3130\177\nQUG.\235\"\310\377&\333EL\345\245\300_\242\302\022\323\035{Cd\317\237\014\277\027aS \234>\005\234\001p\332\330\017\233\371\337<\000\362\\Dh\177\205\366 G\333\237\"\371\346\316!\203_\216\0330\201\030\023#?\304\006\341\374\344\277/|\206\272\206\255\350n\\\245ZF\325\361O\210\201\367\243\232\354\324\356\242U\021\035E\276s\260M=\013\017\025d7\353\267?$\343]IEky\260\365\373\354\327\371\311\023\275\236\220\372\240%1\201\327\267\037\034\232\315\016\006\266\021\2027\223\232\334\356\207\367e\223\333\315\310NC\266m\023\204\243\256\364$\222w\276\317\376\034\027&\260#\013\004;\251G\027l\377\312\033h(D\343\026\204\005\264[\213\021\023\331\324\245\346\255'\243\264\305\262\324\013o\224\276\372s\"\233\363\370\213\230\365\007\356\342\204\236v\224\312)]\345\342\357\223\027\351\231\326\255\275\236\325\352\360\t}\022\\\212+\211\236~\322z\274\267\374f\n\270z\357x\363E\370q<\003D<B\325\363[_\356]\332\253\266\237\177\327\376\216\265\031os\247\355\370o\017\035\n\246\036N\203<\234~B\344\311\364\017D~\230\376\221\310\217\323\006\021c\272J\244:\375\232\310\353\351_\210\3742\375\365a\220\257\017o\022\331<\3747\"\177;\254\022Q\017[D\254\303.\021\367\360\372\014\310\372\314\006\221\215\231?\316tf\346\232O\372}Yg\346\3757;\315\357\360\035\224\243\312\267@\2371H\266d\322\032\315\321\367B\373\304'\3240'\273\351\366\336\251_\001\315\261\221\3717S\335\031\244\364\266\362yz\024\237*\333\355\315g\235\031*\227O\005\010q\310O\341\227\250|\231\337\241v""\374\271u\034\03733G\233\3717S\235\031\312\003G\022\366\227\177\002dE\302\232";
-    PyObject *data = __Pyx_DecompressString(cstring, 3495, 1);
+    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (3671 bytes) */
+const char* const cstring = "x\332\345WKw\333F\2266e\305\241b\331\246d\312\222\355\330\001\375\222\235v\224\310q+~\317\241l\331Vf\222\216\374P\222\356\223\301)\002E\n\026\010\200x\310\244'\311\361RK,\261\304\022K,\271\3242K.\271\344O\320O\230\357V\361)\321\231\236\315\364b\316!Q\205z\336\307w\277{qO)\232\246\242\033Uny\206my\212\343r\215\353\206U\031\014*Wu\245\032x\276R\342\212a\351\274\316u\205Y\272b\331\276\342\231\006\226\257\006\3452w\225\035\203\277Ut\233{b\212\327\035\333\343\212\347\273\206\316\275\307\314Rl\313l(\232\313\231\317\025\246\224\344&\177\213\371\212\341)\232m\371F%\260\003\017\227(U^\265\335\306\022v\321Q\314\363\214\212\245\370\266\202\315\372\027\342\034\271\202\256\354.\352\036\374\3265|V2yw\201\024\252\354\332\325?\333+\324R\336\032\376\226\3427\034\256,v\307}\227Y\236Pc\260E.\303\016\003\246\362\207l\367d\330`\2064\202\\\264Vu\374\206\342m1\034\355\007\016\204+\333\256\2425\374-\333Zb\256\313\032\353B\000;\360\025\273\254\224\354\300\322=\345:\253\343\224\253\372\215\365\303wI\343\007\216c\273>\327\327\255\035f\032\360\222\255\363\233dx,\206\223\026\265E\005\367,\3422Rd\361\246R\301\256\336b)\016l-\256y\360\235Pp\223\024\204\010\337\3330\245p\315c!%\351\243s\323(q\027F\206\t\311\255\270D\370\317R~X\373\341\213\333wn\013X\270\374\r\256\367 ]I3\3419\300\201t\n\014\323\307ed^oIY/+\r;P,\0161\341V\007\353\2067\370[\334R<\356SGY\024\276`>\364V\261\035\330\\\354\332\325\330\341\264\373)3=\276\364\267\021\343A\344.\300\230\246q\257g\315\227>w\224*k\010\373\001\317\357\270k\017\014\375\332\022\310\301\221@\343\016w\001\014\237W\351\335.\221RK\217\026o\374\033\323u\325\"\363\220\262\n,\364U]\263M\223\304\201c\226XI{0\204eZ$\205}tp\270\007\241G\272\341\321\275\\\334^\321\224\353\344\246\212@\017i@\301\310\353>\267|\021\032\203\2704<\271E')=\343\035W\036<T\276:\204-\313\206\353\312,0}EU]\256\007\032WUE\017\204\242\226m}\001W\356\030\314\304\254fX\206\257\252VPu\032K\252f\273|\251\212}\2068G)3\303\224\3762\252\004\274\341eA\225!*\016\256\350\332\355\221\347j_B,\356\371_\252[\006w""\345\036\247Q\177 \351A\037\261\323\3411\202q\337\\#\363\243\243V\305\263\003W\343\217\202\276'\231i\332\232`\034\241\203\316|\2664fVF\003\235\330%\254\245\342\313\307\353\353k\246i8\236\341}\217\310z\351C\350~g\251oKikU\035\236\002v=@v\334\244\270\022\010\322\207\316b\276\317\264-U\"v0\254\231\234\271*6\250P\322o\034\234@\300\370.\347\252\255i\201#\342ch\205\204\244*\255\256\032\372@\205%h\247\001M\252i\333\316`\024\240\n\\\010\314\034\246\031\303\227\r\216P\205\r\0073\025\356\253\214\225J\243#:w\374\255\003C\243\342\323P\377\324\321\341-\346\2159\322\344e\177t\204\354\247\226\032>\367F\307\035\346B\265\3211\227\275=dZ1nT\266\016,\365\034\023\001\000\202<0\014_\036\270h\310\370\037\234Pw\354\241\203\014Oz\312\340C:#t\335\203\3461\rk[\030\301S\311\215\3060R\252\314\335\036s\214\343\332\016\253\020\340\202!\227\302\302\344!\340g\034D\344\354\270\031\357\220_\275\303~\365\016\373\325\033\357Wo\254_\275C~\365\306\370\317;\354'o\274\237zv\357\232L\325\266\270\266=\230\016\254\021\323\251\352\017\215:\376O\220\305\324\357A\257/x\371%\257\005\334\3228%\301\245A>d\002\366\220\014\342\323_5\305S\274\003[\364\014\300\372\203\270\356\221J\027t\314t\266\344\031\242\203\\'\302\210y\rK3lD\252\213\274oX\334\033a\001\266S\301O\032\275\304<N\177\325\330\3610\253!F5tA\245\2421m07eNU\355u\000DJ\n\364:B!\037\"\016\r\230\303\361H\260.\323p\227\266\255\231({\016\263H\327\272\032\262\254\217D\010Mt\325\021B\016\263\212n\250\270\017\033e\203\224\205\237\247{\276N\371_<T\n\007\221\035\270^\341\234*$\330\036\326;\300C\034YF\024\035\334um\227\022\214J\253\312\206^\336V\337l\031\3644m<\035\321w\3207Y\305+\2336\363\277\276%\232\225\333R\376\245A\356\351*T\262\353P\352 \301\341\035\331\254[5\225\003\330N-\007\226\246\252=\276\353\263\\\237\333F\030m\230\307z\3545\312Y\003\246\032\345\247>+\215pQ\237\201\016\320\313\030\266\0212\312\314\243Vl\344Cq9\t\343\333\266i\030\272\241\327UU&g\264Tu\032\026\354D\336\350\003q\210\250de\321-/\006\\%\301'\261\367\006\327\370\236\324\353\215\360,\214(;\3166""\335N\177X\245~\230\326T\265\312\2009u$2\253\254.\215\213\222\233\352\355\252\241W\261\210P\002e\254\n&l\261\325\326\003\023\255\245\022\266,\025\316\247\030D\357M\025\177!\225\205\035l\207S\213\313\321X\374\255p\003uec\227\360\220\246\226\347\370e\213U\351\\\371\024z\241\310\250R\255J\274AG\210\007\324\244\006@\245\006\200\244\006ZPC\346\022mP\3526;\026H\206\356\264\034Q7\001\373\270\232\016\3516\252\345P\017\250\337\346\272\350\371b\n\037\014v\271l\033\266\251\213c\035Z!\301\203\330\335rl\007\337le\243.=\200DP\265E\251,l8\234\027T\025\005\227\244E/\250\3127 \026\365\235\354waC]\341=\321\013,\307\320\340Fu\315\352\355\351\017\365\311U\216\357\210\357.\342\240Z\300Li\276A\301y\250\\\352\017\360:u+\206\007x\215\313X\007\363\224\010\020\002\224k\333>Q\200lM[\264N\367\335!\376\342:\375U\307\343f\031\305\262\336Kl\375t\326Ob#\251k8a\365\322\224\250\351\272\240\030$\252~z\032IJx\351V\334C\225\240:\246*\024U'9u\000@\202\202|sP5c9\274\3453\327\027\017\322Z\234\000[9\236o;\335b\325w\003|r\215K\200\336\216\252\322r<\267\270/\322\220\354@y\327~\353W\035\262\240hL\233\032G\276\301|\304\030*\223O\312\\\242\247\373\370\0243\245\361\002\204\330\235\003y\025\340\200\304\201\203:\233\007\310X=\225a\025\374\002.\036^\235\276\273\272\321,C\223\006\274\326\344\235f\246\235\235nM_\2106\"\036/\277/\276/v\262\347\242\033\361r\374$\311\246\223\351\267M\326\356\016\024\251\363\227\370\227\264\220.S\367Jd%\253\t\246O\356\262\335 \\\213f\332\331S\273\265\360Xh\307\033\275\256\031\027\306\036\271\020M\3053qa\377\330\221\251\023\273\305\335\327\341\225\020\243\323\242[hgg[\2637\223b{\372\324n#:\031W\222\215\367E!\247\022g\342\231n\377z\222ID?\027f\302\263Q!\272\035\325c?\271\227n6\037\376\221\031?q\177\217I\311\246\242\031(\260\025\353\311\347\351\323\346\315=6~\375\203\275\332\007'>xP'{|\367\233\360r\370\n\026\231>\321\316~&v\255\244\263d\267O\243'\361\261\270\224LB=\274<\217W\261U\330\341ns\242ym/\323\236>\023\226\243\325H\010\352\206\237F/\260\275&\327O\357>\017E\263\036\376\030\025\243W""\361\\\314\342\332\310\346\271p3\272\025m\310\315\371\360\347\250\024ga\250|\262A\373\276\213f:\331;\377\324\332\326\364\247\021T\271\337\274\325\334\334[\036Z\234\013'\340-#r\343\205d&\271B\010\220\236\221'_m\326H\005-:\203\0253\037\220\343\373\250\320\221\332\220\271\344]\321\006\365\321ig/\320=\237E5\202Y!Z\336\317\036\231:\265\313\332\323\271\360#i\325\323\341]\241\377\002\016\374{Z\243\201;\321r\3644.\020f\202p\025h\312\321Q\271|\370\034+7\343\345v\216\016\314\235\016o\205/\302Z;O\002\347\346\204\0357\332\335\316O\361F\\N \305Y\002\363\361\335\273\342\240\351\331p1\3724~\021\327:\331\251\366\364|\350G\260\307B\004\013\322:z\274/J$\257\205s!\223\363\271\360\023\310\376\3278C\335\0232\276\320m\345\n\000\376\325\270F\303\307\245\314\330\235=\260{\214\202\313\341\323\350f,\3605\036\007]|t\204\237g\243\025q\317N\362\"\251u\335\271\032\225\343b\374:\271\226N\244\205\256\327&\342kp\313\\RNWS&]s)Z\303\326k\311Q\211YH\367\340\310\324\205h=\336L\226\223\242\014},=\217p\250\311H\236\215o\305/\223\217\222\377l.\313\201\323\361Zr\021bg\225\370#\030\316K.\321\306\241\0272\227\022\375\232<lf\2323\344\353\377\261\333HN\244\033$\342H\267\273\200\216;G\330\276\0301\262\345\364\356\375\260\022\275\216\257\304\0320z3-\201\347\246\363\341\343\260&\275&\255s-\231H.'\233\351\255t\203\274q,\344\360\0070s.Z\214\317\t]s\204\277\257\201\335\251d!\235K+\315\r\220W\177p\"\276\004=\347\323\217\323\032\316\377\027\014#\316\266\343\013\tKj\373'E\210\354\326\303_\343\207i&=\337,Jb\376_\r\354\237#\030>\r\257J;\315\206\205p%Z\020q~9\331H\330\230\241\375\334\221\251\205\260\326G\205h\366\247\217L]\354\3070|\"\"\212\034\363I\017\332\233\361\235d\031n;\221\333\365\303{\010\017\021\260\217\243\267\344\261\016\274\3611\311 \027\274ET\354P\224\236\215\316\306\005\ne\230\203B\371\016l\302\332\371\213\255\213+)K\353\315\306\037\031\032\276\035\326#?\276\035\377\226\026\323\327\315\313\315\215v~\2563=`\002P\304N\370\022\032\016\337xj\3677\301\272\2713@\316\006\"e5f\235\\\227\213;\220z\005L\177\025\234v""\006l\014\343\234j\235\372\014o\263\270'HV[K\217\232\245\275\321\023\347!F\rd\317:\"\217M\202Ns\363\244\010\250\340\226\010\246\247\351\245\024\203\371V\376\n\002\363UrN@1'\030\246\223\243\000\373\0356\346\351Js\026\221\225\243\334q\022\336\016\220i.\301}\304htd\003Y\361L\\G\234\347\300J \336_\223\345^\367\277\222\302\310\350<\314z,2\223B'w\201\214\0014\315\nG\314\344\303\345N\236pv7~\236<\023\222\034|=\217\370x\006\003\346\257\201o\336\2453\355\005\005\254\236M3\355\205\0028\210'w\323\"u\317\342R\321\334@\312\313/\302`S\351\331\346\r\244\221\374Bk\341\013\350\264\215\240\316_\022\005\300\334\371\377\243;\337 b\376?\3349d\333\231K\240\271\353\311\365\364FS\370~\010)\247\303o \000h\260#nl\200\001\346\233Y@XH\3624\276\231\260N\357D\236\n\204\314#\016\353`\337\014\005\311\237v;8~Y\252\370\rr2u:#o\340\202\2313\341O\"\320\212\204\354\347\010\000\204\004m\354\005\332\314\237\036\000y.\203\014\356\241\240\310\323\366\347\240\353\374\005p\376U\322E\216\211\221\237c\203\364=\363\317\013\237\245:c3\272\037W)\373Q>\375wD\315\307QM\326v\367Q\334\210\032d\271}\270\260=\017\237\026e\375\353\267N\337\000M^KQ\214\356/\310\2444\330y\274u\374\274\240/\274\336n\315\177\236\024\222\277\246\031\231\310N\213\242\004W\255\204\247\221\350\345\206{\210\371\247{\005\342\340K\310d;(\014k\262\352\350\0236Q\327\337%=Q\275\3608tA\230\327\223\253\311[\320cm08\213J\356u\274\210<\222Ig\376\025\303\310\t\333\311\005\022\252\223\005\221\302L\224\200\263\340\310ocF\265&\312\232ne\010\216\213E5\177\270\332\376\362\217\231\361\023\3352\234J\317\0051\201\327\375O\216L\345\372\003\333`\275\333IMn\367\303\207\362\273\242\223\225\305\235\254\224\307x\227>\004\316 _.\367\272\277\305\3051\335\241\005\242;\356\263Ht{W\336B\r'j\345 ,\242\302\235\213\230H`.\325\313]\031%\230\nR/\274Q\306\350\315\211\004\312\343\257c\326\033\270\217\023\272\332Q\366\244\270\317\307?%\257\322s\315\225\275\256\325\352\000\r}\205]\211\267\022=\375\234\300\365>\203\300\374\350\344\356\253\360\263x\022!\365\004\205\206\337\374f\357""\312^\265\365\362\307\326\217\254\305x\213;-\307\337?r$\310<\236@\363x\342\0315\317&~\246\346\347\211_\250\371e\302\240\306\230\250RS\235xG\315\273\211\337\251\371}\342\273\243h\276;\272A\315\306\321\177P\363\217\243*5\352Q\213\032\353\250K\215{tm\022\315\332\344:5\353\223\337N\266'\247w\237\365J\341\366\344\307\357wv\177\304\247g\236\302e\226\276\034\221\337\310\2445\232\243O\264\326\251\317\351\033\005\021\260\2757\377G\2463:2\363>\323\231\004\302Z\312W\351q|\035n\2676^\264'\251By.\242\030\207\374J<\331\316\376\005\351\372?\232'\361\3758y|w\371}\246=I\324{,a\177\373o\223V\200\031";
+    PyObject *data = __Pyx_DecompressString(cstring, 3671, 1);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #else /* compression: none (7663 bytes) */
-const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedBuffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis Step may not be zero (axis %d)Unable to convert item to object.>')?add_note and  at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenablegc (got got differing extents in dimension isenableditemsize <= 0 for cython.arrayno default __reduce__ due to non-trivial __cinit__numpy._core.multiarray failed to importnumpy._core.umath failed to import object>src/forest/_hier_core.pyx<strided and direct><strided and direct or indirect><strided and indirect><stringsource>unable to allocate array data.unable to allocate shape and strides.ASCIIEllipsisNodeStoreNodeStore.__reduce_cython__NodeStore.__setstate_cython__NodeStore.alloc_nodeNodeStore.attach_bufferNodeStore.clear_all_dirtyNodeStore.clear_subtree_occupationNodeStore.collect_forest_idsNodeStore.descent_loopNodeStore.ensure_capacityNodeStore.forest_ids_arrayNodeStore.get_aabbNodeStore.get_depthNodeStore.get_dirtyNodeStore.get_forest_idNodeStore.get_has_aabbNodeStore.get_leftNodeStore.get_node_bytesNodeStore.get_parentNodeStore.get_raw_bufferNodeStore.get_rightNodeStore.get_split_valNodeStore.get_statsNodeStore.get_subtree_occNodeStore.get_subtree_occ_volNodeStore.is_occupiedNodeStore.iter_dirtyNodeStore.link_aabbs_collideNodeStore.mark_occupiedNodeStore.propagat""e_upNodeStore.reset_all_occupationNodeStore.reset_occupationNodeStore.set_aabbNodeStore.set_depthNodeStore.set_dirtyNodeStore.set_forest_idNodeStore.set_has_aabbNodeStore.set_leftNodeStore.set_parentNodeStore.set_rightNodeStore.set_split_val__Pyx_PyDict_NextRefSequenceView.MemoryViewa_arra_paabbaabb_laabb_paabb_raabb_uabcalloc_nodeallocate_bufferalpha_arralpha_pasarrayasyncio.coroutinesattach_bufferavgavg_depthbasebase_ivsbufccapcivs_hicivs_lo__class____class_getitem__clear_all_dirtyclear_subtree_occupationcline_in_tracebackclosecollect_forest_idscollidecountdd_arrd_pdepthdescent_loopdi__dict___dictdimdimsdstdtypedtype_is_objectedgeemptyencodeensure_capacityenumerateerrorfail_codefidfk_jhifk_jlofk_phifk_ploflagsfloat32float64forest._hier_coreforest_box_idforest_ids_arrayformatfortranfull__func__get_aabbget_depthget_dirtyget_forest_idget_has_aabbget_leftget_node_bytesget_parentget_raw_bufferget_rightget_split_valget_statsget_subtree_occget_subtree_occ_vol__getstate__going_lefthas_tooliididx__import__indexint32_is_coroutineis_occupieditemsitemsizeiter_dirtyivs_hiivs_lojoints_bytesjtype_arrjtype_pkleftleft_idxlink_aabbs_collide__main__mark_occupiedmax_depthmemviewmidmin_edge_lengthmode__module__n_dimsn_fk_callsn_jmn_jointsn_leavesn_linksn_new_nodesn_nodesn_obsn_split_dimsn_tfname__name__nbytesndimneeded__new__new_arrnew_capnew_fidnew_occnew_sizenew_subnew_subvnextnodenpnumpyobjobs_arr_npobs_packedobs_ptrobs_tupoffoiold_sizeppackparentpathpopprefix_bytespropagate_up__pyx_checksum__pyx_result__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_unpickle_NodeStore__pyx_vtable____qualname____reduce____reduce_cython____reduce_ex__registerreset_all_occupationreset_occupationright_idxroot_jhiroot_jloroot_phiroot_ploseedseed_pselfsendset_aabbset_depthset_dirtyset_forest_idset_has_aabbset_left__set_name__set_parentset_rightset_split_valsetdefault__setstate____setstate_cython__shapesizesplit_dims_arrsplit_psrcstackstartstart_idxstatestepstopstridestructsv__test__theta_arrtheta_pthrowtmp""_jhitmp_jlotmp_phitmp_plotool_atool_alphatool_dtotal_depthuint8unpackupdateuse_setstatevalvaluevaluesxzero_length_linkszeros\320\0048\270\001\330\010\014\320\014\035\230Q\230e\2401\200A\200A\340\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\032\230)\2401\240A\330\010\032\230+\240]\260!\2601\330\010\032\230$\230n\250B\250a\330\010\016\210a\210u\220E\230\021\330\010\017\210q\220\006\220o\240Q\330\010\017\210q\220\006\220l\240!\200A\340\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\030\230\t\240\021\240!\360\006\000\t\r\210A\210U\220$\220a\330\010\014\210A\210U\220!\330\010\022\320\022,\250A\330\014\017\210y\230\016\240g\250Q\200A\330\010\014\320\014 \240\001\240\021\200A\330\010\014\320\014(\250\001\250\021\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270=\310\001\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270;\300a\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270,\300a\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270<\300q\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270<\300q\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270,\300a\200A\340\010\013\2107\220#\220T\230\021\330\014\r\330\010\037\230x\240t\2506\260\022\2601\330\010\034\230D\240\006\240b\250\004\250A\330\010\034\230H\240B\240d\250!\360\006\000\t9\270\002\270&\300\001\330\014\026\220f\230B\230a\330\010\017\210r\220\034\230R\230x\240q\250\004\250A\330\010\014\210H\220A\330\010\014\210I\220W\230A\230T\240\025\240a\240q\360\006\000\t9\270\002\270&\300\001\330\014\025\220V\2302\230Q\330\010\017\210r\220\024\220Y\230b\240\010\250\001\250\024\250Q\330\010\014\210M\230\021\340\0108\270\002\270&\300\001\330\014\025\220V\2302\230Q\330\010\017\210r\220\024\220Y\230b\240\010\250\001\250\024\250Q\330\010\014\320\014\034\230A\340\010;\2702\270V\3001\330\014\025\220V\2302\230Q\330\010\020\220\002\220$\220i\230r\240\030\250\021\250$\250a\330\010\014\320\014 \240\001\340\0108\270\002\270%\270q\330\014\026""\220c\230\026\230r\240\021\330\010\017\210r\220\024\220Y\230b\240\010\250\001\250\024\250Q\330\010\014\210N\230!\340\010\014\210H\220A\200A\340\010\014\320\014\034\230A\230Q\200A\340\010\034\230A\330\010\035\230Q\330\010\037\230q\330\010\032\230!\2301\360\010\000\t\017\210a\330\014\020\220\005\220T\230\021\330\014\023\2209\230A\230T\240\030\250\024\250Z\260q\330\014\023\2208\2301\230F\240!\330\014\017\210u\220B\220a\330\020\034\230A\330\020\024\220H\230A\230V\2401\330\020\037\230q\330\020\023\2202\220R\220q\330\024 \240\001\340\020\025\220W\230A\230Q\330\020\025\220W\230A\230X\240Q\240f\250A\340\010\031\230\021\330\010\013\2109\220B\220a\330\014\022\220'\230\034\240R\240q\340\010\t\330\014\027\220t\2301\330\014\030\230\001\330\014\031\230\021\330\014\031\230\021\200A\360\006\000\t\r\210E\220\025\220a\220t\2301\330\014\020\220\n\230!\2305\240\001\330\014\020\220\r\230Q\230e\2401\330\014\020\320\020!\240\021\240%\240q\330\014\020\220\013\2301\230F\240!\200A\360\010\000\t\r\210E\220\025\220a\220t\2301\330\014\023\2209\230A\230T\240\030\250\024\250Z\260q\330\014\023\2201\220F\230,\240a\200A\340\010\014\210H\220A\330\010\014\210I\220W\230A\230T\240\025\240a\240q\330\010\014\210H\220A\340\010\014\210M\230\022\2306\240\021\240%\240v\250R\250q\330\010\014\320\014\034\230B\230f\240A\240U\250&\260\002\260!\330\010\014\320\014 \240\002\240&\250\001\250\025\250f\260B\260a\330\010\014\210N\230\"\230E\240\021\240&\250\003\2506\260\022\2601\200A\360<\000\t\035\230I\240V\2501\250A\330\010\032\230$\230a\330\010\033\2304\230q\330\010\030\230\t\240\022\2402\240S\250\005\250^\2701\330\010\030\230\t\240\023\240E\250\036\260q\330\010 \240\005\240R\240s\250\"\250A\330\010 \240\005\240R\240s\250\"\250A\360\006\000\t \230|\250=\270\001\270\021\330\010\037\230|\250=\270\001\270\021\330\010\037\230|\250=\270\001\270\021\330\010\037\230|\250=\270\001\270\021\330\010\037\230y\250\r\260Q\260a\330\010\037\230y\250\r\260Q\260a\330\010\037\230|\250=\270\001\270\021\360\006\000\t\032\230\021\340""\010\036\230a\360\010\000\t\014\210;\220g\230U\240$\240c\250\021\250,\260b\270\001\330\014\024\220C\220q\230\001\330\014\031\230\022\2306\240\021\240&\250\002\250#\250V\2602\260Q\330\014\020\220\006\220e\2301\230A\330\020\032\230'\240\032\2501\250A\330\020\032\230!\2303\230b\240\t\250\030\260\025\260g\270Q\270a\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\014\026\220k\240\035\250a\250q\360\016\000\t\017\210a\210x\220|\240=\260\001\260\033\270A\330\010\016\210a\210x\220|\240=\260\001\260\033\270A\330\010\016\210a\210x\220|\240=\260\001\260\033\270A\330\010\016\210a\210x\220|\240=\260\001\260\033\270A\360\032\000\t\r\210F\220%\220q\230\001\330\014\022\220!\2206\230\030\240\030\250\021\250#\250Q\250a\330\014\022\220!\2206\230\030\240\030\250\021\250#\250Q\250a\360\020\000\t\030\220q\330\010\032\230$\230a\330\010\032\230$\230a\360\014\000\t\036\230Q\330\010\037\230q\330\010\036\230a\340\010\031\230\021\360\010\000\t\n\330\014\023\2209\230A\230V\2408\2501\360\006\000\r\020\210t\220:\230Q\230a\330\020\034\230C\230w\240c\250\021\340\014\020\220\007\220q\230\001\360\006\000\r\020\210w\220a\220v\230Q\330\020\031\230\031\240!\2401\330\020\032\230!\330\020\023\2208\2303\230a\330\024\036\320\0366\260a\260x\270y\310\001\330\020\023\2204\220x\230t\2404\240}\260A\260U\270#\270Q\330\024\025\340\014\024\220H\230A\230V\2401\330\014\017\210v\220S\230\001\330\020\034\230C\230w\240c\250\021\340\014\017\210}\230B\230a\330\020\026\220g\230Q\230f\240B\240a\340\020\026\220f\230B\230a\340\014\023\2206\230\021\230%\230r\240\026\240q\250\001\330\014\017\320\017\037\230r\240\022\2404\240u\250B""\320.>\270b\300\001\330\020\034\230C\230w\240c\250\021\340\014\027\220x\230q\240\006\240a\340\014\017\210y\230\004\230A\340\020\027\220v\230Q\230e\2402\240V\2501\250F\260\"\260A\340\020\024\320\024$\240A\240T\250\032\2602\260Q\330\020\027\220t\2301\340\020\033\2304\230~\250Q\250e\2606\270\022\2701\330\020\034\230D\240\016\250a\250u\260F\270\"\270A\330\020\037\230q\340\020\027\220y\240\001\240\026\240x\250q\330\020\030\230\001\230\026\230|\2501\330\020\030\230\001\230\026\230{\250!\330\020\030\230\001\230\026\230|\2501\330\020\027\220q\230\006\230l\250!\340\020\035\230V\2401\240E\250\022\2501\360\006\000\021\024\2201\340\024\032\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250k\270\021\330\024\"\240!\360\006\000\025\033\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250j\270\001\330\024\"\240!\360\006\000\025\033\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250j\270\001\330\024\"\240!\360\006\000\025\033\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250k""\270\021\330\024\"\240!\360\006\000\021\"\240\021\240(\250(\260)\2701\330\020\024\320\024)\250\021\250%\250q\360\006\000\021\027\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\340\020\023\2201\330\024\032\230!\2307\240!\330\024\032\230!\340\024\032\230!\2307\240!\330\024\032\230!\360\010\000\021\026\220X\230Q\230f\240A\330\020\034\230H\240A\240V\2501\340\020\023\2206\230\021\230%\230r\240\021\330\024\032\230!\2307\240!\330\024\032\230!\340\024\032\230!\2307\240!\330\024\032\230!\360\006\000\021#\240!\240:\250Q\330\024\034\230H\240H\250A\330\024\035\230U\240%\240y\260\001\330\024\034\230H\240A\330\024\035\230Y\240i\250q\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\340\010\020\220\005\220V\230;\240m\2601\200A\340\010\014\210K\220q\230\007\230q\200A\340\010\013\210;\220c\230\021\330\014\023\2201\330\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\033\2309\240A\240Q\330\010\017\210t\320\023)\250\021\250&\260\001\200A\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270/\310\021\200A\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270,\300a\200A\340\010\017\210r\220\030\230\021\230$\230a\200A\360\n\000\t\020\210r\220\030\230\021\230$\230k\250\022\2504\250q\200A\330\010\017\210t\220=\240\001\240\021\200A\340\010\027\220t\2301\330\010\014\210M\230\021\330\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\020\220\001\220\026\220|\2401\330\010\020\220\001\220\026\220}\240A\330\010\020\220\001\220\026\220}\240A\330\010\020\220\001\220\026\220|\2401\330\010\020\220\001\220\026\220|\2401\330\010\017\210q\220\006\220o\240Q\330\010\017\210q\220\006\220l\240!\330\010\017\210q\200A\340\010\027\220t\2302\230T\240\021\330\010\017\210u\220A\220T\230\025\230a\230t\2404\240r\250\024\250Q\200A\330\010\017\210t\320\023)\250\021\250!\200A\340\010\017\210t\320\023$\240A\240Q\200A\330""\010\017\210t\220:\230Q\230e\2403\240a\200A\330\010\017\210t\220;\230a\230q\200A\330\010\017\210w\220a\220y\240\001\240\024\240X\250T\260\032\2706\300\021\200A\330\010\017\210x\220q\230\t\240\021\240$\240h\250d\260*\270F\300!\200\001\360\010\000\005\016\210T\220\037\240\004\240H\250D\260\007\260t\2707\300$\300m\320SW\320Wa\320ae\320ep\320pt\360\000\000u\001C\002\360\000\000C\002G\002\360\000\000G\002Y\002\360\000\000Y\002]\002\360\000\000]\002i\002\360\000\000i\002m\002\360\000\000m\002z\002\360\000\000z\002~\002\360\000\000~\002M\003\360\000\000M\003Q\003\360\000\000Q\003[\003\360\000\000[\003_\003\360\000\000_\003n\003\360\000\000n\003r\003\360\000\000r\003E\004\360\000\000E\004I\004\360\000\000I\004J\004\330\004\014\210G\2201\220F\230,\240a\330\004\007\200v\210W\220E\230\024\230Q\330\010\022\220!\330\010\027\220q\340\010\027\220q\330\004\007\200q\330\010\017\320\017*\250$\250a\250w\260k\300\027\310\001\340\010\017\320\017*\250$\250a\250w\260k\300\021\200\001\340\004\037\230q\320 0\260\013\270;\300k\320QR\330\004\023\2209\230H\240A\240Q\330\004\007\200|\2207\230!\330\010+\2501\250L\270\016\300a\330\004\013\2101\200\001\330\004'\240q\250\006\250aO";
+    #else /* compression: none (8148 bytes) */
+const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedBuffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis Step may not be zero (axis %d)Unable to convert item to object.>')?add_note and  at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenablegc (got got differing extents in dimension isenableditemsize <= 0 for cython.arrayno default __reduce__ due to non-trivial __cinit__numpy._core.multiarray failed to importnumpy._core.umath failed to import object>src/forest/_hier_core.pyx<strided and direct><strided and direct or indirect><strided and indirect><stringsource>unable to allocate array data.unable to allocate shape and strides.ASCIIEllipsisNodeStoreNodeStore.__reduce_cython__NodeStore.__setstate_cython__NodeStore.alloc_nodeNodeStore.attach_bufferNodeStore.clear_all_dirtyNodeStore.clear_subtree_occupationNodeStore.collect_forest_idsNodeStore.descent_loopNodeStore.ensure_capacityNodeStore.forest_ids_arrayNodeStore.get_aabbNodeStore.get_depthNodeStore.get_dirtyNodeStore.get_forest_idNodeStore.get_has_aabbNodeStore.get_leftNodeStore.get_node_bytesNodeStore.get_parentNodeStore.get_raw_bufferNodeStore.get_rightNodeStore.get_split_valNodeStore.get_statsNodeStore.get_subtree_occNodeStore.get_subtree_occ_volNodeStore.is_occupiedNodeStore.iter_dirtyNodeStore.link_aabbs_collideNodeStore.mark_occupiedNodeStore.propagat""e_upNodeStore.reset_all_occupationNodeStore.reset_occupationNodeStore.set_aabbNodeStore.set_depthNodeStore.set_dirtyNodeStore.set_forest_idNodeStore.set_has_aabbNodeStore.set_leftNodeStore.set_parentNodeStore.set_rightNodeStore.set_split_valNodeStore.subtree_collide_checkNodeStore.unmark_occupied__Pyx_PyDict_NextRefSequenceView.MemoryViewa_arra_paabbaabb_laabb_paabb_raabb_uabcalloc_nodeallocate_bufferalpha_arralpha_pasarrayasyncio.coroutinesattach_bufferavgavg_depthbasebase_ivsbufccapcivs_hicivs_lo__class____class_getitem__clear_all_dirtyclear_subtree_occupationcline_in_tracebackclosecollect_forest_idscollidecountdd_arrd_pdepthdescent_loopdi__dict___dictdimdimsdstdtypedtype_is_objectedgeemptyencodeensure_capacityenumerateerrorfail_codefidfk_jhifk_jlofk_phifk_ploflagsfloat32float64forest._hier_coreforest_box_idforest_ids_arrayformatfortranfull__func__get_aabbget_depthget_dirtyget_forest_idget_has_aabbget_leftget_node_bytesget_parentget_raw_bufferget_rightget_split_valget_statsget_subtree_occget_subtree_occ_vol__getstate__going_lefthas_tooliididx__import__indexint32_is_coroutineis_occupieditemsitemsizeiter_dirtyivs_hiivs_lojoints_bytesjtype_arrjtype_pkleftleft_idxlink_aabbs_collide__main__mark_occupiedmax_depthmemviewmidmin_edge_lengthmode__module__n_dimsn_fk_callsn_jmn_jointsn_leavesn_linksn_new_nodesn_nodesn_obsn_split_dimsn_tfname__name__nbytesndimneeded__new__new_arrnew_capnew_fidnew_occnew_sizenew_subnew_subvnextnodenpnumpyobjobs_arrobs_arr_npobs_packedobs_ptrobs_tupoffoiold_sizeppackparentpathpopprefix_bytespromotion_depthpropagate_up__pyx_checksum__pyx_result__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_unpickle_NodeStore__pyx_vtable____qualname____reduce____reduce_cython____reduce_ex__registerreset_all_occupationreset_occupationright_idxroot_jhiroot_jloroot_phiroot_ploseedseed_pselfsendset_aabbset_depthset_dirtyset_forest_idset_has_aabbset_left__set_name__set_parentset_rightset_split_valsetdefault__setstate____setstate_cython__shapesizesplit_dims_arrsplit_psrc""stackstartstart_idxstatestepstopstridestructsubtree_collide_checksv__test__theta_arrtheta_pthrowtmp_jhitmp_jlotmp_phitmp_plotool_atool_alphatool_dtotal_depthuint8unmark_occupiedunpackupdateuse_setstatevalvaluevaluesxzero_length_linkszeros\320\0048\270\001\330\010\014\320\014\035\230Q\230e\2401\200A\200A\340\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\032\230)\2401\240A\330\010\032\230+\240]\260!\2601\330\010\032\230$\230n\250B\250a\330\010\016\210a\210u\220E\230\021\330\010\017\210q\220\006\220o\240Q\330\010\017\210q\220\006\220l\240!\200A\340\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\030\230\t\240\021\240!\360\006\000\t\r\210A\210U\220$\220a\330\010\014\210A\210U\220!\330\010\022\320\022,\250A\330\014\017\210y\230\016\240g\250Q\200A\330\010\014\320\014 \240\001\240\021\200A\330\010\014\320\014(\250\001\250\021\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270=\310\001\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270;\300a\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270,\300a\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270<\300q\200A\330\010\020\220\001\220\031\230!\2304\230x\240t\250:\260V\270<\300q\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270,\300a\200A\340\010\013\2107\220#\220T\230\021\330\014\r\330\010\037\230x\240t\2506\260\022\2601\330\010\034\230D\240\006\240b\250\004\250A\330\010\034\230H\240B\240d\250!\360\006\000\t9\270\002\270&\300\001\330\014\026\220f\230B\230a\330\010\017\210r\220\034\230R\230x\240q\250\004\250A\330\010\014\210H\220A\330\010\014\210I\220W\230A\230T\240\025\240a\240q\360\006\000\t9\270\002\270&\300\001\330\014\025\220V\2302\230Q\330\010\017\210r\220\024\220Y\230b\240\010\250\001\250\024\250Q\330\010\014\210M\230\021\340\0108\270\002\270&\300\001\330\014\025\220V\2302\230Q\330\010\017\210r\220\024\220Y\230b\240\010\250\001\250\024\250Q\330\010\014\320\014\034\230A\340\010;\2702\270V\3001\330\014\025\220V\2302\230Q\330\010\020\220""\002\220$\220i\230r\240\030\250\021\250$\250a\330\010\014\320\014 \240\001\340\0108\270\002\270%\270q\330\014\026\220c\230\026\230r\240\021\330\010\017\210r\220\024\220Y\230b\240\010\250\001\250\024\250Q\330\010\014\210N\230!\340\010\014\210H\220A\200A\340\010\014\320\014\034\230A\230Q\200A\340\010\034\230A\330\010\035\230Q\330\010\037\230q\330\010\032\230!\2301\360\010\000\t\017\210a\330\014\020\220\005\220T\230\021\330\014\023\2209\230A\230T\240\030\250\024\250Z\260q\330\014\023\2208\2301\230F\240!\330\014\017\210u\220B\220a\330\020\034\230A\330\020\024\220H\230A\230V\2401\330\020\037\230q\330\020\023\2202\220R\220q\330\024 \240\001\340\020\025\220W\230A\230Q\330\020\025\220W\230A\230X\240Q\240f\250A\340\010\031\230\021\330\010\013\2109\220B\220a\330\014\022\220'\230\034\240R\240q\340\010\t\330\014\027\220t\2301\330\014\030\230\001\330\014\031\230\021\330\014\031\230\021\200A\360\006\000\t\r\210E\220\025\220a\220t\2301\330\014\020\220\n\230!\2305\240\001\330\014\020\220\r\230Q\230e\2401\330\014\020\320\020!\240\021\240%\240q\330\014\020\220\013\2301\230F\240!\200A\360\010\000\t\r\210E\220\025\220a\220t\2301\330\014\023\2209\230A\230T\240\030\250\024\250Z\260q\330\014\023\2201\220F\230,\240a\200A\340\010\014\210H\220A\330\010\014\210I\220W\230A\230T\240\025\240a\240q\330\010\014\210H\220A\340\010\014\210M\230\022\2306\240\021\240%\240v\250R\250q\330\010\014\320\014\034\230B\230f\240A\240U\250&\260\002\260!\330\010\014\320\014 \240\002\240&\250\001\250\025\250f\260B\260a\330\010\014\210N\230\"\230E\240\021\240&\250\003\2506\260\022\2601\200A\360<\000\t\035\230I\240V\2501\250A\330\010\032\230$\230a\330\010\033\2304\230q\330\010\030\230\t\240\022\2402\240S\250\005\250^\2701\330\010\030\230\t\240\023\240E\250\036\260q\330\010 \240\005\240R\240s\250\"\250A\330\010 \240\005\240R\240s\250\"\250A\360\006\000\t \230|\250=\270\001\270\021\330\010\037\230|\250=\270\001\270\021\330\010\037\230|\250=\270\001\270\021\330\010\037\230|\250=\270\001\270\021\330\010\037\230y\250""\r\260Q\260a\330\010\037\230y\250\r\260Q\260a\330\010\037\230|\250=\270\001\270\021\360\006\000\t\032\230\021\340\010\036\230a\360\010\000\t\014\210;\220g\230U\240$\240c\250\021\250,\260b\270\001\330\014\024\220C\220q\230\001\330\014\031\230\022\2306\240\021\240&\250\002\250#\250V\2602\260Q\330\014\020\220\006\220e\2301\230A\330\020\032\230'\240\032\2501\250A\330\020\032\230!\2303\230b\240\t\250\030\260\025\260g\270Q\270a\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\020\032\230!\2303\230b\240\002\240\"\240E\250\027\260\007\260q\270\001\330\014\026\220k\240\035\250a\250q\360\016\000\t\017\210a\210x\220|\240=\260\001\260\033\270A\330\010\016\210a\210x\220|\240=\260\001\260\033\270A\330\010\016\210a\210x\220|\240=\260\001\260\033\270A\330\010\016\210a\210x\220|\240=\260\001\260\033\270A\360\032\000\t\r\210F\220%\220q\230\001\330\014\022\220!\2206\230\030\240\030\250\021\250#\250Q\250a\330\014\022\220!\2206\230\030\240\030\250\021\250#\250Q\250a\360\020\000\t\030\220q\330\010\032\230$\230a\330\010\032\230$\230a\360\014\000\t\036\230Q\330\010\037\230q\330\010\036\230a\340\010\031\230\021\360\010\000\t\n\330\014\023\2209\230A\230V\2408\2501\360\006\000\r\020\210t\220:\230Q\230a\330\020\034\230C\230w\240c\250\021\340\014\020\220\007\220q\230\001\360\006\000\r\020\210w\220a\220v\230Q\330\020\031\230\031\240!\2401\330\020\032\230!\330\020\023\2208\2303\230a\330\024\036\320\0366\260a\260x\270y\310\001\330\020\023\2204\220x\230t\2404\240}\260A\260U\270#\270Q\330\024\025\340\014\024\220H\230A\230V\2401\330\014\017\210v\220S\230\001\330\020\034\230C\230w\240c\250\021\340\014\017\210}\230B\230a\330\020\026\220g\230Q\230f\240B\240a\340\020\026\220f\230B""\230a\340\014\023\2206\230\021\230%\230r\240\026\240q\250\001\330\014\017\320\017\037\230r\240\022\2404\240u\250B\320.>\270b\300\001\330\020\034\230C\230w\240c\250\021\340\014\027\220x\230q\240\006\240a\340\014\017\210y\230\004\230A\340\020\027\220v\230Q\230e\2402\240V\2501\250F\260\"\260A\340\020\024\320\024$\240A\240T\250\032\2602\260Q\330\020\027\220t\2301\340\020\033\2304\230~\250Q\250e\2606\270\022\2701\330\020\034\230D\240\016\250a\250u\260F\270\"\270A\330\020\037\230q\340\020\027\220y\240\001\240\026\240x\250q\330\020\030\230\001\230\026\230|\2501\330\020\030\230\001\230\026\230{\250!\330\020\030\230\001\230\026\230|\2501\330\020\027\220q\230\006\230l\250!\340\020\035\230V\2401\240E\250\022\2501\360\006\000\021\024\2201\340\024\032\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250k\270\021\330\024\"\240!\360\006\000\025\033\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250j\270\001\330\024\"\240!\360\006\000\025\033\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250j\270\001\330\024\"\240!\360\006\000\025\033\230!\2309\240H\250G\2602\260Q\330\024\032\230!\2309\240H\250G\2602\260Q\330\024\033\2301\230G\2401\330\024&\240a\240z\260\021\330\030 \240\010\250\010\260\001\330\030!\240\025\240e\2509\260A\330""\030!\240\031\250!\330\030!\240\031\250)\2601\330\024'\240q\250\t\260\031\270)\3001\330\024\030\320\030-\250Q\250k\270\021\330\024\"\240!\360\006\000\021\"\240\021\240(\250(\260)\2701\330\020\027\220y\240\001\240\026\240x\250q\330\020\023\2207\230!\2306\240\021\340\024&\240a\240y\260\001\260\027\270\010\300\001\330\024\033\2301\230F\240,\250a\340\024\030\320\030-\250Q\250e\2601\360\006\000\021\027\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\340\020\023\2201\330\024\032\230!\2307\240!\330\024\032\230!\340\024\032\230!\2307\240!\330\024\032\230!\360\010\000\021\026\220X\230Q\230f\240A\330\020\034\230H\240A\240V\2501\340\020\023\2206\230\021\230%\230r\240\021\330\024\032\230!\2307\240!\330\024\032\230!\340\024\032\230!\2307\240!\330\024\032\230!\360\006\000\021#\240!\240:\250Q\330\024\034\230H\240H\250A\330\024\035\230U\240%\240y\260\001\330\024\034\230H\240A\330\024\035\230Y\240i\250q\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\330\020\026\220a\220x\230y\250\001\340\010\020\220\005\220V\230;\240m\2601\200A\340\010\014\210K\220q\230\007\230q\200A\340\010\013\210;\220c\230\021\330\014\023\2201\330\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\033\2309\240A\240Q\330\010\017\210t\320\023)\250\021\250&\260\001\200A\360\030\000\t\014\210;\220c\230\021\330\014\023\2201\330\010\013\320\013\033\2303\230a\330\014\023\2204\320\027*\250!\2505\260\001\360\006\000\t\032\230\023\230A\230Q\330\010\013\2106\220\023\220A\330\014\023\2201\330\010:\270\"\270F\300!\330\014\022\220\"\220C\220v\230R\230q\360\006\000\t\r\210F\220%\220q\230\001\330\014\026\220g\230Z\240q\250\001\330\014\023\2201\220C\220r\230\031\240(\250%\250w\260a\260q\330\014\023\2201\220C\220r\230\022\2302\230U\240'\250\027\260\001\260\021\330\014\023\2201\220C\220r\230\022\2302\230U\240'\250\027\260\001\260\021\330\014\023\2201\220C\220r\230\022\2302\230U\240'\250""\027\260\001\260\021\330\014\023\2201\220C\220r\230\022\2302\230U\240'\250\027\260\001\260\021\330\014\023\2201\220C\220r\230\022\2302\230U\240'\250\027\260\001\260\021\330\014\023\2201\220C\220r\230\022\2302\230U\240'\250\027\260\001\260\021\330\010\036\230k\250\035\260a\260q\340\010\017\320\017)\250\021\330\014\020\220\010\230\004\230J\240a\330\014\025\220W\230A\200A\340\010\014\320\014\037\230q\240\001\200A\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270/\310\021\200A\330\010\017\210q\220\t\230\021\230$\230h\240d\250*\260F\270,\300a\200A\340\010\017\210r\220\030\230\021\230$\230a\200A\360\n\000\t\020\210r\220\030\230\021\230$\230k\250\022\2504\250q\200A\330\010\017\210t\220=\240\001\240\021\200A\340\010\027\220t\2301\330\010\014\210M\230\021\330\010\032\230)\2401\240D\250\010\260\004\260J\270a\330\010\020\220\001\220\026\220|\2401\330\010\020\220\001\220\026\220}\240A\330\010\020\220\001\220\026\220}\240A\330\010\020\220\001\220\026\220|\2401\330\010\020\220\001\220\026\220|\2401\330\010\017\210q\220\006\220o\240Q\330\010\017\210q\220\006\220l\240!\330\010\017\210q\200A\340\010\027\220t\2302\230T\240\021\330\010\017\210u\220A\220T\230\025\230a\230t\2404\240r\250\024\250Q\200A\330\010\017\210t\320\023)\250\021\250!\200A\340\010\017\210t\320\023$\240A\240Q\200A\330\010\017\210t\220:\230Q\230e\2403\240a\200A\330\010\017\210t\220;\230a\230q\200A\330\010\017\210w\220a\220y\240\001\240\024\240X\250T\260\032\2706\300\021\200A\330\010\017\210x\220q\230\t\240\021\240$\240h\250d\260*\270F\300!\200\001\360\010\000\005\016\210T\220\037\240\004\240H\250D\260\007\260t\2707\300$\300m\320SW\320Wa\320ae\320ep\320pt\360\000\000u\001C\002\360\000\000C\002G\002\360\000\000G\002Y\002\360\000\000Y\002]\002\360\000\000]\002i\002\360\000\000i\002m\002\360\000\000m\002z\002\360\000\000z\002~\002\360\000\000~\002M\003\360\000\000M\003Q\003\360\000\000Q\003[\003\360\000\000[\003_\003\360\000\000_\003n\003\360\000\000n\003r\003\360\000\000r\003E\004\360\000\000E\004I\004\360""\000\000I\004J\004\330\004\014\210G\2201\220F\230,\240a\330\004\007\200v\210W\220E\230\024\230Q\330\010\022\220!\330\010\027\220q\340\010\027\220q\330\004\007\200q\330\010\017\320\017*\250$\250a\250w\260k\300\027\310\001\340\010\017\320\017*\250$\250a\250w\260k\300\021\200\001\340\004\037\230q\320 0\260\013\270;\300k\320QR\330\004\023\2209\230H\240A\240Q\330\004\007\200|\2207\230!\330\010+\2501\250L\270\016\300a\330\004\013\2101\200\001\330\004'\240q\250\006\250aO";
     PyObject *data = NULL;
     CYTHON_UNUSED_VAR(__Pyx_DecompressString);
     #endif
     PyObject **stringtab = __pyx_mstate->__pyx_string_tab;
     Py_ssize_t pos = 0;
-    for (int i = 0; i < 322; i++) {
+    for (int i = 0; i < 328; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyUnicode_DecodeUTF8(bytes + pos, bytes_length, NULL);
       if (likely(string) && i >= 48) PyUnicode_InternInPlace(&string);
@@ -38298,7 +39876,7 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       stringtab[i] = string;
       pos += bytes_length;
     }
-    for (int i = 322; i < 358; i++) {
+    for (int i = 328; i < 366; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyBytes_FromStringAndSize(bytes + pos, bytes_length);
       stringtab[i] = string;
@@ -38309,15 +39887,15 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       }
     }
     Py_XDECREF(data);
-    for (Py_ssize_t i = 0; i < 358; i++) {
+    for (Py_ssize_t i = 0; i < 366; i++) {
       if (unlikely(PyObject_Hash(stringtab[i]) == -1)) {
         __PYX_ERR(0, 1, __pyx_L1_error)
       }
     }
     #if CYTHON_IMMORTAL_CONSTANTS
     {
-      PyObject **table = stringtab + 322;
-      for (Py_ssize_t i=0; i<36; ++i) {
+      PyObject **table = stringtab + 328;
+      for (Py_ssize_t i=0; i<38; ++i) {
         #if CYTHON_COMPILING_IN_CPYTHON_FREETHREADING
         #if PY_VERSION_HEX < 0x030E0000
         if (_Py_IsOwnedByCurrentThread(table[i]) && Py_REFCNT(table[i]) == 1)
@@ -38390,209 +39968,219 @@ static int __Pyx_CreateCodeObjects(__pyx_mstatetype *__pyx_mstate) {
   PyObject* tuple_dedup_map = PyDict_New();
   if (unlikely(!tuple_dedup_map)) return -1;
   {
-    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS|CO_GENERATOR), 580};
+    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS|CO_GENERATOR), 730};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_i, __pyx_mstate->__pyx_n_u_node};
     __pyx_mstate_global->__pyx_codeobj_tab[0] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_iter_dirty, __pyx_mstate->__pyx_kp_b_iso88591_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[0])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 154};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 218};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_buf, __pyx_mstate->__pyx_n_u_cap};
     __pyx_mstate_global->__pyx_codeobj_tab[1] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_attach_buffer, __pyx_mstate->__pyx_kp_b_iso88591_A_HA_IWAT_aq_HA_M_6_vRq_BfAU_fBa, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[1])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 10, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 167};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 10, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 231};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_needed, __pyx_mstate->__pyx_n_u_new_cap, __pyx_mstate->__pyx_n_u_old_size, __pyx_mstate->__pyx_n_u_new_size, __pyx_mstate->__pyx_n_u_new_arr, __pyx_mstate->__pyx_n_u_new_occ, __pyx_mstate->__pyx_n_u_new_sub, __pyx_mstate->__pyx_n_u_new_subv, __pyx_mstate->__pyx_n_u_new_fid};
     __pyx_mstate_global->__pyx_codeobj_tab[2] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_ensure_capacity, __pyx_mstate->__pyx_kp_b_iso88591_A_7_T_xt6_1_D_b_A_HBd_9_fBa_r_Rx, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[2])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 221};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 285};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_parent, __pyx_mstate->__pyx_n_u_depth, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_node};
     __pyx_mstate_global->__pyx_codeobj_tab[3] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_alloc_node, __pyx_mstate->__pyx_kp_b_iso88591_A_t1_M_1D_Ja_1_A_A_1_1_q_oQ_q_l, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[3])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 237};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 301};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[4] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_left, __pyx_mstate->__pyx_kp_b_iso88591_A_xq_hd_F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[4])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 240};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 304};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_val};
     __pyx_mstate_global->__pyx_codeobj_tab[5] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_left, __pyx_mstate->__pyx_kp_b_iso88591_A_4xt_V_a_q_hd_F_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[5])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 244};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 308};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[6] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_right, __pyx_mstate->__pyx_kp_b_iso88591_A_xq_hd_F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[6])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 247};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 311};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_val};
     __pyx_mstate_global->__pyx_codeobj_tab[7] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_right, __pyx_mstate->__pyx_kp_b_iso88591_A_4xt_V_q_q_hd_F_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[7])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 251};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 315};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[8] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_parent, __pyx_mstate->__pyx_kp_b_iso88591_A_xq_hd_F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[8])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 254};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 318};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[9] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_depth, __pyx_mstate->__pyx_kp_b_iso88591_A_xq_hd_F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[9])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 257};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 321};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[10] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_split_val, __pyx_mstate->__pyx_kp_b_iso88591_A_xq_hd_F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[10])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 260};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 324};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_val};
     __pyx_mstate_global->__pyx_codeobj_tab[11] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_split_val, __pyx_mstate->__pyx_kp_b_iso88591_A_4xt_V_q_q_hd_F_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[11])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 264};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 328};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[12] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_has_aabb, __pyx_mstate->__pyx_kp_b_iso88591_A_way_XT_6, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[12])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 267};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 331};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_val};
     __pyx_mstate_global->__pyx_codeobj_tab[13] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_has_aabb, __pyx_mstate->__pyx_kp_b_iso88591_A_q_hd_F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[13])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 270};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 334};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_val};
     __pyx_mstate_global->__pyx_codeobj_tab[14] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_parent, __pyx_mstate->__pyx_kp_b_iso88591_A_4xt_V, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[14])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 273};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 337};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_val};
     __pyx_mstate_global->__pyx_codeobj_tab[15] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_depth, __pyx_mstate->__pyx_kp_b_iso88591_A_4xt_V_q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[15])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 276};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 340};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[16] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_dirty, __pyx_mstate->__pyx_kp_b_iso88591_A_way_XT_6, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[16])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 279};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 343};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_val};
     __pyx_mstate_global->__pyx_codeobj_tab[17] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_dirty, __pyx_mstate->__pyx_kp_b_iso88591_A_q_hd_F_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[17])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 282};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 346};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_node, __pyx_mstate->__pyx_n_u_p, __pyx_mstate->__pyx_n_u_dims};
     __pyx_mstate_global->__pyx_codeobj_tab[18] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_aabb, __pyx_mstate->__pyx_kp_b_iso88591_A_1D_Ja_AU_a_AU_A_y_gQ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[18])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 7, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 293};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 7, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 357};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_aabb, __pyx_mstate->__pyx_n_u_node, __pyx_mstate->__pyx_n_u_dst, __pyx_mstate->__pyx_n_u_src, __pyx_mstate->__pyx_n_u_nbytes};
     __pyx_mstate_global->__pyx_codeobj_tab[19] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_aabb, __pyx_mstate->__pyx_kp_b_iso88591_A_1D_Ja_1A_1_nBa_auE_q_oQ_q_l, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[19])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 313};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 377};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[20] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_is_occupied, __pyx_mstate->__pyx_kp_b_iso88591_A_t_Qe3a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[20])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 316};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 380};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[21] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_subtree_occ, __pyx_mstate->__pyx_kp_b_iso88591_A_t, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[21])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 319};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 383};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[22] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_subtree_occ_vol, __pyx_mstate->__pyx_kp_b_iso88591_A_t_AQ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[22])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 323};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 387};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
     __pyx_mstate_global->__pyx_codeobj_tab[23] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_forest_id, __pyx_mstate->__pyx_kp_b_iso88591_A_t_aq, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[23])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 1, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 326};
+    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 1, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 390};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self};
     __pyx_mstate_global->__pyx_codeobj_tab[24] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_forest_ids_array, __pyx_mstate->__pyx_kp_b_iso88591_A_r_k_4q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[24])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 383};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 447};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_obs_packed, __pyx_mstate->__pyx_n_u_node, __pyx_mstate->__pyx_n_u_aabb};
     __pyx_mstate_global->__pyx_codeobj_tab[25] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_link_aabbs_collide, __pyx_mstate->__pyx_kp_b_iso88591_A_c_1_1D_Ja_9AQ_t, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[25])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 470};
+    const __Pyx_PyCode_New_function_description descr = {4, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 455};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_obs_packed, __pyx_mstate->__pyx_n_u_promotion_depth, __pyx_mstate->__pyx_n_u_n_obs, __pyx_mstate->__pyx_n_u_obs_arr, __pyx_mstate->__pyx_n_u_obs_tup, __pyx_mstate->__pyx_n_u_oi, __pyx_mstate->__pyx_n_u_obs_ptr};
+    __pyx_mstate_global->__pyx_codeobj_tab[26] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_subtree_collide_check, __pyx_mstate->__pyx_kp_b_iso88591_A_c_1_3a_4_5_AQ_6_A_1_F_CvRq_F_q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[26])) goto bad;
+  }
+  {
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 595};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_start_idx};
-    __pyx_mstate_global->__pyx_codeobj_tab[26] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_propagate_up, __pyx_mstate->__pyx_kp_b_iso88591_A_AQ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[26])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[27] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_propagate_up, __pyx_mstate->__pyx_kp_b_iso88591_A_AQ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[27])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 495};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 620};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_forest_box_id};
-    __pyx_mstate_global->__pyx_codeobj_tab[27] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_mark_occupied, __pyx_mstate->__pyx_kp_b_iso88591_8_Qe1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[27])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[28] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_mark_occupied, __pyx_mstate->__pyx_kp_b_iso88591_8_Qe1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[28])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 503};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 644};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
-    __pyx_mstate_global->__pyx_codeobj_tab[28] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_reset_occupation, __pyx_mstate->__pyx_kp_b_iso88591_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[28])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[29] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_unmark_occupied, __pyx_mstate->__pyx_kp_b_iso88591_A_q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[29])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 506};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 653};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
+    __pyx_mstate_global->__pyx_codeobj_tab[30] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_reset_occupation, __pyx_mstate->__pyx_kp_b_iso88591_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[30])) goto bad;
+  }
+  {
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 656};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_fid};
-    __pyx_mstate_global->__pyx_codeobj_tab[29] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_forest_id, __pyx_mstate->__pyx_kp_b_iso88591_A_Kq_q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[29])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[31] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_set_forest_id, __pyx_mstate->__pyx_kp_b_iso88591_A_Kq_q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[31])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 531};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 681};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
-    __pyx_mstate_global->__pyx_codeobj_tab[30] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_collect_forest_ids, __pyx_mstate->__pyx_kp_b_iso88591_A_t_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[30])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[32] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_collect_forest_ids, __pyx_mstate->__pyx_kp_b_iso88591_A_t_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[32])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 566};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 716};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx};
-    __pyx_mstate_global->__pyx_codeobj_tab[31] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_clear_subtree_occupation, __pyx_mstate->__pyx_kp_b_iso88591_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[31])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[33] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_clear_subtree_occupation, __pyx_mstate->__pyx_kp_b_iso88591_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[33])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 569};
+    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 719};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_i};
-    __pyx_mstate_global->__pyx_codeobj_tab[32] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_reset_all_occupation, __pyx_mstate->__pyx_kp_b_iso88591_A_E_at1_5_Qe1_q_1F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[32])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[34] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_reset_all_occupation, __pyx_mstate->__pyx_kp_b_iso88591_A_E_at1_5_Qe1_q_1F, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[34])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 589};
+    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 739};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_i, __pyx_mstate->__pyx_n_u_node};
-    __pyx_mstate_global->__pyx_codeobj_tab[33] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_clear_all_dirty, __pyx_mstate->__pyx_kp_b_iso88591_A_E_at1_9AT_Zq_1F_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[33])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[35] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_clear_all_dirty, __pyx_mstate->__pyx_kp_b_iso88591_A_E_at1_9AT_Zq_1F_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[35])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 10, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 599};
+    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 10, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 749};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_n_leaves, __pyx_mstate->__pyx_n_u_max_depth, __pyx_mstate->__pyx_n_u_total_depth, __pyx_mstate->__pyx_n_u_stack, __pyx_mstate->__pyx_n_u_i, __pyx_mstate->__pyx_n_u_d, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_node, __pyx_mstate->__pyx_n_u_avg};
-    __pyx_mstate_global->__pyx_codeobj_tab[34] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_stats, __pyx_mstate->__pyx_kp_b_iso88591_A_A_Q_q_1_a_T_9AT_Zq_81F_uBa_A_H, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[34])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[36] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_stats, __pyx_mstate->__pyx_kp_b_iso88591_A_A_Q_q_1_a_T_9AT_Zq_81F_uBa_A_H, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[36])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 1, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 635};
+    const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 1, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 785};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self};
-    __pyx_mstate_global->__pyx_codeobj_tab[35] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_raw_buffer, __pyx_mstate->__pyx_kp_b_iso88591_A_r_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[35])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[37] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_raw_buffer, __pyx_mstate->__pyx_kp_b_iso88591_A_r_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[37])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 639};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 789};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_off};
-    __pyx_mstate_global->__pyx_codeobj_tab[36] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_node_bytes, __pyx_mstate->__pyx_kp_b_iso88591_A_t2T_uAT_at4r_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[36])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[38] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_get_node_bytes, __pyx_mstate->__pyx_kp_b_iso88591_A_t2T_uAT_at4r_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[38])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {21, 0, 0, 75, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 662};
+    const __Pyx_PyCode_New_function_description descr = {21, 0, 0, 75, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 812};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_seed, __pyx_mstate->__pyx_n_u_obs_packed, __pyx_mstate->__pyx_n_u_alpha_arr, __pyx_mstate->__pyx_n_u_a_arr, __pyx_mstate->__pyx_n_u_d_arr, __pyx_mstate->__pyx_n_u_theta_arr, __pyx_mstate->__pyx_n_u_jtype_arr, __pyx_mstate->__pyx_n_u_has_tool, __pyx_mstate->__pyx_n_u_tool_alpha, __pyx_mstate->__pyx_n_u_tool_a, __pyx_mstate->__pyx_n_u_tool_d, __pyx_mstate->__pyx_n_u_split_dims_arr, __pyx_mstate->__pyx_n_u_n_split_dims, __pyx_mstate->__pyx_n_u_base_ivs, __pyx_mstate->__pyx_n_u_max_depth, __pyx_mstate->__pyx_n_u_min_edge_length, __pyx_mstate->__pyx_n_u_root_plo, __pyx_mstate->__pyx_n_u_root_phi, __pyx_mstate->__pyx_n_u_root_jlo, __pyx_mstate->__pyx_n_u_root_jhi, __pyx_mstate->__pyx_n_u_n_joints, __pyx_mstate->__pyx_n_u_n_dims, __pyx_mstate->__pyx_n_u_n_links, __pyx_mstate->__pyx_n_u_n_tf, __pyx_mstate->__pyx_n_u_n_jm, __pyx_mstate->__pyx_n_u_prefix_bytes, __pyx_mstate->__pyx_n_u_joints_bytes, __pyx_mstate->__pyx_n_u_alpha_p, __pyx_mstate->__pyx_n_u_a_p, __pyx_mstate->__pyx_n_u_d_p, __pyx_mstate->__pyx_n_u_theta_p, __pyx_mstate->__pyx_n_u_jtype_p, __pyx_mstate->__pyx_n_u_split_p, __pyx_mstate->__pyx_n_u_seed_p, __pyx_mstate->__pyx_n_u_n_obs, __pyx_mstate->__pyx_n_u_obs_arr_np, __pyx_mstate->__pyx_n_u_obs_ptr, __pyx_mstate->__pyx_n_u_obs_tup, __pyx_mstate->__pyx_n_u_oi, __pyx_mstate->__pyx_n_u_fk_plo, __pyx_mstate->__pyx_n_u_fk_phi, __pyx_mstate->__pyx_n_u_fk_jlo, __pyx_mstate->__pyx_n_u_fk_jhi, __pyx_mstate->__pyx_n_u_tmp_plo, __pyx_mstate->__pyx_n_u_tmp_phi, __pyx_mstate->__pyx_n_u_tmp_jlo, __pyx_mstate->__pyx_n_u_tmp_jhi, __pyx_mstate->__pyx_n_u_ivs_lo, __pyx_mstate->__pyx_n_u_ivs_hi, __pyx_mstate->__pyx_n_u_civs_lo, __pyx_mstate->__pyx_n_u_civs_hi, __pyx_mstate->__pyx_n_u_di, __pyx_mstate->__pyx_n_u_aabb_l, __pyx_mstate->__pyx_n_u_aabb_r, __pyx_mstate->__pyx_n_u_aabb_u, __pyx_mstate->__pyx_n_u_idx, __pyx_mstate->__pyx_n_u_base, __pyx_mstate->__pyx_n_u_stride, __pyx_mstate->__pyx_n_u_node, __pyx_mstate->__pyx_n_u_aabb_p, __pyx_mstate->__pyx_n_u_left_idx, __pyx_mstate->__pyx_n_u_right_idx, __pyx_mstate->__pyx_n_u_depth, __pyx_mstate->__pyx_n_u_dim, __pyx_mstate->__pyx_n_u_edge, __pyx_mstate->__pyx_n_u_mid, __pyx_mstate->__pyx_n_u_sv, __pyx_mstate->__pyx_n_u_fail_code, __pyx_mstate->__pyx_n_u_n_new_nodes, __pyx_mstate->__pyx_n_u_n_fk_calls, __pyx_mstate->__pyx_n_u_going_left, __pyx_mstate->__pyx_n_u_collide, __pyx_mstate->__pyx_n_u_path, __pyx_mstate->__pyx_n_u_k};
-    __pyx_mstate_global->__pyx_codeobj_tab[37] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_descent_loop, __pyx_mstate->__pyx_kp_b_iso88591_A_IV1A_a_4q_2S_1_E_q_Rs_A_Rs_A_y, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[37])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[39] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_src_forest__hier_core_pyx, __pyx_mstate->__pyx_n_u_descent_loop, __pyx_mstate->__pyx_kp_b_iso88591_A_IV1A_a_4q_2S_1_E_q_Rs_A_Rs_A_y, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[39])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {1, 0, 0, 4, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 1};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_state, __pyx_mstate->__pyx_n_u_dict_2, __pyx_mstate->__pyx_n_u_use_setstate};
-    __pyx_mstate_global->__pyx_codeobj_tab[38] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_stringsource, __pyx_mstate->__pyx_n_u_reduce_cython, __pyx_mstate->__pyx_kp_b_iso88591_T_HD_t7_mSWWaaeeppt_u_C_C_G_G_Y, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[38])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[40] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_stringsource, __pyx_mstate->__pyx_n_u_reduce_cython, __pyx_mstate->__pyx_kp_b_iso88591_T_HD_t7_mSWWaaeeppt_u_C_C_G_G_Y, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[40])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 2, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 16};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_pyx_state};
-    __pyx_mstate_global->__pyx_codeobj_tab[39] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_stringsource, __pyx_mstate->__pyx_n_u_setstate_cython, __pyx_mstate->__pyx_kp_b_iso88591_q_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[39])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[41] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_stringsource, __pyx_mstate->__pyx_n_u_setstate_cython, __pyx_mstate->__pyx_kp_b_iso88591_q_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[41])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 4, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 4};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_pyx_type, __pyx_mstate->__pyx_n_u_pyx_checksum, __pyx_mstate->__pyx_n_u_pyx_state, __pyx_mstate->__pyx_n_u_pyx_result};
-    __pyx_mstate_global->__pyx_codeobj_tab[40] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_stringsource, __pyx_mstate->__pyx_n_u_pyx_unpickle_NodeStore, __pyx_mstate->__pyx_kp_b_iso88591_q_0_kQR_9HAQ_7_1L_a_1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[40])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[42] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_stringsource, __pyx_mstate->__pyx_n_u_pyx_unpickle_NodeStore, __pyx_mstate->__pyx_kp_b_iso88591_q_0_kQR_9HAQ_7_1L_a_1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[42])) goto bad;
   }
   Py_DECREF(tuple_dedup_map);
   return 0;

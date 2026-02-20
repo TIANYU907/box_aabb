@@ -513,29 +513,58 @@ class BoxPlanner:
                 logger.warning("parallel_expand 启用但未生成分区，回退单区扩展")
 
         if not parallel_mode:
+            # ---- 边缘扩张采样状态 ----
+            # expand_target: 当前正在做边缘扩张的 box（None 表示普通采样模式）
+            expand_target: Optional[BoxNode] = None
+            expand_failures = 0
+            boundary_enabled = self.config.boundary_expand_enabled
+            boundary_max_fail = self.config.boundary_expand_max_failures
+
             for iteration in range(self.config.max_iterations):
                 if n_boxes >= self.config.max_box_nodes:
                     break
 
-                q_seed = self._sample_seed(q_start, q_goal, rng)
-                if q_seed is None:
-                    continue
-
-                # 用树的占用状态检查（O(depth)）
-                if self.hier_tree.is_occupied(q_seed):
-                    continue
+                # ---- 采样策略选择 ----
+                if boundary_enabled and expand_target is not None:
+                    # 边缘采样模式：在当前 box 周围采样
+                    q_seed = self._sample_boundary_seed(expand_target, rng)
+                    if q_seed is None:
+                        expand_failures += 1
+                        if expand_failures >= boundary_max_fail:
+                            expand_target = None  # 切回普通采样
+                        continue
+                    if self.hier_tree.is_occupied(q_seed):
+                        expand_failures += 1
+                        if expand_failures >= boundary_max_fail:
+                            expand_target = None
+                        continue
+                else:
+                    # 普通采样模式
+                    q_seed = self._sample_seed(q_start, q_goal, rng)
+                    if q_seed is None:
+                        continue
+                    if self.hier_tree.is_occupied(q_seed):
+                        continue
 
                 nid = forest.allocate_id()
                 ffb_result = self.hier_tree.find_free_box(
                     q_seed, self.obstacles, mark_occupied=True,
                     forest_box_id=nid)
                 if ffb_result is None:
+                    if expand_target is not None:
+                        expand_failures += 1
+                        if expand_failures >= boundary_max_fail:
+                            expand_target = None
                     continue
                 ivs = ffb_result.intervals
                 vol = 1.0
                 for lo, hi in ivs:
                     vol *= max(hi - lo, 0.0)
                 if gmean_edge_length(vol, self._n_dims) < self.config.min_box_size:
+                    if expand_target is not None:
+                        expand_failures += 1
+                        if expand_failures >= boundary_max_fail:
+                            expand_target = None
                     continue
                 if ffb_result.absorbed_box_ids:
                     forest.remove_boxes(ffb_result.absorbed_box_ids)
@@ -548,7 +577,13 @@ class BoxPlanner:
                 )
                 forest.add_box_direct(box)
                 raw_new_boxes.append(box)
-                n_boxes = len(existing_list) + len(raw_new_boxes)
+
+                # 成功生成 box → 切换到对这个新 box 做边缘扩张
+                if boundary_enabled:
+                    expand_target = box
+                    expand_failures = 0
+
+                n_boxes = len(forest.boxes)
 
                 if (iteration + 1) % 20 == 0 and self.config.verbose:
                     logger.info(
@@ -932,6 +967,58 @@ class BoxPlanner:
 
             if not self.collision_checker.check_config_collision(q):
                 return q.copy()
+
+        return None
+
+    # ==================== 边缘扩张 + Box 合并 ====================
+
+    def _sample_boundary_seed(
+        self,
+        box: BoxNode,
+        rng: np.random.Generator,
+    ) -> Optional[np.ndarray]:
+        """在 box 边界外极小距离采样 seed。
+
+        随机选择一个维度和方向（lo 或 hi），在边界外偏移 epsilon，
+        其他维度在 box 范围内均匀采样。裁剪到关节限制内并检查碰撞。
+
+        Returns:
+            无碰撞 seed 或 None
+        """
+        eps = self.config.boundary_expand_epsilon
+        n_dims = self._n_dims
+        max_attempts = 6  # 尝试几个不同的面
+
+        for _ in range(max_attempts):
+            dim = int(rng.integers(0, n_dims))
+            side = int(rng.integers(0, 2))  # 0: lo 侧, 1: hi 侧
+
+            lo_d, hi_d = box.joint_intervals[dim]
+            jl_lo, jl_hi = self.joint_limits[dim]
+
+            if side == 0:
+                target_val = lo_d - eps
+                if target_val < jl_lo:
+                    continue  # 已在关节下限
+            else:
+                target_val = hi_d + eps
+                if target_val > jl_hi:
+                    continue  # 已在关节上限
+
+            q = np.empty(n_dims, dtype=np.float64)
+            for d in range(n_dims):
+                if d == dim:
+                    q[d] = target_val
+                else:
+                    b_lo, b_hi = box.joint_intervals[d]
+                    q[d] = rng.uniform(b_lo, b_hi)
+
+            # 裁剪到关节限制
+            for d in range(n_dims):
+                q[d] = np.clip(q[d], self.joint_limits[d][0], self.joint_limits[d][1])
+
+            if not self.collision_checker.check_config_collision(q):
+                return q
 
         return None
 

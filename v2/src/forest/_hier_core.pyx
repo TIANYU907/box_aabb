@@ -66,6 +66,70 @@ cdef inline float* _aabb_ptr(char* node) noexcept nogil:
     return <float*>(node + _OFF_AABB)
 
 
+# ═══════════════════════════════════════════
+#  递归子树碰撞检测 (promotion 精化)
+#
+#  depth=0: 直接用当前节点的 union AABB 检测 (等价于旧逻辑)
+#  depth=1: 用 2 个子节点的 AABB 分别检测
+#  depth=2: 用 4 个孙子节点的 AABB 分别检测
+#  depth=k: 用 2^k 个叶子/后代节点的 AABB 分别检测
+#
+#  如果所有后代均无碰撞 → 整个区域安全 (返回 False)
+#  任一后代碰撞 → 不安全 (返回 True)
+# ═══════════════════════════════════════════
+
+cdef bint _subtree_collide_recursive(
+    char* base, int stride, int idx,
+    const float* obs_flat, int n_obs,
+    int remaining_depth,
+) noexcept nogil:
+    """递归检测子树 AABB 碰撞。
+
+    remaining_depth=0 → 用当前节点的 AABB 检测。
+    remaining_depth>0 且有子节点 → 递归到子节点。
+    remaining_depth>0 但为叶节点 → 用当前节点的 AABB 检测。
+    """
+    cdef char* node = base + <long long>idx * stride
+    cdef int left_idx, right_idx
+    cdef float* aabb
+
+    if remaining_depth <= 0:
+        # 用当前节点 AABB
+        if _get_u8(node, _OFF_HAS_AABB) == 0:
+            return True  # 无 AABB → 保守返回碰撞
+        aabb = <float*>(node + _OFF_AABB)
+        return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+
+    left_idx = _get_i32(node, _OFF_LEFT)
+    if left_idx < 0:
+        # 叶节点，无法再下潜 → 用当前 AABB
+        if _get_u8(node, _OFF_HAS_AABB) == 0:
+            return True
+        aabb = <float*>(node + _OFF_AABB)
+        return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+
+    right_idx = _get_i32(node, _OFF_RIGHT)
+
+    # 检查子节点是否有 AABB
+    cdef char* left_node = base + <long long>left_idx * stride
+    cdef char* right_node = base + <long long>right_idx * stride
+    if _get_u8(left_node, _OFF_HAS_AABB) == 0 or _get_u8(right_node, _OFF_HAS_AABB) == 0:
+        # 子节点无 AABB → 回退到当前节点
+        if _get_u8(node, _OFF_HAS_AABB) == 0:
+            return True
+        aabb = <float*>(node + _OFF_AABB)
+        return _link_aabbs_collide_flat(aabb, obs_flat, n_obs)
+
+    # 递归：两个子节点都不碰撞才返回 False
+    if _subtree_collide_recursive(base, stride, left_idx,
+                                   obs_flat, n_obs, remaining_depth - 1):
+        return True
+    if _subtree_collide_recursive(base, stride, right_idx,
+                                   obs_flat, n_obs, remaining_depth - 1):
+        return True
+    return False
+
+
 # ─────────────────────────────────────────────
 #  NodeStore — C 级别节点存储管理
 # ─────────────────────────────────────────────
@@ -388,6 +452,47 @@ cdef class NodeStore:
         cdef float* aabb = _aabb_ptr(node)
         return self._link_aabbs_collide_c(aabb, obs_packed)
 
+    def subtree_collide_check(
+        self, int idx, object obs_packed, int promotion_depth,
+    ):
+        """递归子树碰撞检测 (promotion 精化)
+
+        promotion_depth=0: 用当前节点 union AABB (等价于 link_aabbs_collide)
+        promotion_depth=1: 用 2 个子节点 AABB 分别检测
+        promotion_depth=2: 用 4 个孙子节点 AABB 分别检测
+        promotion_depth=k: 用 2^k 个后代节点 AABB 分别检测
+
+        Returns True 表示碰撞 (不安全), False 表示无碰撞 (安全).
+        """
+        if obs_packed is None:
+            return False
+        if promotion_depth <= 0:
+            return self.link_aabbs_collide(idx, obs_packed)
+
+        # 平坦化障碍物 → float* (与 descent_loop 相同格式)
+        cdef int n_obs = len(obs_packed)
+        if n_obs == 0:
+            return False
+        cdef cnp.ndarray[cnp.float32_t, ndim=1] obs_arr = np.empty(
+            n_obs * 7, dtype=np.float32)
+        cdef tuple obs_tup
+        cdef int oi
+        for oi in range(n_obs):
+            obs_tup = <tuple>obs_packed[oi]
+            obs_arr[oi * 7]     = <float>(<int>obs_tup[0])
+            obs_arr[oi * 7 + 1] = <float>obs_tup[1]
+            obs_arr[oi * 7 + 2] = <float>obs_tup[2]
+            obs_arr[oi * 7 + 3] = <float>obs_tup[3]
+            obs_arr[oi * 7 + 4] = <float>obs_tup[4]
+            obs_arr[oi * 7 + 5] = <float>obs_tup[5]
+            obs_arr[oi * 7 + 6] = <float>obs_tup[6]
+        cdef float* obs_ptr = <float*>cnp.PyArray_DATA(obs_arr)
+
+        return _subtree_collide_recursive(
+            self._base, self._stride, idx,
+            obs_ptr, n_obs, promotion_depth,
+        )
+
     # ── AABB union (向上传播的内核) ──
 
     cdef void _union_aabb_c(
@@ -413,7 +518,12 @@ cdef class NodeStore:
     # ── 向上传播 ──
 
     cdef void _propagate_up_c(self, int start_idx) noexcept:
-        """从 start_idx 向上传播 AABB union, 直到 root 或无变化"""
+        """从 start_idx 向上传播 AABB refine, 直到 root 或无变化
+
+        精化策略: dst = intersect(dst, union(left, right))
+        即对 min 维度取 max(old, union), 对 max 维度取 min(old, union),
+        使父节点 AABB 单调收紧。
+        """
         cdef int idx = start_idx
         cdef char* node
         cdef char* left_node
@@ -422,7 +532,7 @@ cdef class NodeStore:
         cdef float* dst
         cdef float* a
         cdef float* b
-        cdef float old_val, new_val
+        cdef float old_val, union_val, new_val
         cdef bint changed
         cdef int i
 
@@ -446,18 +556,33 @@ cdef class NodeStore:
             a = _aabb_ptr(left_node)
             b = _aabb_ptr(right_node)
 
-            # 检查是否有变化 (early-stop)
+            # intersect(old_dst, union(a, b)):
+            #   min dims → new = max(old, union)  (tighten lower bound)
+            #   max dims → new = min(old, union)  (tighten upper bound)
             changed = False
-            for i in range(self._aabb_floats):
-                if i % 6 < 3:
-                    # min 维度
-                    new_val = a[i] if a[i] < b[i] else b[i]
-                else:
-                    # max 维度
-                    new_val = a[i] if a[i] > b[i] else b[i]
-                if dst[i] != new_val:
+            if _get_u8(node, _OFF_HAS_AABB):
+                # dst already has a direct-FK AABB → refine via intersect
+                for i in range(self._aabb_floats):
+                    if i % 6 < 3:
+                        # min 维度: union = min(a, b), new = max(old, union)
+                        union_val = a[i] if a[i] < b[i] else b[i]
+                        new_val = union_val if union_val > dst[i] else dst[i]
+                    else:
+                        # max 维度: union = max(a, b), new = min(old, union)
+                        union_val = a[i] if a[i] > b[i] else b[i]
+                        new_val = union_val if union_val < dst[i] else dst[i]
+                    if dst[i] != new_val:
+                        dst[i] = new_val
+                        changed = True
+            else:
+                # dst has no prior AABB → just store the union
+                for i in range(self._aabb_floats):
+                    if i % 6 < 3:
+                        new_val = a[i] if a[i] < b[i] else b[i]
+                    else:
+                        new_val = a[i] if a[i] > b[i] else b[i]
                     dst[i] = new_val
-                    changed = True
+                changed = True
 
             if changed:
                 _set_u8(node, _OFF_HAS_AABB, 1)
@@ -495,8 +620,33 @@ cdef class NodeStore:
     def mark_occupied(self, int idx, int forest_box_id=-1):
         self._mark_occupied_c(idx, forest_box_id)
 
+    cdef void _unmark_occupied_c(self, int idx) noexcept:
+        """mark_occupied 的精确逆操作：清除占用并向上传播 subtree_occ / subtree_occ_vol 递减"""
+        if not self._occupied[idx]:
+            return
+        self._occupied[idx] = 0
+        self._forest_id[idx] = -1
+
+        cdef char* node = _node_ptr(self._base, self._stride, idx)
+        cdef int depth = _get_i32(node, _OFF_DEPTH)
+        cdef double vol = ldexp(1.0, -depth)   # 2^(-depth)
+
+        self._subtree_occ[idx] -= 1
+        self._subtree_occ_vol[idx] -= vol
+
+        cdef int pidx = _get_i32(node, _OFF_PARENT)
+        while pidx >= 0:
+            self._subtree_occ[pidx] -= 1
+            self._subtree_occ_vol[pidx] -= vol
+            node = _node_ptr(self._base, self._stride, pidx)
+            pidx = _get_i32(node, _OFF_PARENT)
+
+    def unmark_occupied(self, int idx):
+        """mark_occupied 的逆操作：清除节点占用并正确向上传播计数递减"""
+        self._unmark_occupied_c(idx)
+
     cdef void _reset_occupation_c(self, int idx) noexcept:
-        """重置节点占用状态"""
+        """重置节点占用状态（不传播 subtree 计数，仅用于内部）"""
         self._occupied[idx] = 0
         self._forest_id[idx] = -1
 
@@ -880,9 +1030,15 @@ cdef class NodeStore:
                     self._set_aabb_from_buf_c(right_idx, aabb_r)
                     n_fk_calls += 1
 
-                # Union AABB on parent
+                # Refine AABB on parent: intersect(old, union(left, right))
                 _union_aabb_buf_c(aabb_l, aabb_r, n_links, aabb_u)
-                self._set_aabb_from_buf_c(idx, aabb_u)
+                node = _node_ptr(base, stride, idx)
+                if _get_u8(node, _OFF_HAS_AABB):
+                    # Parent already has direct-FK AABB → refine via intersect
+                    _refine_aabb_buf_c(_aabb_ptr(node), aabb_u, n_links)
+                    _set_u8(node, _OFF_DIRTY, 1)
+                else:
+                    self._set_aabb_from_buf_c(idx, aabb_u)
 
                 # FK 状态 = 目标子节点
                 memcpy(fk_plo, tmp_plo, prefix_bytes)

@@ -96,6 +96,10 @@ class PlannerConfig:
     parallel_partition_depth: int = 2
     parallel_partition_dims: Optional[List[int]] = None
     parallel_cross_partition_connect: bool = True
+    # ---- 边缘扩张采样策略 ----
+    boundary_expand_enabled: bool = True
+    boundary_expand_max_failures: int = 5
+    boundary_expand_epsilon: float = 0.01
 
     def to_dict(self) -> Dict[str, Any]:
         from dataclasses import fields as dc_fields
