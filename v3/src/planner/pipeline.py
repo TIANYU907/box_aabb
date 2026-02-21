@@ -1644,6 +1644,250 @@ def run_method_with_bridge(method_fn, method_name, prep, cfg, q_start,
     return plan_result
 
 
+def incremental_regrow(
+    seeds: List[np.ndarray],
+    planner: SBFPlanner,
+    forest_obj: SafeBoxForest,
+    boxes: Dict[int, BoxNode],
+    adj: Dict[int, Set[int]],
+    uf: UnionFind,
+    obs_packed,
+    min_box_size: float,
+    budget: int = 60,
+    rng: Optional[np.random.Generator] = None,
+    ndim: int = 7,
+) -> int:
+    """在释放的 hier_tree 区域中增量补种 box.
+
+    Seeds 来源:
+      1. 被移除 box 的 seed_config (最高优先)
+      2. sample_unoccupied_seed (自然偏向被释放区域)
+
+    Returns:
+        新增 box 数量
+    """
+    n_added = 0
+    attempted = set()
+
+    def _try_expand_one(q):
+        nonlocal n_added
+        # 已在某 box 内部则跳过
+        existing = find_box_containing(q, boxes)
+        if existing is not None:
+            return
+        if planner.hier_tree.is_occupied(q):
+            return
+        nid = forest_obj.allocate_id()
+        ffb = planner.hier_tree.find_free_box(
+            q, planner.obstacles, mark_occupied=True,
+            forest_box_id=nid, obs_packed=obs_packed)
+        if ffb is None:
+            return
+        vol = 1.0
+        for lo, hi in ffb.intervals:
+            vol *= max(hi - lo, 0)
+        if gmean_edge_length(vol, ndim) < min_box_size:
+            return
+        box = BoxNode(node_id=nid, joint_intervals=ffb.intervals,
+                      seed_config=q.copy(), volume=vol)
+        if ffb.absorbed_box_ids:
+            for aid in ffb.absorbed_box_ids:
+                boxes.pop(aid, None)
+                forest_obj.boxes.pop(aid, None)
+                if aid in adj:
+                    nbrs = adj.pop(aid, set())
+                    for nb in nbrs:
+                        if nb in adj:
+                            adj[nb].discard(aid)
+        forest_obj.add_box_direct(box)
+        boxes[nid] = box
+        # 增量邻接
+        _incremental_adj_uf(box, boxes, adj, uf)
+        n_added += 1
+
+    # Phase 1: 用被移除 box 的 seed 补种
+    for seed in seeds:
+        if n_added >= budget:
+            break
+        key = tuple(np.round(seed, 8))
+        if key in attempted:
+            continue
+        attempted.add(key)
+        _try_expand_one(seed)
+
+    # Phase 2: sample_unoccupied_seed (偏向被释放空间)
+    if rng is not None:
+        miss = 0
+        max_miss = 15
+        while n_added < budget and miss < max_miss:
+            try:
+                q = planner.hier_tree.sample_unoccupied_seed(rng)
+            except ValueError:
+                break
+            if q is None:
+                miss += 1
+                continue
+            if planner.collision_checker.check_config_collision(q):
+                miss += 1
+                continue
+            _try_expand_one(q)
+            if n_added > 0:
+                miss = 0
+            else:
+                miss += 1
+
+    return n_added
+
+
+def _incremental_adj_uf(
+    box: BoxNode,
+    boxes: Dict[int, BoxNode],
+    adj: Dict[int, Set[int]],
+    uf: UnionFind,
+    tol: float = 1e-9,
+) -> None:
+    """增量更新邻接和 UnionFind — 仅检查新 box 与已有 box 的重叠."""
+    nid = box.node_id
+    adj.setdefault(nid, set())
+    if nid not in uf._parent:
+        uf._parent[nid] = nid
+        uf._rank[nid] = 0
+    ndim = len(box.joint_intervals)
+    for bid, other in boxes.items():
+        if bid == nid:
+            continue
+        overlap = True
+        for d in range(ndim):
+            if (box.joint_intervals[d][1] < other.joint_intervals[d][0] - tol or
+                    other.joint_intervals[d][1] < box.joint_intervals[d][0] - tol):
+                overlap = False
+                break
+        if overlap:
+            adj[nid].add(bid)
+            adj.setdefault(bid, set()).add(nid)
+            uf.union(nid, bid)
+
+
+def incremental_obstacle_update(
+    prep: dict,
+    scene: Scene,
+    added_obstacles: list,
+    removed_obstacle_names: list,
+    regrow_budget: int = 60,
+    rng: Optional[np.random.Generator] = None,
+) -> Dict:
+    """增量更新 forest 以响应障碍物变化 (核心 API).
+
+    流程:
+      1. 对新增障碍物 → invalidate + remove colliding boxes
+      2. 更新 scene (添加/移除)
+      3. 重建 CollisionChecker
+      4. 在释放空间中 regrow
+
+    Args:
+        prep: grow_and_prepare 返回的 dict (含 planner, forest_obj, boxes 等)
+        scene: 当前场景 (会被就地修改)
+        added_obstacles: 新增障碍物列表 [{min_point, max_point, name}]
+        removed_obstacle_names: 要移除的障碍物名称列表
+        regrow_budget: 补种预算
+        rng: 随机数生成器
+
+    Returns:
+        dict 包含时间分解和统计信息
+    """
+    planner = prep['planner']
+    forest_obj = prep['forest_obj']
+    boxes = prep['boxes']
+    ndim = planner.robot.n_joints
+
+    # 重建 adj + uf (如果 prep 中没有)
+    if 'adj' not in prep or 'uf' not in prep:
+        adj, uf, _ = _build_adjacency_and_islands(boxes)
+        prep['adj'] = adj
+        prep['uf'] = uf
+    adj = prep['adj']
+    uf = prep['uf']
+
+    n_before = len(forest_obj.boxes)
+    all_removed_seeds: List[np.ndarray] = []
+    total_invalidated = 0
+
+    # ── Step 1: invalidate against new obstacles ──
+    t0 = time.perf_counter()
+    for obs_info in added_obstacles:
+        from forest.models import Obstacle
+        obs = Obstacle(
+            min_point=np.asarray(obs_info['min_point']),
+            max_point=np.asarray(obs_info['max_point']),
+            name=obs_info.get('name', 'new_obs'),
+        )
+        colliding = forest_obj.invalidate_against_obstacle(
+            obs, planner.robot, safety_margin=0.0)
+        total_invalidated += len(colliding)
+        removed = forest_obj.remove_invalidated(colliding)
+        all_removed_seeds.extend(
+            b.seed_config for b in removed if b.seed_config is not None)
+        # 从 adj 中移除
+        for bid in colliding:
+            boxes.pop(bid, None)
+            if bid in adj:
+                nbrs = adj.pop(bid, set())
+                for nb in nbrs:
+                    if nb in adj:
+                        adj[nb].discard(bid)
+    invalidate_ms = (time.perf_counter() - t0) * 1000
+
+    # ── Step 2: update scene ──
+    t0 = time.perf_counter()
+    for name in removed_obstacle_names:
+        scene.remove_obstacle(name)
+    for obs_info in added_obstacles:
+        scene.add_obstacle(
+            obs_info['min_point'], obs_info['max_point'],
+            name=obs_info.get('name', 'new_obs'))
+    # 重建 collision checker
+    planner.collision_checker = CollisionChecker(
+        robot=planner.robot, scene=scene)
+    planner.obstacles = scene.get_obstacles()
+    obs_packed = planner.hier_tree._prepack_obstacles_c(planner.obstacles)
+    scene_ms = (time.perf_counter() - t0) * 1000
+
+    # ── Step 3: rebuild UF ──
+    t0 = time.perf_counter()
+    uf = UnionFind(list(adj.keys()))
+    for bid, nbrs in adj.items():
+        for nb in nbrs:
+            uf.union(bid, nb)
+    prep['uf'] = uf
+    uf_ms = (time.perf_counter() - t0) * 1000
+
+    # ── Step 4: regrow ──
+    t0 = time.perf_counter()
+    n_regrown = incremental_regrow(
+        seeds=all_removed_seeds,
+        planner=planner, forest_obj=forest_obj,
+        boxes=boxes, adj=adj, uf=uf,
+        obs_packed=obs_packed,
+        min_box_size=planner.config.min_box_size,
+        budget=regrow_budget, rng=rng, ndim=ndim,
+    )
+    regrow_ms = (time.perf_counter() - t0) * 1000
+
+    total_ms = invalidate_ms + scene_ms + uf_ms + regrow_ms
+    return dict(
+        n_before=n_before,
+        n_after=len(forest_obj.boxes),
+        n_invalidated=total_invalidated,
+        n_removed_seeds=len(all_removed_seeds),
+        n_regrown=n_regrown,
+        invalidate_ms=invalidate_ms,
+        scene_ms=scene_ms,
+        uf_rebuild_ms=uf_ms,
+        regrow_ms=regrow_ms,
+        total_ms=total_ms,
+    )
+
+
 def run_method_visgraph(prep, cfg, q_start, q_goal, collision_checker, ndim):
     """运行 Visibility Graph 方法."""
     boxes = prep['boxes']

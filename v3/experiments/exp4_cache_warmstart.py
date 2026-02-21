@@ -19,7 +19,6 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -55,110 +54,88 @@ def run(quick: bool = False) -> Path:
     print(f"  Seeds: {n_seeds}")
     print()
 
+    from planner.sbf_planner import SBFPlanner
+    from planner.models import SBFConfig
+
     for seed in range(n_seeds):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            cache_path = Path(tmpdir) / "test.hcache"
+        # ── Run 1: 冷启动 (no_cache=True → 不加载 HCACHE) ──
+        cfg = SBFConfig(
+            max_box_nodes=200,
+            min_box_size=0.1,
+            verbose=False,
+        )
+        planner_cold = SBFPlanner(robot=robot, scene=scene,
+                                   config=cfg, no_cache=True)
+        t0 = time.perf_counter()
+        r1 = planner_cold.plan(q_start, q_goal, seed=seed)
+        t_cold = time.perf_counter() - t0
 
-            # ── Run 1: 冷启动 (no cache) ──
-            from planner.sbf_planner import SBFPlanner
-            from planner.models import SBFConfig
+        n_boxes_cold = len(r1.forest.boxes) if r1.forest else 0
+        results.add(SingleTrialResult(
+            scene_name="panda_8obs",
+            planner_name="SBF-ColdStart",
+            seed=seed, trial=0,
+            result={
+                "success": r1.success,
+                "planning_time": t_cold,
+                "mode": "cold",
+                "n_boxes": n_boxes_cold,
+            },
+            wall_clock=t_cold,
+        ))
 
-            cfg = SBFConfig(
-                max_box_nodes=200,
-                min_box_size=0.1,
-                forest_path=None,
-                verbose=False,
-            )
-            planner = SBFPlanner(robot=robot, scene=scene,
-                                  config=cfg, no_cache=True)
-            t0 = time.perf_counter()
-            r1 = planner.plan(q_start, q_goal, seed=seed)
-            t_cold = time.perf_counter() - t0
+        # ── Run 2: 热启动 (no_cache=False → 加载 auto-saved HCACHE) ──
+        # HierAABBTree.auto_load() 自动从 .cache/ 加载已有的 FK 缓存
+        # 这意味着 boundary_expand 中大量 FK 计算可以跳过
+        planner_warm = SBFPlanner(robot=robot, scene=scene,
+                                   config=cfg, no_cache=False)
+        t0 = time.perf_counter()
+        r2 = planner_warm.plan(q_start, q_goal, seed=seed)
+        t_warm = time.perf_counter() - t0
 
-            results.add(SingleTrialResult(
-                scene_name="panda_8obs",
-                planner_name="SBF-ColdStart",
-                seed=seed, trial=0,
-                result={
-                    "success": r1.success,
-                    "planning_time": t_cold,
-                    "mode": "cold",
-                    "n_boxes": len(r1.forest.boxes) if r1.forest else 0,
-                },
-                wall_clock=t_cold,
-            ))
+        n_boxes_warm = len(r2.forest.boxes) if r2.forest else 0
+        speedup = t_cold / t_warm if t_warm > 0 else 0
+        results.add(SingleTrialResult(
+            scene_name="panda_8obs",
+            planner_name="SBF-WarmStart",
+            seed=seed, trial=0,
+            result={
+                "success": r2.success,
+                "planning_time": t_warm,
+                "mode": "warm",
+                "n_boxes": n_boxes_warm,
+                "speedup": speedup,
+            },
+            wall_clock=t_warm,
+        ))
 
-            # Save cache
-            if r1.forest and hasattr(r1.forest, '_tree'):
-                try:
-                    r1.forest._tree.save_binary(str(cache_path))
-                    cache_saved = True
-                except Exception:
-                    cache_saved = False
-            else:
-                cache_saved = False
+        # ── Run 3: 跨场景 cache 复用 ──
+        # 同一 robot 的 HCACHE 对不同场景仍有效 (AABB tree 不依赖场景)
+        scene_cfg_b = load_scenes(["panda_15obs_moderate"])[0]
+        _, scene_b, _ = load_scene_from_config(scene_cfg_b)
 
-            # ── Run 2: 热启动 (with cache) ──
-            if cache_saved:
-                cfg2 = SBFConfig(
-                    max_box_nodes=200,
-                    min_box_size=0.1,
-                    forest_path=str(cache_path),
-                    verbose=False,
-                )
-                planner2 = SBFPlanner(robot=robot, scene=scene,
-                                       config=cfg2, no_cache=False)
-                t0 = time.perf_counter()
-                r2 = planner2.plan(q_start, q_goal, seed=seed)
-                t_warm = time.perf_counter() - t0
+        planner_cross = SBFPlanner(robot=robot, scene=scene_b,
+                                    config=cfg, no_cache=False)
+        t0 = time.perf_counter()
+        r3 = planner_cross.plan(q_start, q_goal, seed=seed)
+        t_cross = time.perf_counter() - t0
 
-                results.add(SingleTrialResult(
-                    scene_name="panda_8obs",
-                    planner_name="SBF-WarmStart",
-                    seed=seed, trial=0,
-                    result={
-                        "success": r2.success,
-                        "planning_time": t_warm,
-                        "mode": "warm",
-                        "n_boxes": len(r2.forest.boxes) if r2.forest else 0,
-                        "speedup": t_cold / t_warm if t_warm > 0 else 0,
-                    },
-                    wall_clock=t_warm,
-                ))
+        n_boxes_cross = len(r3.forest.boxes) if r3.forest else 0
+        results.add(SingleTrialResult(
+            scene_name="panda_15obs",
+            planner_name="SBF-CrossSceneCache",
+            seed=seed, trial=0,
+            result={
+                "success": r3.success,
+                "planning_time": t_cross,
+                "mode": "cross_scene_cache",
+                "n_boxes": n_boxes_cross,
+            },
+            wall_clock=t_cross,
+        ))
 
-            # ── Run 3: 跨场景 cache 复用 ──
-            if cache_saved:
-                scene_cfg_b = load_scenes(["panda_15obs_moderate"])[0]
-                _, scene_b, _ = load_scene_from_config(scene_cfg_b)
-
-                cfg3 = SBFConfig(
-                    max_box_nodes=200,
-                    min_box_size=0.1,
-                    forest_path=str(cache_path),
-                    verbose=False,
-                )
-                planner3 = SBFPlanner(robot=robot, scene=scene_b,
-                                       config=cfg3, no_cache=False)
-                t0 = time.perf_counter()
-                r3 = planner3.plan(q_start, q_goal, seed=seed)
-                t_cross = time.perf_counter() - t0
-
-                results.add(SingleTrialResult(
-                    scene_name="panda_15obs",
-                    planner_name="SBF-CrossSceneCache",
-                    seed=seed, trial=0,
-                    result={
-                        "success": r3.success,
-                        "planning_time": t_cross,
-                        "mode": "cross_scene_cache",
-                        "n_boxes": len(r3.forest.boxes) if r3.forest else 0,
-                    },
-                    wall_clock=t_cross,
-                ))
-
-        logger.info("seed=%d cold=%.3fs warm=%.3fs",
-                     seed, t_cold,
-                     t_warm if cache_saved else float('nan'))
+        logger.info("seed=%d cold=%.3fs warm=%.3fs cross=%.3fs",
+                     seed, t_cold, t_warm, t_cross)
 
     out_path = OUTPUT_DIR / "exp4_cache_warmstart.json"
     results.metadata = {"n_seeds": n_seeds}

@@ -147,3 +147,36 @@ class SBFAdapter(BasePlanner):
     def reset(self) -> None:
         """清除 forest — 下次 plan() 将重新 grow."""
         self._prep = None
+    def update_scene_incremental(
+        self,
+        new_scene,
+        added_obstacles: list = None,
+        removed_obstacle_names: list = None,
+        regrow_budget: int = 60,
+        rng=None,
+    ) -> dict:
+        """增量更新障碍物, 复用已有 forest.
+
+        Args:
+            new_scene: 更新后的 Scene (仅用于引用, 实际修改由 pipeline 完成)
+            added_obstacles: [{'min_point': [...], 'max_point': [...], 'name': ...}]
+            removed_obstacle_names: ['obs_name', ...]
+            regrow_budget: 补种预算
+            rng: 随机数生成器
+
+        Returns:
+            增量更新统计信息 dict
+        """
+        from planner.pipeline import incremental_obstacle_update
+
+        if self._prep is None:
+            raise RuntimeError("必须先调用 plan() 构建 forest 才能增量更新")
+
+        return incremental_obstacle_update(
+            prep=self._prep,
+            scene=self._scene,
+            added_obstacles=added_obstacles or [],
+            removed_obstacle_names=removed_obstacle_names or [],
+            regrow_budget=regrow_budget,
+            rng=rng,
+        )

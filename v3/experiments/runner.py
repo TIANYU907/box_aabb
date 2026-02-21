@@ -75,6 +75,7 @@ class ExperimentResults:
             "n_trials": len(self.trials),
             "results": self.to_list(),
         }
+        data = _sanitize_for_json(data)
         with open(p, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False,
                       default=_json_default)
@@ -358,14 +359,41 @@ class ExperimentRunner:
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _json_default(obj):
-    """JSON serialization fallback."""
+def _sanitize_for_json(obj):
+    """递归清理数据结构中的 NaN / ±Infinity → None (JSON 合规)."""
+    if isinstance(obj, float):
+        if obj != obj or obj == float('inf') or obj == float('-inf'):
+            return None
+        return obj
+    if isinstance(obj, np.floating):
+        v = float(obj)
+        if v != v or v == float('inf') or v == float('-inf'):
+            return None
+        return v
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, (np.bool_,)):
+        return bool(obj)
     if isinstance(obj, np.ndarray):
-        return obj.tolist()
+        return _sanitize_for_json(obj.tolist())
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(v) for v in obj]
+    return obj
+
+
+def _json_default(obj):
+    """JSON serialization fallback (处理 numpy 类型)."""
+    if isinstance(obj, np.ndarray):
+        return _sanitize_for_json(obj.tolist())
     if isinstance(obj, np.integer):
         return int(obj)
     if isinstance(obj, np.floating):
-        return float(obj)
+        v = float(obj)
+        if v != v or v == float('inf') or v == float('-inf'):
+            return None
+        return v
     if isinstance(obj, (np.bool_,)):
         return bool(obj)
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")

@@ -36,12 +36,14 @@ def _measure_aabb_volume(robot, intervals):
     """Compute AABB volume for given joint intervals using interval FK."""
     from aabb.calculator import AABBCalculator
     calc = AABBCalculator(robot)
-    aabb = calc.compute_aabb(intervals)
-    if aabb is None:
-        return 0.0
+    result = calc.compute_envelope(intervals, method='interval')
+    min_pt, max_pt = result.get_robot_aabb()
     vol = 1.0
-    for lo, hi in aabb:
-        vol *= (hi - lo)
+    for lo, hi in zip(min_pt, max_pt):
+        d = hi - lo
+        if d <= 0:
+            return 0.0
+        vol *= d
     return vol
 
 

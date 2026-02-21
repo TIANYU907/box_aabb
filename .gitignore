@@ -4,10 +4,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+v3/experiments/output/*
+v3/output/*
 # C extensions
 *.so
 *.whl
 *.zip
+*.json
+*.pdf
+*.tex
 # Distribution / packaging
 .Python
 build/
