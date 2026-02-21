@@ -20,8 +20,19 @@ from forest.models import BoxNode
 from .models import BoxTree, Edge
 from .box_tree import BoxTreeManager
 from forest.collision import CollisionChecker
+from forest.connectivity import _nearest_point_wrapped
 
 logger = logging.getLogger(__name__)
+
+
+def _geodesic_dist(
+    a: np.ndarray, b: np.ndarray, period: Optional[float],
+) -> float:
+    if period is None:
+        return float(np.linalg.norm(b - a))
+    half = period / 2.0
+    diff = ((b - a) + half) % period - half
+    return float(np.linalg.norm(diff))
 
 
 class TreeConnector:
@@ -49,12 +60,14 @@ class TreeConnector:
         max_attempts: int = 50,
         connection_radius: float = 2.0,
         segment_resolution: float = 0.05,
+        period: Optional[float] = None,
     ) -> None:
         self.tree_manager = tree_manager
         self.collision_checker = collision_checker
         self.max_attempts = max_attempts
         self.connection_radius = connection_radius
         self.segment_resolution = segment_resolution
+        self.period = period
         self._next_edge_id = 0
 
     def _allocate_edge_id(self) -> int:
@@ -168,12 +181,12 @@ class TreeConnector:
                 continue
 
             # 在 box_a 表面取离 box_b 最近的点
-            q_a = box_a.nearest_point_to(box_b.center)
-            q_b = box_b.nearest_point_to(box_a.center)
+            q_a = _nearest_point_wrapped(box_a, box_b.center, self.period)
+            q_b = _nearest_point_wrapped(box_b, box_a.center, self.period)
 
             # 验证线段无碰撞
             if not self.collision_checker.check_segment_collision(
-                q_a, q_b, self.segment_resolution
+                q_a, q_b, self.segment_resolution, period=self.period
             ):
                 edge = Edge(
                     edge_id=self._allocate_edge_id(),
@@ -203,7 +216,7 @@ class TreeConnector:
 
         for box_a in tree_a.nodes.values():
             for box_b in tree_b.nodes.values():
-                dist = float(np.linalg.norm(box_a.center - box_b.center))
+                dist = _geodesic_dist(box_a.center, box_b.center, self.period)
                 pairs.append((box_a, box_b, dist))
 
         pairs.sort(key=lambda x: x[2])
@@ -268,18 +281,18 @@ class TreeConnector:
             return None
 
         # 在 box 表面取最近点
-        q_box = box.nearest_point_to(config)
+        q_box = _nearest_point_wrapped(box, config, self.period)
 
         # 验证线段
         if self.collision_checker.check_segment_collision(
-            config, q_box, self.segment_resolution
+            config, q_box, self.segment_resolution, period=self.period
         ):
             logger.warning("%s 点到最近 box %d 的连接线段存在碰撞", label, box.node_id)
             # 尝试其他 box
             for candidate in self._find_candidates_for_point(config, exclude=box.node_id):
-                q_cand = candidate.nearest_point_to(config)
+                q_cand = _nearest_point_wrapped(candidate, config, self.period)
                 if not self.collision_checker.check_segment_collision(
-                    config, q_cand, self.segment_resolution
+                    config, q_cand, self.segment_resolution, period=self.period
                 ):
                     edge = Edge(
                         edge_id=self._allocate_edge_id(),
@@ -313,7 +326,8 @@ class TreeConnector:
     ) -> List[BoxNode]:
         """找出离 config 最近的若干 box（排除指定 box）"""
         all_boxes = self.tree_manager.get_all_boxes()
-        candidates = [(b, b.distance_to_config(config))
+        candidates = [(b, _geodesic_dist(
+            _nearest_point_wrapped(b, config, self.period), config, self.period))
                       for b in all_boxes if b.node_id != exclude]
         candidates.sort(key=lambda x: x[1])
         return [b for b, _ in candidates[:max_candidates]]
@@ -406,22 +420,25 @@ class TreeConnector:
         boxes: Dict[int, BoxNode],
     ) -> Optional[int]:
         """将一个点连接到 box 集合中最近的 box"""
-        # 1. 检查是否在某个 box 内
+        # 1. 检查是否在某个 box 内（考虑周期 wrap）
         for box in boxes.values():
-            if box.contains(config):
+            if self._box_contains(box, config):
                 logger.info("%s 点在 box %d 内", label, box.node_id)
                 return box.node_id
 
         # 2. 找最近的 box + 线段碰撞检测
         candidates = sorted(
             boxes.values(),
-            key=lambda b: b.distance_to_config(config),
+            key=lambda b: _geodesic_dist(
+                _nearest_point_wrapped(b, config, self.period),
+                config, self.period),
         )
 
         for box in candidates[:20]:
-            q_box = box.nearest_point_to(config)
+            q_box = _nearest_point_wrapped(box, config, self.period)
             if not self.collision_checker.check_segment_collision(
-                config, q_box, self.segment_resolution
+                config, q_box, self.segment_resolution,
+                period=self.period,
             ):
                 edge = Edge(
                     edge_id=self._allocate_edge_id(),
@@ -434,14 +451,33 @@ class TreeConnector:
                     is_collision_free=True,
                 )
                 edges.append(edge)
+                d = _geodesic_dist(
+                    _nearest_point_wrapped(box, config, self.period),
+                    config, self.period)
                 logger.info(
                     "%s 点通过线段连接到 box %d (距离 %.4f)",
-                    label, box.node_id, box.distance_to_config(config),
+                    label, box.node_id, d,
                 )
                 return box.node_id
 
         logger.warning("%s 点无法连接到任何 box", label)
         return None
+
+    def _box_contains(self, box: BoxNode, config: np.ndarray) -> bool:
+        """检查 config 是否在 box 内（考虑周期 wrap）。"""
+        if self.period is None:
+            return box.contains(config)
+        p = self.period
+        for i, (lo, hi) in enumerate(box.joint_intervals):
+            c = config[i]
+            if lo - 1e-10 <= c <= hi + 1e-10:
+                continue
+            if lo - 1e-10 <= c + p <= hi + 1e-10:
+                continue
+            if lo - 1e-10 <= c - p <= hi + 1e-10:
+                continue
+            return False
+        return True
 
     # ==================== 图构建 ====================
 
@@ -552,7 +588,7 @@ class TreeConnector:
                             close_dims += 1
                     if close_dims == 0:
                         continue
-                    dist = float(np.linalg.norm(a_center - b.center))
+                    dist = _geodesic_dist(a_center, b.center, self.period)
                     if dist <= self.connection_radius * 2.0:
                         candidates.append((dist, a_id, b_id))
 
@@ -564,10 +600,11 @@ class TreeConnector:
                 seen.add(key)
                 a = boxes[a_id]
                 b = boxes[b_id]
-                q_a = a.nearest_point_to(b.center)
-                q_b = b.nearest_point_to(a.center)
+                q_a = _nearest_point_wrapped(a, b.center, self.period)
+                q_b = _nearest_point_wrapped(b, a.center, self.period)
                 if self.collision_checker.check_segment_collision(
                     q_a, q_b, self.segment_resolution,
+                    period=self.period,
                 ):
                     continue
                 edge = Edge(

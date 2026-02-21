@@ -682,16 +682,17 @@ def main():
     # ══════════════════════════════════════════════════════════════
     print("\n[Phase 3] Adjacency, islands & bridging ...")
     boxes = forest_obj.boxes
-    adj, uf, islands = _build_adjacency_and_islands(boxes)
+
+    # 周期 (所有 revolute joint 假设同周期)
+    jl = robot.joint_limits[0]
+    period = float(jl[1] - jl[0])  # 2π
+
+    adj, uf, islands = _build_adjacency_and_islands(boxes, period=period)
     n_islands_before = len(islands)
     print(f"  Islands: {n_islands_before}, boxes: {len(boxes)}")
 
     src = find_box_containing(q_start, boxes)
     tgt = find_box_containing(q_goal, boxes)
-
-    # 周期 (所有 revolute joint 假设同周期)
-    jl = robot.joint_limits[0]
-    period = float(jl[1] - jl[0])  # 2π
 
     bridge_edges = []
     bridge_boxes_list = []
@@ -725,7 +726,7 @@ def main():
 
         # 重建 adj
         boxes = forest_obj.boxes
-        adj, uf, islands = _build_adjacency_and_islands(boxes)
+        adj, uf, islands = _build_adjacency_and_islands(boxes, period=period)
         # add bridge edges
         for e in bridge_edges:
             s_bid = find_box_containing(e.source_config, boxes)

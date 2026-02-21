@@ -283,53 +283,105 @@ def _check_segments_batch(
     return collides
 
 
-def _build_kdtree(boxes: Dict[int, BoxNode]):
-    """构建 box centers 的 cKDTree, 返回 (kd, id_list, id_to_idx)."""
+def _geodesic_center_dists(centers: np.ndarray, period: Optional[float]) -> np.ndarray:
+    """计算所有 center 对之间的距离矩阵 (N×N).
+
+    period=None 用欧几里得, 否则用环面测地线距离.
+    """
+    if period is None:
+        from scipy.spatial.distance import cdist
+        return cdist(centers, centers)
+    # 环面: 每维取 min(|d|, period-|d|)
+    diff = centers[:, None, :] - centers[None, :, :]  # (N, N, D)
+    diff = np.abs(diff)
+    diff = np.minimum(diff, period - diff)
+    return np.sqrt(np.sum(diff ** 2, axis=2))  # (N, N)
+
+
+def _build_kdtree(boxes: Dict[int, BoxNode], period: Optional[float] = None):
+    """构建 box centers 索引.
+
+    当 period=None 时使用 cKDTree 加速;
+    当 period 不为 None 时, cKDTree 不支持环面距离, 退化为全量距离矩阵.
+    返回 (kd_or_dist_matrix, id_list, id_to_idx, centers).
+    """
     id_list = list(boxes.keys())
     centers = np.array([boxes[bid].center for bid in id_list])
-    kd = cKDTree(centers)
     id_to_idx = {bid: i for i, bid in enumerate(id_list)}
-    return kd, id_list, id_to_idx, centers
+    if period is None:
+        kd = cKDTree(centers)
+        return kd, id_list, id_to_idx, centers
+    else:
+        # 返回 (N,N) 距离矩阵替代 KD-Tree
+        dist_mat = _geodesic_center_dists(centers, period)
+        return dist_mat, id_list, id_to_idx, centers
 
 
-def _find_closest_pairs_kdtree(
+def _find_closest_pairs(
     island_a: Set[int],
     island_b: Set[int],
     boxes: Dict[int, BoxNode],
     k: int,
-    kd: cKDTree,
+    kd_or_dist: object,
     id_list: List[int],
     id_to_idx: Dict[int, int],
     centers: np.ndarray,
+    period: Optional[float] = None,
 ) -> List[Tuple[BoxNode, BoxNode, float]]:
-    """用 KD-Tree 找两岛之间最近的 k 对 box (O(|A|·k·logN))."""
+    """找两岛之间最近的 k 对 box.
+
+    period=None 使用 cKDTree (O(|A|·k·logN));
+    period!=None 使用预计算距离矩阵 (O(|A|·|B|)).
+    """
     b_set = island_b
-    # A 侧 centers (跳过不在 id_to_idx 中的 ID, 可能因 bridge 内部变化)
     a_ids = [bid for bid in island_a if bid in id_to_idx]
     if not a_ids:
         return []
-    a_idxs = [id_to_idx[bid] for bid in a_ids]
-    a_centers = centers[a_idxs]  # (|A|, D)
 
-    # 查询时多取一些近邻, 因为不是所有近邻都属于 island_b
-    n_query = min(k * 5 + 20, len(id_list))
-    dists_all, idxs_all = kd.query(a_centers, k=n_query)
-    # dists_all: (|A|, n_query), idxs_all: (|A|, n_query)
-    if dists_all.ndim == 1:
-        dists_all = dists_all.reshape(-1, 1)
-        idxs_all = idxs_all.reshape(-1, 1)
+    if period is None:
+        # --- KD-Tree 路径 ---
+        kd = kd_or_dist
+        a_idxs = [id_to_idx[bid] for bid in a_ids]
+        a_centers = centers[a_idxs]
+        n_query = min(k * 5 + 20, len(id_list))
+        dists_all, idxs_all = kd.query(a_centers, k=n_query)
+        if dists_all.ndim == 1:
+            dists_all = dists_all.reshape(-1, 1)
+            idxs_all = idxs_all.reshape(-1, 1)
 
-    pairs: List[Tuple[BoxNode, BoxNode, float]] = []
-    for row, a_bid in enumerate(a_ids):
-        for col in range(n_query):
-            nn_idx = idxs_all[row, col]
-            nn_bid = id_list[nn_idx]
-            if nn_bid in b_set:
-                pairs.append((boxes[a_bid], boxes[nn_bid], float(dists_all[row, col])))
-                if len(pairs) >= k * 3:  # 收集足够多后提前退出
-                    break
-        if len(pairs) >= k * 3:
-            break
+        pairs: List[Tuple[BoxNode, BoxNode, float]] = []
+        for row, a_bid in enumerate(a_ids):
+            for col in range(n_query):
+                nn_idx = idxs_all[row, col]
+                nn_bid = id_list[nn_idx]
+                if nn_bid in b_set:
+                    pairs.append((boxes[a_bid], boxes[nn_bid],
+                                  float(dists_all[row, col])))
+                    if len(pairs) >= k * 3:
+                        break
+            if len(pairs) >= k * 3:
+                break
+    else:
+        # --- 距离矩阵路径 (geodesic) ---
+        dist_mat = kd_or_dist  # (N, N)
+        a_idxs = np.array([id_to_idx[bid] for bid in a_ids])
+        b_ids = [bid for bid in island_b if bid in id_to_idx]
+        if not b_ids:
+            return []
+        b_idxs = np.array([id_to_idx[bid] for bid in b_ids])
+        # (|A|, |B|) 子矩阵
+        sub = dist_mat[np.ix_(a_idxs, b_idxs)]
+        # 展平取最小的 k*3 对
+        flat = sub.ravel()
+        n_take = min(k * 3, len(flat))
+        top_flat = np.argpartition(flat, n_take - 1)[:n_take]
+        top_flat = top_flat[np.argsort(flat[top_flat])]
+        pairs = []
+        for fi in top_flat:
+            ai = int(fi // len(b_ids))
+            bi = int(fi % len(b_ids))
+            pairs.append((boxes[a_ids[ai]], boxes[b_ids[bi]],
+                          float(flat[fi])))
 
     pairs.sort(key=lambda x: x[2])
     return pairs[:k]
@@ -447,8 +499,8 @@ def bridge_islands(
         if src_bid is not None and uf.same(src_bid, tgt_bid):
             break
 
-        # ---- (B) 每轮重建 KD-Tree ----
-        kd, id_list, id_to_idx, centers = _build_kdtree(boxes)
+        # ---- (B) 每轮重建索引 (KD-Tree 或 geodesic 距离矩阵) ----
+        kd_or_dist, id_list, id_to_idx, centers = _build_kdtree(boxes, period)
 
         # (C) 确定本轮要桥接的岛对
         if src_bid is not None:
@@ -498,17 +550,29 @@ def bridge_islands(
                 if not anchor_idxs:
                     continue
                 anchor_ctrs = centers[anchor_idxs]
-                # 按距目标排序，取最近几个做出发点
-                dists_to_tgt = np.linalg.norm(anchor_ctrs - target_center, axis=1)
+                # 按距目标排序 (geodesic)，取最近几个做出发点
+                if period is not None:
+                    diff_t = np.abs(anchor_ctrs - target_center)
+                    diff_t = np.minimum(diff_t, period - diff_t)
+                    dists_to_tgt = np.sqrt(np.sum(diff_t ** 2, axis=1))
+                else:
+                    dists_to_tgt = np.linalg.norm(
+                        anchor_ctrs - target_center, axis=1)
                 top_k = min(5, len(anchor_idxs))
                 best_rows = np.argsort(dists_to_tgt)[:top_k]
 
                 n_q = min(80, len(id_list))
                 seen_roots: Set[int] = set()
                 for row_i in best_rows:
-                    pt = anchor_ctrs[row_i:row_i+1]
-                    _, nn_row = kd.query(pt, k=n_q)
-                    nn_row = nn_row.flatten()
+                    # 找离 anchor_box 最近的 n_q 个 box (geodesic)
+                    if period is not None:
+                        a_idx = anchor_idxs[row_i]
+                        row_dists = kd_or_dist[a_idx]  # dist_mat 行
+                        nn_row = np.argsort(row_dists)[:n_q]
+                    else:
+                        pt = anchor_ctrs[row_i:row_i+1]
+                        _, nn_row = kd_or_dist.query(pt, k=n_q)
+                        nn_row = nn_row.flatten()
                     for nn_idx in nn_row:
                         nn_bid = id_list[nn_idx]
                         nn_root = uf.find(nn_bid)
@@ -538,10 +602,11 @@ def bridge_islands(
             """只读: 找最近 box 对 → 生成线段 → 碰撞检测.
             返回 (island_a, island_b, candidate_segments, candidate_pairs_info, collides_list)
             """
-            pairs = _find_closest_pairs_kdtree(
+            pairs = _find_closest_pairs(
                 island_a, island_b, boxes,
                 max_pairs_per_island_pair,
-                kd, id_list, id_to_idx, centers,
+                kd_or_dist, id_list, id_to_idx, centers,
+                period=period,
             )
             segs = []
             info = []
@@ -743,16 +808,16 @@ def _try_expand_bridge_box(
     return None
 
 
-def _find_closest_pairs(
+def _find_closest_pairs_brute(
     island_a: Set[int],
     island_b: Set[int],
     boxes: Dict[int, BoxNode],
     k: int,
     period: Optional[float] = None,
 ) -> List[Tuple[BoxNode, BoxNode, float]]:
-    """找两个岛之间距离最近的 k 对 box（按 center 距离排序，支持 wrap）。
+    """找两个岛之间距离最近的 k 对 box（O(|A|·|B|) 暴力, 支持 wrap）。
 
-    保留供 period!=None 时使用（KD-Tree 不支持周期距离）。
+    仅在无 KD-Tree 辅助结构时使用; 主路径请使用 _find_closest_pairs().
     """
     pairs: List[Tuple[BoxNode, BoxNode, float]] = []
 

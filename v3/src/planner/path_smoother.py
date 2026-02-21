@@ -15,8 +15,37 @@ import numpy as np
 
 from forest.models import BoxNode
 from forest.collision import CollisionChecker
+from forest.connectivity import _nearest_point_wrapped
 
 logger = logging.getLogger(__name__)
+
+
+def _geodesic_dist(
+    a: np.ndarray, b: np.ndarray, period: Optional[float],
+) -> float:
+    if period is None:
+        return float(np.linalg.norm(b - a))
+    half = period / 2.0
+    diff = ((b - a) + half) % period - half
+    return float(np.linalg.norm(diff))
+
+
+def _geodesic_diff(
+    a: np.ndarray, b: np.ndarray, period: Optional[float],
+) -> np.ndarray:
+    """Return signed shortest difference b - a on torus."""
+    if period is None:
+        return b - a
+    half = period / 2.0
+    return ((b - a) + half) % period - half
+
+
+def _normalize_config(q: np.ndarray, period: Optional[float]) -> np.ndarray:
+    """Normalize config to [-period/2, period/2]."""
+    if period is None:
+        return q
+    half = period / 2.0
+    return ((q + half) % period) - half
 
 
 class PathSmoother:
@@ -36,9 +65,11 @@ class PathSmoother:
         self,
         collision_checker: CollisionChecker,
         segment_resolution: float = 0.05,
+        period: Optional[float] = None,
     ) -> None:
         self.collision_checker = collision_checker
         self.segment_resolution = segment_resolution
+        self.period = period
 
     def shortcut(
         self,
@@ -78,7 +109,8 @@ class PathSmoother:
 
             # 检查 path[i] → path[j] 直连是否无碰撞
             if not self.collision_checker.check_segment_collision(
-                path[i], path[j], self.segment_resolution
+                path[i], path[j], self.segment_resolution,
+                period=self.period,
             ):
                 # 移除中间点
                 path = path[:i + 1] + path[j:]
@@ -111,7 +143,7 @@ class PathSmoother:
         resampled = [path[0].copy()]
 
         for i in range(1, len(path)):
-            seg_vec = path[i] - path[i - 1]
+            seg_vec = _geodesic_diff(path[i - 1], path[i], self.period)
             seg_len = float(np.linalg.norm(seg_vec))
 
             if seg_len < 1e-10:
@@ -121,6 +153,7 @@ class PathSmoother:
             for k in range(1, n_steps + 1):
                 t = k / n_steps
                 point = path[i - 1] + t * seg_vec
+                point = _normalize_config(point, self.period)
                 resampled.append(point)
 
         return resampled
@@ -162,7 +195,18 @@ class PathSmoother:
             for i in idxs:
                 lo = max(0, i - half_w)
                 hi = min(len(path), i + half_w + 1)
-                avg_candidates.append(np.mean(path[lo:hi], axis=0))
+                if self.period is not None:
+                    # 环面平均：以 path[i] 为基准，用 geodesic diff 累加再整除
+                    ref = path[i]
+                    acc = np.zeros_like(ref)
+                    cnt = hi - lo
+                    for k in range(lo, hi):
+                        acc += _geodesic_diff(ref, path[k], self.period)
+                    avg = ref + acc / cnt
+                    avg = _normalize_config(avg, self.period)
+                else:
+                    avg = np.mean(path[lo:hi], axis=0)
+                avg_candidates.append(avg)
 
             avg_arr = np.asarray(avg_candidates, dtype=np.float64)
 
@@ -234,13 +278,14 @@ class PathSmoother:
 
             # 检查 path[i]→path[j] 是否在 boxes[i:j+1] 的联合内
             valid = True
-            seg = path[j] - path[i]
+            seg = _geodesic_diff(path[i], path[j], self.period)
             for k in range(1, n_samples):
                 t = k / n_samples
                 pt = path[i] + t * seg
+                pt = _normalize_config(pt, self.period)
                 in_some_box = False
                 for bi in range(i, min(j + 1, len(boxes))):
-                    if boxes[bi].contains(pt):
+                    if self._box_contains_periodic(boxes[bi], pt):
                         in_some_box = True
                         break
                 if not in_some_box:
@@ -292,12 +337,21 @@ class PathSmoother:
             for i in range(1, len(path) - 1):
                 lo = max(0, i - half_w)
                 hi = min(len(path), i + half_w + 1)
-                avg = np.mean(path[lo:hi], axis=0)
+                if self.period is not None:
+                    ref = path[i]
+                    acc = np.zeros_like(ref)
+                    cnt = hi - lo
+                    for k in range(lo, hi):
+                        acc += _geodesic_diff(ref, path[k], self.period)
+                    avg = ref + acc / cnt
+                    avg = _normalize_config(avg, self.period)
+                else:
+                    avg = np.mean(path[lo:hi], axis=0)
 
                 # Clip 到对应 box 边界
                 if i < len(box_sequence):
                     box = box_sequence[i]
-                    avg = box.nearest_point_to(avg)
+                    avg = _nearest_point_wrapped(box, avg, self.period)
 
                 if not np.allclose(avg, path[i]):
                     changed = True
@@ -311,10 +365,29 @@ class PathSmoother:
 
         return path
 
+    def _box_contains_periodic(self, box: BoxNode, config: np.ndarray) -> bool:
+        """检查 config 是否在 box 内（考虑周期 wrap）。"""
+        if self.period is None:
+            return box.contains(config)
+        p = self.period
+        for i, (lo, hi) in enumerate(box.joint_intervals):
+            c = config[i]
+            if lo - 1e-10 <= c <= hi + 1e-10:
+                continue
+            if lo - 1e-10 <= c + p <= hi + 1e-10:
+                continue
+            if lo - 1e-10 <= c - p <= hi + 1e-10:
+                continue
+            return False
+        return True
 
-def compute_path_length(path: List[np.ndarray]) -> float:
-    """计算路径总长度 (L2)"""
+
+def compute_path_length(
+    path: List[np.ndarray],
+    period: Optional[float] = None,
+) -> float:
+    """计算路径总长度（环面 geodesic 距离）"""
     if len(path) < 2:
         return 0.0
-    return sum(float(np.linalg.norm(path[i] - path[i - 1]))
+    return sum(_geodesic_dist(path[i - 1], path[i], period)
                for i in range(1, len(path)))

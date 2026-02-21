@@ -151,7 +151,8 @@ class SafeBoxForest:
         from .deoverlap import compute_adjacency
         box_list = list(self.boxes.values())
         self.adjacency = compute_adjacency(
-            box_list, tol=self.config.adjacency_tolerance)
+            box_list, tol=self.config.adjacency_tolerance,
+            period=self.period)
 
     def remove_boxes(self, box_ids: Set[int]) -> None:
         """移除指定 box 及其邻接边"""
@@ -297,31 +298,63 @@ class SafeBoxForest:
 
         若已设置 hier_tree，利用 HierAABBTree 的 O(depth) 查询加速；
         否则回退到 O(N) 线性扫描。
+        周期空间下也检查 ±period 偏移后的包含。
         """
         if self.hier_tree is not None:
             box_id = self.hier_tree.find_containing_box_id(config)
             if box_id is not None and box_id in self.boxes:
                 return self.boxes[box_id]
+            # 周期空间：hier_tree 可能找不到跨边界 config，尝试线性扫描
+            if self.period is not None:
+                for box in self.boxes.values():
+                    if self._contains_periodic(box, config):
+                        return box
             return None
         for box in self.boxes.values():
-            if box.contains(config):
+            if self._contains_periodic(box, config):
                 return box
         return None
 
+    def _contains_periodic(self, box: BoxNode, config: np.ndarray) -> bool:
+        """检查 config 是否在 box 内（考虑周期 wrap）。"""
+        if self.period is None:
+            return box.contains(config)
+        p = self.period
+        for i, (lo, hi) in enumerate(box.joint_intervals):
+            c = config[i]
+            if lo - 1e-10 <= c <= hi + 1e-10:
+                continue
+            if lo - 1e-10 <= c + p <= hi + 1e-10:
+                continue
+            if lo - 1e-10 <= c - p <= hi + 1e-10:
+                continue
+            return False
+        return True
+
     def find_nearest(self, config: np.ndarray) -> Optional[BoxNode]:
-        """找到离 config 最近的 box"""
+        """找到离 config 最近的 box（考虑周期距离）"""
         if self._kdtree_dirty:
             self._rebuild_kdtree()
 
-        if self._kdtree is not None and self._kdtree_ids:
-            _, idx = self._kdtree.query(config)
-            bid = self._kdtree_ids[int(idx)]
-            return self.boxes.get(bid)
+        if self.period is None:
+            # 非周期空间：使用 KDTree 快速查询
+            if self._kdtree is not None and self._kdtree_ids:
+                _, idx = self._kdtree.query(config)
+                bid = self._kdtree_ids[int(idx)]
+                return self.boxes.get(bid)
 
+        # 周期空间或无 KDTree：线性扫描 + 周期距离
+        from .connectivity import _nearest_point_wrapped
         best_box = None
         best_dist = float('inf')
         for box in self.boxes.values():
-            d = box.distance_to_config(config)
+            np_pt = _nearest_point_wrapped(box, config, self.period)
+            if self.period is not None:
+                half = self.period / 2.0
+                diff = ((np_pt - config) + half) % self.period - half
+                d = float(np.linalg.norm(diff))
+            else:
+                d = float(np.linalg.norm(np_pt - config))
             if d < best_dist:
                 best_dist = d
                 best_box = box

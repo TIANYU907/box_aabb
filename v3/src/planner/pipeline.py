@@ -556,6 +556,7 @@ def grow_forest(
           f"{forest.n_boxes} boxes, {elapsed:.1f}s")
 
     # 后处理: 双向 stepping stone 铺路
+    _period = getattr(planner, '_period', None) or getattr(forest, 'period', None)
     if boundary_on:
         _ts_connect = time.perf_counter()
         n_gap_fill = 0
@@ -603,7 +604,11 @@ def grow_forest(
             return box2
 
         def _pave_toward(start_c, end_c, max_steps=300):
-            direction = end_c - start_c
+            if _period is not None:
+                half = _period / 2.0
+                direction = ((end_c - start_c) + half) % _period - half
+            else:
+                direction = end_c - start_c
             dist = np.linalg.norm(direction)
             if dist < 1e-6:
                 return 0
@@ -612,7 +617,11 @@ def grow_forest(
             n_placed = 0
             step_idx = 0
             while step_idx < max_steps:
-                d_remain = np.linalg.norm(end_c - pos)
+                if _period is not None:
+                    diff_r = ((end_c - pos) + half) % _period - half
+                    d_remain = np.linalg.norm(diff_r)
+                else:
+                    d_remain = np.linalg.norm(end_c - pos)
                 if d_remain < 0.05:
                     break
                 placed = False
@@ -647,7 +656,7 @@ def grow_forest(
                     node_id=b.node_id,
                     joint_intervals=[tuple(iv) for iv in b.joint_intervals],
                     seed_config=b.seed_config.copy(), volume=b.volume)
-            _, _uf, _isls = _build_adjacency_and_islands(_snap)
+            _, _uf, _isls = _build_adjacency_and_islands(_snap, period=_period)
 
             _src_bid, _tgt_bid = _find_st_bids(_snap)
             if _src_bid is None or _tgt_bid is None:
@@ -669,7 +678,12 @@ def grow_forest(
                     if bid in _st_isl:
                         continue
                     mc = _box_center(bx)
-                    dd = np.linalg.norm(mc - _st_c)
+                    if _period is not None:
+                        half = _period / 2.0
+                        _diff = ((mc - _st_c) + half) % _period - half
+                        dd = np.linalg.norm(_diff)
+                    else:
+                        dd = np.linalg.norm(mc - _st_c)
                     if dd < _best_d:
                         _best_d = dd
                         _tgt_c = mc
@@ -740,8 +754,11 @@ def grow_forest(
 # Shared infrastructure: adjacency + islands
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _build_adjacency_and_islands(boxes):
-    """O(N²) 向量化 overlap → adjacency dict + UnionFind + islands."""
+def _build_adjacency_and_islands(boxes, period=None):
+    """O(N²) overlap → adjacency dict + UnionFind + islands.
+
+    当 period 不为 None 时, 使用周期边界检测 overlap (π ↔ -π 视为相邻).
+    """
     ids = list(boxes.keys())
     n = len(ids)
     adj: Dict[int, Set[int]] = {bid: set() for bid in ids}
@@ -760,9 +777,20 @@ def _build_adjacency_and_islands(boxes):
             hi[k, d] = ivs[d][1]
 
     eps = 1e-9
+    # 直接 overlap
     overlap_ij = ((hi[:, None, :] >= lo[None, :, :] - eps)
                   & (hi[None, :, :] >= lo[:, None, :] - eps))
     overlap_all = np.all(overlap_ij, axis=2)
+
+    if period is not None:
+        # 额外检测周期平移后的 overlap (左/右移一个 period)
+        for shift_sign in [1.0, -1.0]:
+            shift = period * shift_sign
+            lo_s = lo + shift  # (N, D) box2 平移后
+            hi_s = hi + shift
+            overlap_s = ((hi[:, None, :] >= lo_s[None, :, :] - eps)
+                         & (hi_s[None, :, :] >= lo[:, None, :] - eps))
+            overlap_all |= np.all(overlap_s, axis=2)
 
     ii, jj = np.where(np.triu(overlap_all, k=1))
     for idx in range(len(ii)):
@@ -1270,43 +1298,107 @@ def _refine_path_in_boxes(
 # Solver B: Dijkstra on box graph + SOCP refine
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _dijkstra_box_graph(boxes, adj, src, tgt):
-    """Dijkstra 最短路 (edge weight = center-to-center distance)."""
-    centers = {}
-    for bid, box in boxes.items():
-        centers[bid] = np.array(
-            [(lo + hi) / 2 for lo, hi in box.joint_intervals])
+def _dijkstra_box_graph(boxes, adj, src, tgt, period=None,
+                        q_goal=None):
+    """A* search with boundary-aware edge weights and goal heuristic.
 
-    dist_map: Dict[int, float] = {bid: float('inf') for bid in boxes}
-    prev_map: Dict[int, Optional[int]] = {bid: None for bid in boxes}
-    dist_map[src] = 0.0
-    heap = [(0.0, src)]
+    改进 (相比旧版 center-to-center Dijkstra):
+      1. 边权使用 box 边界最小 L2 距离; 相邻/重叠 box 取 5% 中心距离
+         → 避免大 box 中心距离过长导致路径绕行
+      2. 当提供 q_goal 时, 启用 A* 启发式 (box 内最近点到 goal 的距离)
+         → 搜索方向偏好地理上更靠近终点的 box
+    """
+    # ── 预计算 box lo / hi / center ──
+    box_lo, box_hi, centers = {}, {}, {}
+    for bid, box in boxes.items():
+        lo = np.array([lo_d for lo_d, hi_d in box.joint_intervals])
+        hi = np.array([hi_d for lo_d, hi_d in box.joint_intervals])
+        box_lo[bid] = lo
+        box_hi[bid] = hi
+        centers[bid] = (lo + hi) * 0.5
+
+    # ── A* 启发式 (admissible): box 内最近点到 goal 的欧氏距离 ──
+    _use_h = (q_goal is not None and period is None)
+
+    def _h(bid):
+        if not _use_h:
+            return 0.0
+        nearest = np.clip(q_goal, box_lo[bid], box_hi[bid])
+        return float(np.linalg.norm(nearest - q_goal))
+
+    # ── 边权: 边界距离 (相邻→ 5% 中心距离) ──
+    def _w(u, v):
+        if period is not None:
+            half = period / 2.0
+            diff = ((centers[u] - centers[v]) + half) % period - half
+            return float(np.linalg.norm(diff))
+        gap = np.maximum(0.0, np.maximum(box_lo[v] - box_hi[u],
+                                          box_lo[u] - box_hi[v]))
+        surface_dist = float(np.linalg.norm(gap))
+        if surface_dist > 1e-10:
+            return surface_dist
+        # 相邻或重叠 → 适度折扣中心距离, 避免大 box 被过度惩罚
+        # 30% 保留足够权重让 Dijkstra 在高维空间选出真正短的序列
+        return max(0.3 * float(np.linalg.norm(centers[u] - centers[v])),
+                   1e-12)
+
+    # ── A* 主循环 ──
+    g_map: Dict[int, float] = {src: 0.0}
+    prev_map: Dict[int, Optional[int]] = {}
+    cnt = 0
+    heap = [(_h(src), cnt, src)]
+    closed: set = set()
 
     while heap:
-        d, u = heapq.heappop(heap)
-        if d > dist_map[u]:
+        _, _, u = heapq.heappop(heap)
+        if u in closed:
             continue
+        closed.add(u)
         if u == tgt:
             break
-        cu = centers[u]
         for v in adj.get(u, set()):
-            w = float(np.linalg.norm(cu - centers[v]))
-            nd = d + w
-            if nd < dist_map[v]:
-                dist_map[v] = nd
+            if v in closed:
+                continue
+            tentative = g_map[u] + _w(u, v)
+            if tentative < g_map.get(v, float('inf')):
+                g_map[v] = tentative
                 prev_map[v] = u
-                heapq.heappush(heap, (nd, v))
+                cnt += 1
+                heapq.heappush(heap, (tentative + _h(v), cnt, v))
 
-    if dist_map[tgt] == float('inf'):
+    if tgt not in closed:
         return None, float('inf')
 
-    seq = []
-    cur = tgt
+    seq: list = []
+    cur: Optional[int] = tgt
     while cur is not None:
         seq.append(cur)
-        cur = prev_map[cur]
+        cur = prev_map.get(cur)
     seq.reverse()
-    return seq, dist_map[tgt]
+    return seq, g_map.get(tgt, float('inf'))
+
+
+def _shortcut_box_sequence(box_seq, adj):
+    """贪心跳跃: 在 box 序列中跳过可直接相邻到达的中间 box.
+
+    从序列起点开始, 每一步尽可能跳到最远的、与当前 box 直接相邻/
+    相同的 box, 从而缩短 box 序列, 减少不必要的绕行.
+    """
+    if len(box_seq) <= 2:
+        return box_seq
+    n = len(box_seq)
+    result = [box_seq[0]]
+    i = 0
+    while i < n - 1:
+        farthest = i + 1
+        nbrs = adj.get(box_seq[i], set())
+        for j in range(n - 1, i + 1, -1):
+            if box_seq[j] in nbrs:
+                farthest = j
+                break
+        result.append(box_seq[farthest])
+        i = farthest
+    return result
 
 
 def _solve_method_gcs(boxes, adj, src, tgt, q_start, q_goal, ndim,
@@ -1321,33 +1413,96 @@ def _solve_method_gcs(boxes, adj, src, tgt, q_start, q_goal, ndim,
                 waypoints=waypoints, box_seq=box_seq, plan_ms=ms)
 
 
+def _segment_in_box(p_a: np.ndarray, p_b: np.ndarray, box: BoxNode,
+                    n_samples: int = 6) -> bool:
+    """Check if the line segment from p_a to p_b stays within box."""
+    for t in np.linspace(0.0, 1.0, n_samples):
+        pt = p_a + t * (p_b - p_a)
+        for d, (lo, hi) in enumerate(box.joint_intervals):
+            if pt[d] < lo - 1e-9 or pt[d] > hi + 1e-9:
+                return False
+    return True
+
+
+def _geometric_shortcut(
+    waypoints: List[np.ndarray],
+    boxes: Dict[int, BoxNode],
+    box_seq: List[int],
+) -> Tuple[List[np.ndarray], float]:
+    """贪心几何缩短: 在 SOCP 精炼后, 跳过 box 内部的冗余中间路径点.
+
+    对于每个路径点 i, 尝试直接连接到尽可能远的路径点 j,
+    使得线段 p_i → p_j 完全在某个 box 内 (即 box_seq 中任一 box
+    能包含这条线段). 成功则跳过中间所有路径点.
+    """
+    if len(waypoints) <= 2:
+        cost = sum(float(np.linalg.norm(waypoints[k + 1] - waypoints[k]))
+                   for k in range(len(waypoints) - 1))
+        return waypoints, cost
+
+    # Collect all box bounds for containment checks
+    unique_boxes = [boxes[bid] for bid in box_seq if bid in boxes]
+
+    result = [waypoints[0]]
+    i = 0
+    n = len(waypoints)
+    while i < n - 1:
+        farthest = i + 1
+        for j in range(n - 1, i + 1, -1):
+            # Check: does segment waypoints[i]→waypoints[j] fit in any box?
+            for box in unique_boxes:
+                if _segment_in_box(waypoints[i], waypoints[j], box):
+                    farthest = j
+                    break
+            if farthest == j:
+                break
+        result.append(waypoints[farthest])
+        i = farthest
+
+    cost = sum(float(np.linalg.norm(result[k + 1] - result[k]))
+               for k in range(len(result) - 1))
+    return result, cost
+
+
 def _solve_method_dijkstra(boxes, adj, src, tgt, q_start, q_goal, ndim,
                            label="Dijkstra"):
-    """Dijkstra on box graph → box sequence → SOCP refine."""
+    """Dijkstra on box graph → shortcut → SOCP refine."""
     t0 = time.perf_counter()
 
-    box_seq, raw_dist = _dijkstra_box_graph(boxes, adj, src, tgt)
+    box_seq, raw_dist = _dijkstra_box_graph(boxes, adj, src, tgt,
+                                            q_goal=q_goal)
     if box_seq is None:
         ms = (time.perf_counter() - t0) * 1000
         print(f"    [{label}] Dijkstra: no path found")
         return dict(method=label, success=False, cost=float('inf'),
                     waypoints=[], box_seq=[], plan_ms=ms)
 
+    # ── 贪心跳跃: 跳过可直接相邻到达的中间 box ──
+    short_seq = _shortcut_box_sequence(box_seq, adj)
+
     waypoints = [q_start.copy()]
-    for bid in box_seq[1:-1]:
+    for bid in short_seq[1:-1]:
         box = boxes[bid]
         c = np.array([(lo + hi) / 2 for lo, hi in box.joint_intervals])
         waypoints.append(c)
     waypoints.append(q_goal.copy())
 
     refined_wps, refined_cost = _refine_path_in_boxes(
-        waypoints, box_seq, boxes, q_start, q_goal, ndim)
+        waypoints, short_seq, boxes, q_start, q_goal, ndim)
+
+    # ── 几何路径缩短: 跳过 SOCP 后冗余的中间路径点 ──
+    refined_wps, refined_cost = _geometric_shortcut(
+        refined_wps, boxes, short_seq)
 
     ms = (time.perf_counter() - t0) * 1000
-    print(f"    [{label}] {len(box_seq)} boxes, raw_dist={raw_dist:.4f}, "
-          f"refined={refined_cost:.4f}, {len(refined_wps)} wp ({ms:.0f}ms)")
+    n_skip = len(box_seq) - len(short_seq)
+    skip_info = (f", shortcut {len(box_seq)}->{len(short_seq)}"
+                 if n_skip > 0 else "")
+    print(f"    [{label}] {len(box_seq)} boxes{skip_info}, "
+          f"raw_dist={raw_dist:.4f}, refined={refined_cost:.4f}, "
+          f"{len(refined_wps)} wp ({ms:.0f}ms)")
     return dict(method=label, success=True, cost=refined_cost,
-                waypoints=refined_wps, box_seq=box_seq, plan_ms=ms)
+                waypoints=refined_wps, box_seq=short_seq, plan_ms=ms)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1550,7 +1705,8 @@ def run_method_with_bridge(method_fn, method_name, prep, cfg, q_start,
     forest_obj = prep['forest_obj']
 
     t0 = time.perf_counter()
-    adj, uf, islands = _build_adjacency_and_islands(boxes)
+    period = getattr(planner, '_period', None) or getattr(forest_obj, 'period', None)
+    adj, uf, islands = _build_adjacency_and_islands(boxes, period=period)
     adj_ms = (time.perf_counter() - t0) * 1000
     n_edges = sum(len(v) for v in adj.values()) // 2
     print(f"    [adj] {len(adj)} vertices, {n_edges} edges ({adj_ms:.0f}ms)")
@@ -1576,7 +1732,7 @@ def run_method_with_bridge(method_fn, method_name, prep, cfg, q_start,
             segment_resolution=0.03,
             max_pairs_per_island_pair=10,
             max_rounds=5,
-            period=None,
+            period=period,
             hier_tree=planner.hier_tree,
             obstacles=planner.obstacles,
             forest=forest_obj,
@@ -1619,6 +1775,36 @@ def run_method_with_bridge(method_fn, method_name, prep, cfg, q_start,
         print(f"    [{method_name}] ERROR: start or goal not in any box "
               f"after bridge")
         return None
+
+    # ── 直连检测: 碰撞检测 straight-line, 跳过图搜索 ──
+    _cc = getattr(planner, 'collision_checker', None)
+    if _cc is not None:
+        _res = getattr(cfg, 'segment_collision_resolution', 0.05)
+        if not _cc.check_segment_collision(q_start, q_goal, resolution=_res,
+                                            period=period):
+            direct_cost = float(np.linalg.norm(q_goal - q_start))
+            ms_total = (time.perf_counter() - t0) * 1000 if 't0' in dir() else 0
+            print(f"    [{method_name}] direct-connect OK! "
+                  f"cost={direct_cost:.4f}")
+            plan_result = dict(
+                method=method_name, success=True, cost=direct_cost,
+                waypoints=[q_start.copy(), q_goal.copy()],
+                box_seq=[src, tgt] if src != tgt else [src],
+                plan_ms=0.0)
+            plan_result.update(
+                boxes=dict(boxes), adj=adj,
+                n_before_islands=n_before_islands,
+                n_after_islands=n_before_islands,
+                bridge_edges=bridge_edges,
+                bridge_boxes=bridge_boxes_list,
+                adj_ms=adj_ms, bridge_ms=bridge_ms,
+                grow_ms=prep['grow_ms'], cache_ms=prep['cache_ms'],
+                coarsen_ms=prep['coarsen_ms'],
+                coarsen_stats=prep['coarsen_stats'],
+                n_grown=prep['n_grown'],
+                n_cache_nodes=prep['n_cache_nodes'],
+            )
+            return plan_result
 
     plan_result = method_fn(
         boxes=boxes, adj=adj, src=src, tgt=tgt,
@@ -1802,7 +1988,8 @@ def incremental_obstacle_update(
 
     # 重建 adj + uf (如果 prep 中没有)
     if 'adj' not in prep or 'uf' not in prep:
-        adj, uf, _ = _build_adjacency_and_islands(boxes)
+        _period_inc = getattr(planner, '_period', None) or getattr(forest_obj, 'period', None)
+        adj, uf, _ = _build_adjacency_and_islands(boxes, period=_period_inc)
         prep['adj'] = adj
         prep['uf'] = uf
     adj = prep['adj']

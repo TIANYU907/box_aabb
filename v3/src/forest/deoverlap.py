@@ -32,6 +32,7 @@ def compute_adjacency(
     tol: float = 1e-8,
     chunk_threshold: int = 300,
     chunk_size: int = 64,
+    period: Optional[float] = None,
 ) -> Dict[int, Set[int]]:
     """计算所有 box 的邻接关系（全向量化 + 上三角分块）
 
@@ -79,6 +80,15 @@ def compute_adjacency(
         overlap_width = np.minimum(hi[:, None, :], hi[None, :, :]) - \
             np.maximum(lo[:, None, :], lo[None, :, :])
 
+        # 周期边界：取直接 / 左移 / 右移中的最大 overlap_width
+        if period is not None:
+            p = period
+            ow_right = np.minimum(hi[:, None, :], hi[None, :, :] + p) - \
+                np.maximum(lo[:, None, :], lo[None, :, :] + p)
+            ow_left = np.minimum(hi[:, None, :], hi[None, :, :] - p) - \
+                np.maximum(lo[:, None, :], lo[None, :, :] - p)
+            overlap_width = np.maximum(overlap_width, np.maximum(ow_right, ow_left))
+
         separated = overlap_width < -tol
         touching = (overlap_width >= -tol) & (overlap_width <= tol)
         overlapping = overlap_width > tol
@@ -105,6 +115,15 @@ def compute_adjacency(
 
                 overlap_width = np.minimum(hi_i[:, None, :], hi_j[None, :, :]) - \
                     np.maximum(lo_i[:, None, :], lo_j[None, :, :])
+
+                # 周期边界
+                if period is not None:
+                    p = period
+                    ow_right = np.minimum(hi_i[:, None, :], hi_j[None, :, :] + p) - \
+                        np.maximum(lo_i[:, None, :], lo_j[None, :, :] + p)
+                    ow_left = np.minimum(hi_i[:, None, :], hi_j[None, :, :] - p) - \
+                        np.maximum(lo_i[:, None, :], lo_j[None, :, :] - p)
+                    overlap_width = np.maximum(overlap_width, np.maximum(ow_right, ow_left))
 
                 separated = overlap_width < -tol
                 touching = (overlap_width >= -tol) & (overlap_width <= tol)

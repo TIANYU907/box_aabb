@@ -43,8 +43,40 @@ from .connector import TreeConnector
 from .path_smoother import PathSmoother, compute_path_length
 from .gcs_optimizer import GCSOptimizer
 from forest.deoverlap import compute_adjacency
+from forest.connectivity import _nearest_point_wrapped
 
 logger = logging.getLogger(__name__)
+
+
+def _geodesic_dist(
+    a: np.ndarray, b: np.ndarray, period: Optional[float],
+) -> float:
+    """环面上两个配置的 L2 距离。period=None 退化为欧氏距离。"""
+    if period is None:
+        return float(np.linalg.norm(b - a))
+    half = period / 2.0
+    diff = ((b - a) + half) % period - half
+    return float(np.linalg.norm(diff))
+
+
+def _contains_periodic(
+    box: BoxNode, config: np.ndarray, period: Optional[float],
+) -> bool:
+    """检查 config 是否在 box 内（考虑周期 wrap）。"""
+    if period is None:
+        return box.contains(config)
+    for i, (lo, hi) in enumerate(box.joint_intervals):
+        c = config[i]
+        # 直接检查
+        if lo - 1e-10 <= c <= hi + 1e-10:
+            continue
+        # 尝试 ±period 偏移后检查
+        if lo - 1e-10 <= c + period <= hi + 1e-10:
+            continue
+        if lo - 1e-10 <= c - period <= hi + 1e-10:
+            continue
+        return False
+    return True
 
 
 def _partition_expand_worker(payload: Dict[str, object]) -> Dict[str, object]:
@@ -169,6 +201,17 @@ class SBFPlanner:
 
         self._n_dims = len(self.joint_limits)
 
+        # 计算周期空间周期：对 revolute 关节 [-π, π]，period = 2π
+        # 非周期空间设为 None
+        jl0 = self.joint_limits[0]
+        span = jl0[1] - jl0[0]
+        # 判定条件：所有关节 span 相同且接近 2π
+        all_same = all(
+            abs((hi - lo) - span) < 1e-6
+            for lo, hi in self.joint_limits
+        )
+        self._period: Optional[float] = float(span) if all_same and abs(span - 2 * np.pi) < 0.1 else None
+
         # 初始化子模块
         self.collision_checker = CollisionChecker(
             robot=robot,
@@ -196,10 +239,12 @@ class SBFPlanner:
             max_attempts=self.config.connection_max_attempts,
             connection_radius=self.config.connection_radius,
             segment_resolution=self.config.segment_collision_resolution,
+            period=self._period,
         )
         self.path_smoother = PathSmoother(
             collision_checker=self.collision_checker,
             segment_resolution=self.config.segment_collision_resolution,
+            period=self._period,
         )
         self.gcs_optimizer = GCSOptimizer(
             fallback=True,
@@ -402,11 +447,12 @@ class SBFPlanner:
 
         # ---- Step 0.5: 尝试直连 ----
         if not self.collision_checker.check_segment_collision(
-            q_start, q_goal, self.config.segment_collision_resolution
+            q_start, q_goal, self.config.segment_collision_resolution,
+            period=self._period,
         ):
             result.success = True
             result.path = [q_start.copy(), q_goal.copy()]
-            result.path_length = float(np.linalg.norm(q_goal - q_start))
+            result.path_length = _geodesic_dist(q_start, q_goal, self._period)
             result.message = "直连成功（无需 box 拓展）"
             result.computation_time = time.time() - t0
             logger.info(result.message)
@@ -437,9 +483,9 @@ class SBFPlanner:
             start_bid = None
             goal_bid = None
             for bid, box in valid_boxes.items():
-                if start_bid is None and box.contains(q_start):
+                if start_bid is None and _contains_periodic(box, q_start, self._period):
                     start_bid = bid
-                if goal_bid is None and box.contains(q_goal):
+                if goal_bid is None and _contains_periodic(box, q_goal, self._period):
                     goal_bid = bid
                 if start_bid is not None and goal_bid is not None:
                     break
@@ -777,7 +823,7 @@ class SBFPlanner:
         # ---- 组装结果 ----
         result.success = True
         result.path = path
-        result.path_length = compute_path_length(path)
+        result.path_length = compute_path_length(path, period=self._period)
         result.forest = forest
         result.n_boxes_created = len(forest.boxes)
         result.n_collision_checks = self.collision_checker.n_collision_checks
@@ -835,13 +881,15 @@ class SBFPlanner:
         for pt in path:
             best = None
             for box in box_sequence:
-                if box.contains(pt):
+                if _contains_periodic(box, pt, self._period):
                     best = box
                     break
             if best is None and box_sequence:
-                # 找最近的
+                # 找最近的（考虑周期距离）
                 best = min(box_sequence,
-                           key=lambda b: b.distance_to_config(pt))
+                           key=lambda b: _geodesic_dist(
+                               _nearest_point_wrapped(b, pt, self._period),
+                               pt, self._period))
             result.append(best if best is not None else box_sequence[0])
         return result
 
@@ -928,7 +976,7 @@ class SBFPlanner:
             candidates = []
             for rb in reachable_boxes:
                 for ub in unreachable_boxes:
-                    dist = float(np.linalg.norm(rb.center - ub.center))
+                    dist = _geodesic_dist(rb.center, ub.center, self._period)
                     candidates.append((rb, ub, dist))
             candidates.sort(key=lambda x: x[2])
 
@@ -937,11 +985,12 @@ class SBFPlanner:
 
             for rb, ub, dist in candidates[:max_candidates]:
                 # Try connecting nearest points on box surfaces
-                q_r = rb.nearest_point_to(ub.center)
-                q_u = ub.nearest_point_to(rb.center)
+                q_r = _nearest_point_wrapped(rb, ub.center, self._period)
+                q_u = _nearest_point_wrapped(ub, rb.center, self._period)
 
                 if not self.collision_checker.check_segment_collision(
                     q_r, q_u, self.config.segment_collision_resolution,
+                    period=self._period,
                 ):
                     edge = Edge(
                         edge_id=self.connector._allocate_edge_id(),
@@ -1062,12 +1111,16 @@ class SBFPlanner:
         随机选择一个维度和方向（lo 或 hi），在边界外偏移 epsilon，
         其他维度在 box 范围内均匀采样。裁剪到关节限制内并检查碰撞。
 
+        当关节空间为周期空间时（period != None），若越过关节上/下限，
+        则 wrap 到对侧边界（例如 > π → -π + ε），而非放弃该方向。
+
         Returns:
             无碰撞 seed 或 None
         """
         eps = self.config.boundary_expand_epsilon
         n_dims = self._n_dims
         max_attempts = 6  # 尝试几个不同的面
+        period = self._period  # 周期空间周期，None 表示非周期
 
         for _ in range(max_attempts):
             dim = int(rng.integers(0, n_dims))
@@ -1079,11 +1132,19 @@ class SBFPlanner:
             if side == 0:
                 target_val = lo_d - eps
                 if target_val < jl_lo:
-                    continue  # 已在关节下限
+                    if period is not None:
+                        # 周期空间：wrap 到对侧（例如 < -π → +π - ε）
+                        target_val = jl_hi - (jl_lo - target_val)
+                    else:
+                        continue  # 非周期空间，已在关节下限
             else:
                 target_val = hi_d + eps
                 if target_val > jl_hi:
-                    continue  # 已在关节上限
+                    if period is not None:
+                        # 周期空间：wrap 到对侧（例如 > +π → -π + ε）
+                        target_val = jl_lo + (target_val - jl_hi)
+                    else:
+                        continue  # 非周期空间，已在关节上限
 
             q = np.empty(n_dims, dtype=np.float64)
             for d in range(n_dims):
@@ -1127,7 +1188,8 @@ class SBFPlanner:
         # 找最近的 box
         nearest = self.tree_manager.find_nearest_box(seed)
         if nearest is not None:
-            dist = nearest.distance_to_config(seed)
+            np_pt = _nearest_point_wrapped(nearest, seed, self._period)
+            dist = _geodesic_dist(np_pt, seed, self._period)
             if dist < self.config.connection_radius:
                 # 足够近，加入该树
                 self.tree_manager.add_box(
@@ -1203,7 +1265,9 @@ class SBFPlanner:
                 best_pair = None
                 for ba in tree_a.nodes.values():
                     for bb in tree_b.nodes.values():
-                        d = ba.distance_to_config(bb.center)
+                        d = _geodesic_dist(
+                            _nearest_point_wrapped(ba, bb.center, self._period),
+                            bb.center, self._period)
                         if d < best_dist:
                             best_dist = d
                             best_pair = (ba, bb)
@@ -1213,8 +1277,8 @@ class SBFPlanner:
 
                 ba, bb = best_pair
                 # 在两个 box 的最近点之间的中间区域采样
-                q_a = ba.nearest_point_to(bb.center)
-                q_b = bb.nearest_point_to(ba.center)
+                q_a = _nearest_point_wrapped(ba, bb.center, self._period)
+                q_b = _nearest_point_wrapped(bb, ba.center, self._period)
                 midpoint = (q_a + q_b) / 2.0
 
                 for _ in range(3):

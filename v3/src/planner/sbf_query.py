@@ -82,9 +82,21 @@ class SBFQuery:
             graph["edges"].setdefault(bid, [])
             for nb in neighbors:
                 if nb in self.forest.boxes:
-                    a = self.forest.boxes[bid].center
-                    b = self.forest.boxes[nb].center
-                    graph["edges"][bid].append((nb, float(np.linalg.norm(a - b)), None))
+                    box_u = self.forest.boxes[bid]
+                    box_v = self.forest.boxes[nb]
+                    # 边权: box 边界最小 L2 距离 (相邻→ 5% 中心距离)
+                    lo_u = np.array([lo for lo, hi in box_u.joint_intervals])
+                    hi_u = np.array([hi for lo, hi in box_u.joint_intervals])
+                    lo_v = np.array([lo for lo, hi in box_v.joint_intervals])
+                    hi_v = np.array([hi for lo, hi in box_v.joint_intervals])
+                    gap = np.maximum(0.0, np.maximum(lo_v - hi_u, lo_u - hi_v))
+                    surface_dist = float(np.linalg.norm(gap))
+                    if surface_dist > 1e-10:
+                        w = surface_dist
+                    else:
+                        w = max(0.3 * float(np.linalg.norm(
+                            box_u.center - box_v.center)), 1e-12)
+                    graph["edges"][bid].append((nb, w, None))
         graph["edges"].setdefault(goal_box.node_id, []).append(("goal", 0.0, None))
 
         path = self.gcs_optimizer._optimize_fallback(

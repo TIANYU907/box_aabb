@@ -75,6 +75,7 @@ def _sweep_merge_dim(
     ndim: int,
     box_to_nodes: Dict[int, List[int]],
     tol: float = 1e-10,
+    period: float = None,
 ) -> int:
     """沿维度 dim 做一轮 run-length 贪心合并 (向量化分组 + 批量合并).
 
@@ -126,11 +127,18 @@ def _sweep_merge_dim(
         sorted_lo = lo_dim[sorted_idxs]
         if len(sorted_idxs) < 2:
             continue
+        n_sorted = len(sorted_idxs)
         gaps = np.abs(sorted_hi[:-1] - sorted_lo[1:])
         touching = gaps <= tol
 
+        # 周期边界：检查最后一个 box 的 hi 和第一个 box 的 lo 是否跨边界相接
+        wrap_touching = False
+        if period is not None and n_sorted >= 2:
+            wrap_gap = abs((sorted_hi[-1] - sorted_lo[0]) - period)
+            if wrap_gap <= tol:
+                wrap_touching = True
+
         i = 0
-        n_sorted = len(sorted_idxs)
         while i < n_sorted - 1:
             if not touching[i]:
                 i += 1
@@ -139,6 +147,37 @@ def _sweep_merge_dim(
             while i < n_sorted - 1 and touching[i]:
                 i += 1
             run_end = i  # inclusive
+
+            # 跨周期边界: 如果当前 run 起始于 idx 0 且 wrap_touching,
+            # 将尾部相接的 box 也纳入 run (但不扩展合并区间, 仅合并 ID)
+            if wrap_touching and run_start == 0:
+                # 尾部向前找连续 touching 的 run
+                j = n_sorted - 2  # touching[-1] corresponds to pair (n-2, n-1)
+                while j >= 0 and touching[j]:
+                    j -= 1
+                tail_start = j + 1  # first index of tail run
+                if tail_start > run_end:
+                    # 合并头尾: lo 取尾部起始, hi 取头部结束
+                    run_cache_idxs = np.concatenate([
+                        sorted_idxs[tail_start:],
+                        sorted_idxs[run_start:run_end + 1]
+                    ])
+                    run_box_ids = [ids_list[ci] for ci in run_cache_idxs]
+                    first_box = forest.boxes[run_box_ids[0]]
+                    merged_ivs = [tuple(iv) for iv in first_box.joint_intervals]
+                    # 跨边界合并: lo 取尾部起始的 lo, hi 取头部结束的 hi
+                    # 可能跨越 ±π, 维持原拓扑的两段表示不合并区间
+                    # 简化策略: 合并为覆盖整段 [tail_lo, head_hi + period]
+                    # 实际上由于是 sorted by lo, tail_lo > head_hi
+                    # 最安全的做法: 合并为 full span [sorted_lo[tail_start], sorted_hi[run_end] + period]
+                    # 但这会越界。改为: 不合并跨边界的 run, 只标记 wrap 已处理
+                    # --> 安全策略: 跨边界时各自独立合并
+                    merged_ivs[dim] = (float(sorted_lo[run_start]),
+                                       float(sorted_hi[run_end]))
+                    merge_instructions.append((set(run_box_ids), merged_ivs))
+                    wrap_touching = False  # 已处理
+                    i += 1
+                    continue
 
             run_cache_idxs = sorted_idxs[run_start:run_end + 1]
             run_box_ids = [ids_list[ci] for ci in run_cache_idxs]
@@ -150,6 +189,22 @@ def _sweep_merge_dim(
 
             merge_instructions.append((set(run_box_ids), merged_ivs))
             i += 1
+
+        # 跨边界尾部 run 独立处理 (如果头部没有 run 合入)
+        if wrap_touching:
+            j = n_sorted - 2
+            while j >= 0 and touching[j]:
+                j -= 1
+            tail_start = j + 1
+            if tail_start < n_sorted - 1:
+                run_cache_idxs = sorted_idxs[tail_start:]
+                run_box_ids = [ids_list[ci] for ci in run_cache_idxs]
+                first_box = forest.boxes[run_box_ids[0]]
+                merged_ivs = [tuple(iv) for iv in first_box.joint_intervals]
+                merged_ivs[dim] = (float(sorted_lo[tail_start]),
+                                   float(sorted_hi[-1]))
+                merge_instructions.append((set(run_box_ids), merged_ivs))
+
 
     # ---- Phase 2: 执行所有合并 (批量修改 forest) ----
     for old_ids, new_ivs in merge_instructions:
@@ -239,7 +294,8 @@ def coarsen_forest(
         merged_this_round = 0
 
         for dim in range(ndim):
-            n = _sweep_merge_dim(store, forest, dim, ndim, box_to_nodes)
+            n = _sweep_merge_dim(store, forest, dim, ndim, box_to_nodes,
+                                 period=getattr(forest, 'period', None))
             merged_this_round += n
 
         stats.n_rounds = round_idx + 1

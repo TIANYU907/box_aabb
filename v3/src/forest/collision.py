@@ -287,21 +287,41 @@ class CollisionChecker:
         q_start: np.ndarray,
         q_end: np.ndarray,
         resolution: Optional[float] = None,
+        period: Optional[float] = None,
     ) -> bool:
         """线段碰撞检测
 
         在两个关节配置之间等间隔采样，逐点做碰撞检测。
+        当 period 不为 None 时，沿环面最短弧（geodesic）插值，
+        并将中间点归一化到 [-period/2, period/2]。
 
         Args:
             q_start: 起始关节配置
             q_end: 终止关节配置
             resolution: 采样间隔（关节空间 L2 距离），默认 0.05 rad
+            period: 关节空间周期（例如 2π），None 表示不 wrap
 
         Returns:
             True = 存在碰撞点, False = 所有采样点无碰撞
         """
         if resolution is None:
             resolution = 0.05
+
+        if period is not None:
+            # 沿环面最短弧插值
+            half = period / 2.0
+            diff = ((q_end - q_start) + half) % period - half  # 每维最短有符号差
+            dist = float(np.linalg.norm(diff))
+            if dist < 1e-10:
+                return self.check_config_collision(q_start)
+            n_steps = max(2, int(np.ceil(dist / resolution)) + 1)
+            for i in range(n_steps):
+                t = i / (n_steps - 1)
+                q = q_start + t * diff
+                q = ((q + half) % period) - half  # 归一化到 [-π, π]
+                if self.check_config_collision(q):
+                    return True
+            return False
 
         dist = float(np.linalg.norm(q_end - q_start))
         if dist < 1e-10:
