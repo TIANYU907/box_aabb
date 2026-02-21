@@ -187,10 +187,8 @@ class GCSOptimizer:
             logger.warning("Drake GCS 求解失败")
             return None
 
-        # 提取路径
+        # 提取路径：遍历激活边上的点
         path = [q_start.copy()]
-        # TODO: 从 result 提取中间路径点
-        # 目前简化版直接提取激活边上的点
         for edge in gcs.Edges():
             if result.GetSolution(edge.phi()) > 0.5:
                 xu_val = result.GetSolution(edge.xu())

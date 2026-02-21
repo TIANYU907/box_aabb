@@ -6,8 +6,8 @@ import pytest
 from aabb.robot import load_robot
 from forest.models import BoxNode
 from forest.scene import Scene
-from planner.models import PlannerConfig
-from planner.box_planner import BoxPlanner
+from planner.models import SBFConfig
+from planner.sbf_planner import SBFPlanner
 
 
 # ─────────────────────────────────────────────
@@ -27,7 +27,7 @@ def _make_simple_scene(obstacles=None):
 
 
 # ─────────────────────────────────────────────
-#  _sample_boundary_seed (BoxPlanner)
+#  _sample_boundary_seed (SBFPlanner)
 # ─────────────────────────────────────────────
 
 class TestSampleBoundarySeed:
@@ -36,8 +36,8 @@ class TestSampleBoundarySeed:
         scene = _make_simple_scene([
             {"min": [10.0, 10.0, 10.0], "max": [11.0, 11.0, 11.0]}
         ])
-        config = PlannerConfig(boundary_expand_epsilon=0.01)
-        planner = BoxPlanner(robot, scene, config=config, no_cache=True)
+        config = SBFConfig(boundary_expand_epsilon=0.01)
+        planner = SBFPlanner(robot, scene, config=config, no_cache=True)
 
         box = BoxNode(
             node_id=0,
@@ -63,29 +63,29 @@ class TestSampleBoundarySeed:
 
 
 # ─────────────────────────────────────────────
-#  PlannerConfig new fields
+#  SBFConfig new fields
 # ─────────────────────────────────────────────
 
-class TestPlannerConfigBoundaryFields:
+class TestSBFConfigBoundaryFields:
     def test_defaults(self):
-        cfg = PlannerConfig()
+        cfg = SBFConfig()
         assert cfg.boundary_expand_enabled is True
         assert cfg.boundary_expand_max_failures == 5
         assert cfg.boundary_expand_epsilon == 0.01
 
     def test_to_dict_includes_fields(self):
-        cfg = PlannerConfig(boundary_expand_max_failures=3)
+        cfg = SBFConfig(boundary_expand_max_failures=3)
         d = cfg.to_dict()
         assert d["boundary_expand_max_failures"] == 3
         assert "boundary_expand_enabled" in d
 
     def test_from_dict_round_trip(self):
-        orig = PlannerConfig(
+        orig = SBFConfig(
             boundary_expand_enabled=False,
             boundary_expand_max_failures=7,
         )
         d = orig.to_dict()
-        loaded = PlannerConfig.from_dict(d)
+        loaded = SBFConfig.from_dict(d)
         assert loaded.boundary_expand_enabled is False
         assert loaded.boundary_expand_max_failures == 7
 
@@ -101,14 +101,14 @@ class TestBoundarySamplingIntegration:
         scene = _make_simple_scene([
             {"min": [0.6, -0.2, -1000.0], "max": [0.9, 0.2, 1000.0]},
         ])
-        config = PlannerConfig(
+        config = SBFConfig(
             boundary_expand_enabled=True,
             boundary_expand_max_failures=3,
             boundary_expand_epsilon=0.05,
             max_box_nodes=30,
             max_iterations=100,
         )
-        planner = BoxPlanner(robot, scene, config=config, no_cache=True)
+        planner = SBFPlanner(robot, scene, config=config, no_cache=True)
         q_s = np.array([-1.0, 0.0])
         q_g = np.array([1.0, 0.0])
         result = planner.plan(q_s, q_g, seed=123)
@@ -127,13 +127,13 @@ class TestPlanWithBoundaryExpand:
         scene = _make_simple_scene([
             {"min": [0.3, -0.1, -0.5], "max": [0.5, 0.1, 0.5]},
         ])
-        config = PlannerConfig(
+        config = SBFConfig(
             max_iterations=50,
             max_box_nodes=50,
             boundary_expand_enabled=True,
             boundary_expand_max_failures=3,
         )
-        planner = BoxPlanner(robot, scene, config=config, no_cache=True)
+        planner = SBFPlanner(robot, scene, config=config, no_cache=True)
         q_start = np.array([0.5, 0.5])
         q_goal = np.array([-0.5, -0.5])
         result = planner.plan(q_start, q_goal, seed=42)
@@ -146,12 +146,12 @@ class TestPlanWithBoundaryExpand:
         scene = _make_simple_scene([
             {"min": [0.3, -0.1, -0.5], "max": [0.5, 0.1, 0.5]},
         ])
-        config = PlannerConfig(
+        config = SBFConfig(
             max_iterations=50,
             max_box_nodes=50,
             boundary_expand_enabled=False,
         )
-        planner = BoxPlanner(robot, scene, config=config, no_cache=True)
+        planner = SBFPlanner(robot, scene, config=config, no_cache=True)
         q_start = np.array([0.5, 0.5])
         q_goal = np.array([-0.5, -0.5])
         result = planner.plan(q_start, q_goal, seed=42)

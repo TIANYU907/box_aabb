@@ -1,7 +1,7 @@
 import numpy as np
 
-from planner.box_planner import BoxPlanner
-from planner.models import PlannerConfig
+from planner.sbf_planner import SBFPlanner
+from planner.models import SBFConfig
 
 
 class _DummyChecker:
@@ -26,9 +26,9 @@ class _DummyAllCollide:
         return True
 
 
-def _make_planner(checker, goal_bias: float = 0.0) -> BoxPlanner:
-    planner = BoxPlanner.__new__(BoxPlanner)
-    planner.config = PlannerConfig(goal_bias=goal_bias)
+def _make_planner(checker, goal_bias: float = 0.0) -> SBFPlanner:
+    planner = SBFPlanner.__new__(SBFPlanner)
+    planner.config = SBFConfig(goal_bias=goal_bias)
     planner._n_dims = 2
     planner.joint_limits = [(-1.0, 1.0), (-2.0, 2.0)]
     planner.collision_checker = checker

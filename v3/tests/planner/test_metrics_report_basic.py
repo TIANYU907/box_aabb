@@ -3,16 +3,16 @@ import numpy as np
 from aabb.robot import load_robot
 from forest.scene import Scene
 from planner.metrics import evaluate_result
-from planner.models import PlannerResult
+from planner.models import SBFResult
 from planner.report import PlannerReportGenerator
-from planner.models import PlannerConfig
+from planner.models import SBFConfig
 
 
 def test_metrics_and_report_generate() -> None:
     robot = load_robot("2dof_planar")
     scene = Scene()
 
-    result = PlannerResult(success=True)
+    result = SBFResult(success=True)
     result.path = [np.array([-1.0, 0.0]), np.array([1.0, 0.0])]
     result.compute_path_length()
 
@@ -20,7 +20,7 @@ def test_metrics_and_report_generate() -> None:
     report = PlannerReportGenerator().generate(
         robot=robot,
         scene=scene,
-        config=PlannerConfig(),
+        config=SBFConfig(),
         q_start=result.path[0],
         q_goal=result.path[-1],
         result=result,

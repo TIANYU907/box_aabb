@@ -1,7 +1,7 @@
 import numpy as np
 
-from forest.box_forest import BoxForest
-from forest.models import BoxNode, PlannerConfig
+from forest.safe_box_forest import SafeBoxForest
+from forest.models import BoxNode, SBFConfig
 
 
 def _mk_box(node_id: int, lo: float, hi: float) -> BoxNode:
@@ -13,11 +13,11 @@ def _mk_box(node_id: int, lo: float, hi: float) -> BoxNode:
     )
 
 
-def test_box_forest_add_and_find() -> None:
-    forest = BoxForest(
+def test_safe_box_forest_add_and_find() -> None:
+    forest = SafeBoxForest(
         robot_fingerprint="dummy",
         joint_limits=[(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)],
-        config=PlannerConfig(adjacency_tolerance=1e-8),
+        config=SBFConfig(adjacency_tolerance=1e-8),
     )
 
     forest.add_box_direct(_mk_box(0, -0.5, 0.0))
@@ -32,11 +32,11 @@ def test_box_forest_add_and_find() -> None:
     assert forest.find_nearest(np.array([0.9, 0.9, 0.9], dtype=np.float64)) is not None
 
 
-def test_box_forest_interval_cache_updates_on_remove() -> None:
-    forest = BoxForest(
+def test_safe_box_forest_interval_cache_updates_on_remove() -> None:
+    forest = SafeBoxForest(
         robot_fingerprint="dummy",
         joint_limits=[(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)],
-        config=PlannerConfig(adjacency_tolerance=1e-8),
+        config=SBFConfig(adjacency_tolerance=1e-8),
     )
 
     forest.add_box_direct(_mk_box(0, -0.5, 0.0))

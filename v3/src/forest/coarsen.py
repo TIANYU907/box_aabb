@@ -70,7 +70,7 @@ def _build_box_to_nodes(store, n_nodes: int) -> Dict[int, List[int]]:
 
 def _sweep_merge_dim(
     store,
-    forest,         # BoxForest
+    forest,         # SafeBoxForest
     dim: int,
     ndim: int,
     box_to_nodes: Dict[int, List[int]],
@@ -165,7 +165,7 @@ def _sweep_merge_dim(
 
 def _execute_merge_batch(
     store,
-    forest,           # BoxForest
+    forest,           # SafeBoxForest
     old_ids: Set[int],
     new_ivs: list,
     box_to_nodes: Dict[int, List[int]],
@@ -210,7 +210,7 @@ def _execute_merge_batch(
 
 def coarsen_forest(
     tree,       # HierAABBTree
-    forest,     # BoxForest
+    forest,     # SafeBoxForest
     obstacles: list = None,         # 保留接口兼容, 本算法不需要
     safety_margin: float = 0.0,     # 保留接口兼容
     max_rounds: int = 20,
@@ -219,7 +219,7 @@ def coarsen_forest(
 
     Args:
         tree: HierAABBTree
-        forest: BoxForest
+        forest: SafeBoxForest
         obstacles: (unused) 保留接口兼容
         safety_margin: (unused)
         max_rounds: 最大迭代轮数

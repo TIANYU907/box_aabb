@@ -1,4 +1,4 @@
-"""planner/box_query.py - fast planning query on existing BoxForest."""
+"""planner/sbf_query.py - fast planning query on existing SafeBoxForest."""
 
 from __future__ import annotations
 
@@ -7,29 +7,29 @@ from typing import Optional
 
 import numpy as np
 
-from .models import PlannerConfig, PlannerResult
+from .models import SBFConfig, SBFResult
 from forest.models import BoxNode
-from forest.box_forest import BoxForest
+from forest.safe_box_forest import SafeBoxForest
 from forest.scene import Scene
 from forest.collision import CollisionChecker
 from .path_smoother import PathSmoother, compute_path_length
 from .gcs_optimizer import GCSOptimizer
 
 
-class BoxForestQuery:
-    """Query planner using an existing BoxForest without global rebuild."""
+class SBFQuery:
+    """Query planner using an existing SafeBoxForest without global rebuild."""
 
     def __init__(
         self,
-        forest: BoxForest,
+        forest: SafeBoxForest,
         robot,
         scene: Scene,
-        config: Optional[PlannerConfig] = None,
+        config: Optional[SBFConfig] = None,
     ) -> None:
         self.forest = forest
         self.robot = robot
         self.scene = scene
-        self.config = config or PlannerConfig()
+        self.config = config or SBFConfig()
         self.collision_checker = CollisionChecker(robot=robot, scene=scene)
         self.path_smoother = PathSmoother(
             collision_checker=self.collision_checker,
@@ -37,11 +37,11 @@ class BoxForestQuery:
         )
         self.gcs_optimizer = GCSOptimizer(fallback=True, bezier_degree=self.config.gcs_bezier_degree)
 
-    def plan(self, q_start: np.ndarray, q_goal: np.ndarray, seed: Optional[int] = None) -> PlannerResult:
+    def plan(self, q_start: np.ndarray, q_goal: np.ndarray, seed: Optional[int] = None) -> SBFResult:
         t0 = time.time()
         q_start = np.asarray(q_start, dtype=np.float64)
         q_goal = np.asarray(q_goal, dtype=np.float64)
-        result = PlannerResult()
+        result = SBFResult()
 
         if self.collision_checker.check_config_collision(q_start):
             result.message = "起始配置存在碰撞"

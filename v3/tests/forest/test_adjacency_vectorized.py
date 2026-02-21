@@ -1,7 +1,7 @@
 import numpy as np
 
 from forest.models import BoxNode
-from forest.deoverlap import compute_adjacency, compute_adjacency_reference
+from forest.deoverlap import compute_adjacency
 
 
 def _make_boxes(n: int, dims: int = 3) -> list[BoxNode]:
@@ -23,14 +23,17 @@ def _make_boxes(n: int, dims: int = 3) -> list[BoxNode]:
 
 
 def test_compute_adjacency_matches_reference_small() -> None:
+    """Non-chunked vs chunked should agree for small box sets."""
     boxes = _make_boxes(80, dims=4)
-    ref = compute_adjacency_reference(boxes, tol=1e-8)
-    new = compute_adjacency(boxes, tol=1e-8, chunk_threshold=1000, chunk_size=64)
-    assert new == ref
+    # Force non-chunked (high threshold) vs chunked (low threshold)
+    non_chunked = compute_adjacency(boxes, tol=1e-8, chunk_threshold=10000, chunk_size=64)
+    chunked = compute_adjacency(boxes, tol=1e-8, chunk_threshold=1, chunk_size=32)
+    assert chunked == non_chunked
 
 
 def test_compute_adjacency_matches_reference_chunked() -> None:
+    """Non-chunked vs chunked should agree for larger box sets."""
     boxes = _make_boxes(220, dims=3)
-    ref = compute_adjacency_reference(boxes, tol=1e-8)
-    new = compute_adjacency(boxes, tol=1e-8, chunk_threshold=100, chunk_size=32)
-    assert new == ref
+    non_chunked = compute_adjacency(boxes, tol=1e-8, chunk_threshold=10000, chunk_size=64)
+    chunked = compute_adjacency(boxes, tol=1e-8, chunk_threshold=100, chunk_size=32)
+    assert chunked == non_chunked

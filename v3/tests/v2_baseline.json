@@ -1,0 +1,12 @@
+{
+  "2dof_simple": {
+    "total_ms": 634.6,
+    "success": true,
+    "n_boxes": 139
+  },
+  "2dof_gcs_style": {
+    "total_ms": 1459.9,
+    "success": true,
+    "n_boxes": 139
+  }
+}

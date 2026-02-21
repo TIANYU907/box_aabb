@@ -1,5 +1,5 @@
 """
-planner/box_forest.py - 扁平无重叠 Box 森林
+planner/safe_box_forest.py - 扁平无重叠 Box 森林
 
 在 C-free 空间中维护一组互不重叠（容忍微小角落重叠）的 axis-aligned
 hyperrectangle（BoxNode），以及它们之间的邻接关系。
@@ -13,11 +13,11 @@ hyperrectangle（BoxNode），以及它们之间的邻接关系。
 
 使用方式：
     # 构建
-    forest = BoxForest.build(robot, scene, config)
+    forest = SafeBoxForest.build(robot, scene, config)
     forest.save("forest.pkl")
 
     # 跨场景复用
-    forest = BoxForest.load("forest.pkl", robot)
+    forest = SafeBoxForest.load("forest.pkl", robot)
     valid_ids = forest.validate_boxes(collision_checker)
     # 规划时使用 forest.boxes, forest.adjacency
 """
@@ -34,7 +34,7 @@ except Exception:  # pragma: no cover
     cKDTree = None
 
 from aabb.robot import Robot
-from .models import PlannerConfig, BoxNode
+from .models import SBFConfig, BoxNode
 from .scene import Scene
 from .collision import CollisionChecker
 from .deoverlap import compute_adjacency
@@ -42,7 +42,7 @@ from .deoverlap import compute_adjacency
 logger = logging.getLogger(__name__)
 
 
-class BoxForest:
+class SafeBoxForest:
     """扁平无重叠 Box 森林
 
     维护一组互不重叠的 BoxNode 和它们的邻接关系。
@@ -61,12 +61,12 @@ class BoxForest:
         self,
         robot_fingerprint: str,
         joint_limits: List[Tuple[float, float]],
-        config: Optional[PlannerConfig] = None,
+        config: Optional[SBFConfig] = None,
         period: Optional[float] = None,
     ) -> None:
         self.robot_fingerprint = robot_fingerprint
         self.joint_limits = joint_limits
-        self.config = config or PlannerConfig()
+        self.config = config or SBFConfig()
         self.period = period  # 关节空间周期（例如 2π），用于邻接检测
         self.boxes: Dict[int, BoxNode] = {}
         self.adjacency: Dict[int, Set[int]] = {}
@@ -378,7 +378,7 @@ class BoxForest:
 
         if colliding_ids:
             logger.info(
-                "BoxForest.validate_boxes: %d/%d boxes collide in current scene",
+                "SafeBoxForest.validate_boxes: %d/%d boxes collide in current scene",
                 len(colliding_ids), len(self.boxes),
             )
         return colliding_ids
@@ -583,14 +583,14 @@ class BoxForest:
         }
         with open(filepath, 'wb') as f:
             pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        logger.info("BoxForest 已保存到 %s (%d boxes)", filepath, self.n_boxes)
+        logger.info("SafeBoxForest 已保存到 %s (%d boxes)", filepath, self.n_boxes)
 
     @classmethod
     def load(
         cls,
         filepath: str,
         robot: Robot,
-    ) -> 'BoxForest':
+    ) -> 'SafeBoxForest':
         """从文件加载
 
         不绑定场景 —— 加载后需调用 validate_boxes() 做惰性碰撞验证。
@@ -600,7 +600,7 @@ class BoxForest:
             robot: 机器人模型（需与构建时一致）
 
         Returns:
-            加载的 BoxForest 实例
+            加载的 SafeBoxForest 实例
 
         Raises:
             ValueError: 机器人指纹不匹配
@@ -618,7 +618,7 @@ class BoxForest:
         forest = cls(
             robot_fingerprint=data['robot_fingerprint'],
             joint_limits=data['joint_limits'],
-            config=data.get('config', PlannerConfig()),
+            config=data.get('config', SBFConfig()),
         )
         forest.boxes = data['boxes']
         forest.adjacency = data['adjacency']
@@ -633,7 +633,7 @@ class BoxForest:
                 forest._next_id = max_existing + 1
 
         logger.info(
-            "BoxForest 从 %s 加载: %d 个 box, %d 条邻接边",
+            "SafeBoxForest 从 %s 加载: %d 个 box, %d 条邻接边",
             filepath, forest.n_boxes,
             sum(len(v) for v in forest.adjacency.values()) // 2,
         )

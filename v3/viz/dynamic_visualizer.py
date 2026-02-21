@@ -1,5 +1,5 @@
 """
-planner/dynamic_visualizer.py - 动态可视化：机械臂路径动画
+viz/dynamic_visualizer.py - 动态可视化：机械臂路径动画
 
 给定机器人 DH 参数和关节空间路径，在环境中动态展现
 机械臂从头到尾的动作。
@@ -11,7 +11,7 @@ planner/dynamic_visualizer.py - 动态可视化：机械臂路径动画
 - 可保存为 GIF/MP4
 
 使用方式：
-    from planner.dynamic_visualizer import animate_robot_path
+    from viz.dynamic_visualizer import animate_robot_path
     anim = animate_robot_path(robot, path, scene=scene)
     anim.save("robot_motion.gif", writer='pillow', fps=20)
 """

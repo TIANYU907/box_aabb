@@ -7,9 +7,8 @@ planner/connector.py - 树间连接与始末点连接
 3. 连接规划起始点/目标点到最近的 box
 4. 构建整体图用于路径搜索
 
-连接策略（v5.0 更新）：
+连接策略：
 - 邻接模式：从邻接表直接构建边，transition 在共享面中心
-- Legacy 模式：兼容旧的 overlap-based 和 segment-based 连接
 """
 
 import logging
@@ -379,7 +378,7 @@ class TreeConnector:
         q_goal: np.ndarray,
         boxes: Dict[int, BoxNode],
     ) -> Tuple[List[Edge], Optional[int], Optional[int]]:
-        """将始末点连接到 BoxForest 的 box
+        """将始末点连接到 SafeBoxForest 的 box
 
         优先检查包含，然后尝试自由空间线段连接。
 
@@ -456,7 +455,7 @@ class TreeConnector:
         goal_box_id: Optional[int],
         boxes: Dict[int, BoxNode],
     ) -> Dict:
-        """构建基于 BoxForest 邻接图的搜索图
+        """构建基于 SafeBoxForest 邻接图的搜索图
 
         与 build_adjacency_graph 格式相同，但节点来自 boxes 参数
         而非 tree_manager。
@@ -586,76 +585,3 @@ class TreeConnector:
         if edges:
             logger.info("跨分区补边: %d 条", len(edges))
         return edges
-
-    # ==================== 图构建 (legacy) ====================
-
-    def build_adjacency_graph(
-        self,
-        all_edges: List[Edge],
-        q_start: np.ndarray,
-        q_goal: np.ndarray,
-        start_box_id: Optional[int],
-        goal_box_id: Optional[int],
-    ) -> Dict:
-        """构建邻接图用于路径搜索
-
-        图的节点为 box node_id 加上特殊的 'start' 和 'goal' 节点。
-        图的边为连接关系及代价。
-
-        Returns:
-            {
-                'nodes': set of node_ids (int, plus 'start', 'goal'),
-                'edges': {node_id: [(neighbor_id, cost, edge), ...]},
-                'start': 'start',
-                'goal': 'goal',
-                'start_box': start_box_id,
-                'goal_box': goal_box_id,
-            }
-        """
-        nodes: Set = set()
-        adj: Dict = {}
-
-        # 收集所有 box 节点
-        for box in self.tree_manager.get_all_boxes():
-            nodes.add(box.node_id)
-            if box.node_id not in adj:
-                adj[box.node_id] = []
-
-        # 添加边
-        for edge in all_edges:
-            src, tgt = edge.source_box_id, edge.target_box_id
-
-            if src == -1:
-                src = 'start' if np.allclose(edge.source_config, q_start) else 'goal'
-                nodes.add(src)
-                if src not in adj:
-                    adj[src] = []
-
-            if tgt == -1:
-                tgt = 'start' if np.allclose(edge.target_config, q_start) else 'goal'
-                nodes.add(tgt)
-                if tgt not in adj:
-                    adj[tgt] = []
-
-            adj.setdefault(src, []).append((tgt, edge.cost, edge))
-            adj.setdefault(tgt, []).append((src, edge.cost, edge))
-
-        # 确保 start/goal 在图中
-        if start_box_id is not None:
-            nodes.add('start')
-            adj.setdefault('start', []).append((start_box_id, 0.0, None))
-            adj.setdefault(start_box_id, []).append(('start', 0.0, None))
-
-        if goal_box_id is not None:
-            nodes.add('goal')
-            adj.setdefault('goal', []).append((goal_box_id, 0.0, None))
-            adj.setdefault(goal_box_id, []).append(('goal', 0.0, None))
-
-        return {
-            'nodes': nodes,
-            'edges': adj,
-            'start': 'start',
-            'goal': 'goal',
-            'start_box': start_box_id,
-            'goal_box': goal_box_id,
-        }

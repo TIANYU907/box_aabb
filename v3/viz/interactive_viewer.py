@@ -1,5 +1,5 @@
 """
-planner/interactive_viewer.py - 交互式 3D 路径回放查看器
+viz/interactive_viewer.py - 交互式 3D 路径回放查看器
 
 基于 matplotlib TkAgg 后端，在可交互窗口中循环播放规划路径。
 支持：
@@ -11,7 +11,7 @@ planner/interactive_viewer.py - 交互式 3D 路径回放查看器
   - Q / Esc 关闭
 
 使用方式：
-    from planner.interactive_viewer import launch_viewer
+    from viz.interactive_viewer import launch_viewer
     launch_viewer(robot, path, scene=scene)
 
 也可通过 CLI 入口：

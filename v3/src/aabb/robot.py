@@ -542,37 +542,3 @@ def load_robot(name: str) -> Robot:
     return Robot.from_config(name)
 
 
-def create_panda_robot() -> Robot:
-    """创建Franka Emika Panda机器人
-
-    Panda是7自由度协作机器人，夹爪连杆通过 tool_frame 表示。
-
-    .. deprecated:: 3.0.0
-        请使用 ``load_robot('panda')`` 或 ``Robot.from_config('panda')``。
-    """
-    return load_robot('panda')
-
-
-def _panda_joint_limits() -> List[Tuple[float, float]]:
-    """获取 Panda 关节限制（从配置文件加载）"""
-    robot = load_robot('panda')
-    if robot.joint_limits:
-        return robot.joint_limits
-    # 硬编码后备
-    return [
-        (-2.8973, 2.8973), (-1.7628, 1.7628), (-2.8973, 2.8973),
-        (-3.0718, -0.0698), (-2.8973, 2.8973), (-0.0175, 3.7525),
-        (-2.8973, 2.8973),
-    ]
-
-
-# 保持向后兼容 — 推荐通过 robot.joint_limits 获取
-PANDA_JOINT_LIMITS = [
-    (-2.8973, 2.8973),   # q0
-    (-1.7628, 1.7628),   # q1
-    (-2.8973, 2.8973),   # q2
-    (-3.0718, -0.0698),  # q3
-    (-2.8973, 2.8973),   # q4
-    (-0.0175, 3.7525),   # q5
-    (-2.8973, 2.8973),   # q6
-]

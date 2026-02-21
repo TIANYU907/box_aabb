@@ -132,63 +132,6 @@ def compute_adjacency(
     return adj
 
 
-def compute_adjacency_reference(
-    boxes: List[BoxNode],
-    tol: float = 1e-8,
-) -> Dict[int, Set[int]]:
-    """参考实现：逐行向量化 O(N²·D)，用于正确性/性能对照。"""
-    n = len(boxes)
-    if n == 0:
-        return {}
-
-    n_dims = boxes[0].n_dims
-    adj: Dict[int, Set[int]] = {b.node_id: set() for b in boxes}
-
-    if n < 2:
-        return adj
-
-    intervals_arr = np.empty((n, n_dims, 2), dtype=np.float64)
-    for i, box in enumerate(boxes):
-        for d, (lo, hi) in enumerate(box.joint_intervals):
-            intervals_arr[i, d, 0] = lo
-            intervals_arr[i, d, 1] = hi
-
-    lo = intervals_arr[:, :, 0]  # (N, D)
-    hi = intervals_arr[:, :, 1]  # (N, D)
-
-    for i in range(n):
-        remaining = n - i - 1
-        if remaining <= 0:
-            break
-
-        i_lo = lo[i]
-        i_hi = hi[i]
-        j_lo = lo[i + 1:]
-        j_hi = hi[i + 1:]
-
-        overlap_width = np.minimum(i_hi, j_hi) - np.maximum(i_lo, j_lo)
-
-        separated = overlap_width < -tol
-        touching = (overlap_width >= -tol) & (overlap_width <= tol)
-        overlapping = overlap_width > tol
-
-        any_separated = np.any(separated, axis=1)
-        n_touching = np.sum(touching, axis=1)
-        n_overlapping = np.sum(overlapping, axis=1)
-
-        is_adjacent = (~any_separated) & (n_touching >= 1) & (n_overlapping >= n_dims - 1)
-
-        idx_adj = np.where(is_adjacent)[0]
-        for offset in idx_adj:
-            j = i + 1 + offset
-            adj[boxes[i].node_id].add(boxes[j].node_id)
-            adj[boxes[j].node_id].add(boxes[i].node_id)
-
-    n_edges = sum(len(v) for v in adj.values()) // 2
-    logger.info("compute_adjacency: %d boxes, %d 条邻接边", n, n_edges)
-    return adj
-
-
 def compute_adjacency_incremental(
     new_boxes: List[BoxNode],
     all_boxes: List[BoxNode],

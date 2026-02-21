@@ -9,7 +9,7 @@ planner/metrics.py - 路径质量评价指标
 - box 覆盖率
 - 计算统计
 
-所有指标支持从 PlannerResult 或路径点列表直接计算。
+所有指标支持从 SBFResult 或路径点列表直接计算。
 """
 
 import logging
@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from aabb.robot import Robot
-from .models import PlannerResult
+from .models import SBFResult
 from forest.models import BoxNode
 from forest.scene import Scene
 from forest.collision import CollisionChecker
@@ -238,12 +238,12 @@ def compute_joint_range_usage(
 
 
 def evaluate_result(
-    result: PlannerResult,
+    result: SBFResult,
     robot: Robot,
     scene: Scene,
     joint_limits: Optional[List[Tuple[float, float]]] = None,
 ) -> PathMetrics:
-    """从 PlannerResult 计算完整的路径质量指标
+    """从 SBFResult 计算完整的路径质量指标
 
     Args:
         result: Box-RRT 规划结果
@@ -294,13 +294,13 @@ def evaluate_result(
 
 
 def compare_results(
-    results: Dict[str, Tuple[PlannerResult, Robot, Scene]],
+    results: Dict[str, Tuple[SBFResult, Robot, Scene]],
     joint_limits: Optional[List[Tuple[float, float]]] = None,
 ) -> Dict[str, PathMetrics]:
     """比较多个规划结果的质量指标
 
     Args:
-        results: {名称: (PlannerResult, Robot, Scene)} 字典
+        results: {名称: (SBFResult, Robot, Scene)} 字典
         joint_limits: 共用关节限制
 
     Returns:

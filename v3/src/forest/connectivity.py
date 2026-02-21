@@ -370,7 +370,7 @@ def bridge_islands(
         period: 关节空间周期（例如 2π），None 表示不 wrap
         hier_tree: HierAABBTree（可选），用于在 bridge 处展开 box
         obstacles: 碰撞环境障碍物列表（与 hier_tree 搭配使用）
-        forest: BoxForest（可选），用于分配 ID 和添加 bridge box
+        forest: SafeBoxForest（可选），用于分配 ID 和添加 bridge box
         min_box_size: box 几何平均边长下限
         n_bridge_seeds: 沿线段采样的 seed 数（用于 box 展开尝试）
         min_island_size: 岛总体积几何平均边长下限

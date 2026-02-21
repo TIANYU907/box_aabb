@@ -1,17 +1,17 @@
 """
-planner/box_planner.py - BoxPlanner 主规划器
+planner/sbf_planner.py - SBFPlanner 主规划器
 
 基于关节区间(box)拓展与分解的路径规划算法。
 
 v5.0 更新：
-- 集成 BoxForest 扁平无重叠 box 集合
+- 集成 SafeBoxForest 扁平无重叠 box 集合
 - 扩展时边界截断（避免重叠已有 box）
 - 邻接图搜索 + 共享面 waypoint 优化
 - 路径限制在 box 内（box-aware shortcut + smoothing）
-- BoxForest 跨场景持久化
+- SafeBoxForest 跨场景持久化
 
 算法流程：
-1. 加载 BoxForest（如有缓存）+ AABB 缓存
+1. 加载 SafeBoxForest（如有缓存）+ AABB 缓存
 2. 验证始末点无碰撞
 3. 尝试直连
 4. 扩展 box（边界截断避免重叠）
@@ -20,7 +20,7 @@ v5.0 更新：
 7. Dijkstra 搜 box 序列
 8. 共享面 waypoint 优化
 9. Box-aware shortcut + smoothing
-10. 保存 BoxForest + AABB 缓存
+10. 保存 SafeBoxForest + AABB 缓存
 """
 
 import time
@@ -32,13 +32,13 @@ from typing import List, Tuple, Optional, Set, Dict
 import numpy as np
 
 from aabb.robot import Robot
-from .models import PlannerConfig, PlannerResult, gmean_edge_length
+from .models import SBFConfig, SBFResult, gmean_edge_length
 from forest.models import BoxNode
 from forest.scene import Scene
 from forest.collision import CollisionChecker
 from forest.hier_aabb_tree import HierAABBTree, build_kd_partitions
 from .box_tree import BoxTreeManager
-from forest.box_forest import BoxForest
+from forest.safe_box_forest import SafeBoxForest
 from .connector import TreeConnector
 from .path_smoother import PathSmoother, compute_path_length
 from .gcs_optimizer import GCSOptimizer
@@ -124,8 +124,8 @@ def _partition_expand_worker(payload: Dict[str, object]) -> Dict[str, object]:
     }
 
 
-class BoxPlanner:
-    """BoxPlanner — 基于 box 分解的路径规划器
+class SBFPlanner:
+    """SBFPlanner — 基于 box 分解的路径规划器
 
     在关节空间中通过拓展无碰撞 box 来快速覆盖 C-free，
     然后在 box graph 上搜索/优化路径。
@@ -140,7 +140,7 @@ class BoxPlanner:
         >>> robot = load_robot('2dof_planar')
         >>> scene = Scene()
         >>> scene.add_obstacle([1.0, 0.5], [1.5, 1.0])
-        >>> planner = BoxPlanner(robot, scene)
+        >>> planner = SBFPlanner(robot, scene)
         >>> result = planner.plan(q_start, q_goal)
         >>> if result.success:
         ...     print(f"路径长度: {result.path_length:.4f}")
@@ -150,13 +150,13 @@ class BoxPlanner:
         self,
         robot: Robot,
         scene: Scene,
-        config: Optional[PlannerConfig] = None,
+        config: Optional[SBFConfig] = None,
         joint_limits: Optional[List[Tuple[float, float]]] = None,
         no_cache: bool = False,
     ) -> None:
         self.robot = robot
         self.scene = scene
-        self.config = config or PlannerConfig()
+        self.config = config or SBFConfig()
 
         # 关节限制
         if joint_limits is not None:
@@ -308,7 +308,7 @@ class BoxPlanner:
 
     def _merge_connect_partitions(
         self,
-        forest: BoxForest,
+        forest: SafeBoxForest,
         local_results: List[Dict[str, object]],
         partitions: List[Dict[str, object]],
     ) -> List:
@@ -354,7 +354,7 @@ class BoxPlanner:
         q_start: np.ndarray,
         q_goal: np.ndarray,
         seed: Optional[int] = None,
-    ) -> PlannerResult:
+    ) -> SBFResult:
         """执行路径规划
 
         Args:
@@ -363,7 +363,7 @@ class BoxPlanner:
             seed: 随机数种子（可选，用于可重复性）
 
         Returns:
-            PlannerResult 规划结果
+            SBFResult 规划结果
         """
         t0 = time.time()
         rng = np.random.default_rng(seed)
@@ -371,7 +371,7 @@ class BoxPlanner:
         q_start = np.asarray(q_start, dtype=np.float64)
         q_goal = np.asarray(q_goal, dtype=np.float64)
 
-        result = PlannerResult()
+        result = SBFResult()
 
         try:
             return self._plan_impl(q_start, q_goal, rng, t0, result)
@@ -384,8 +384,8 @@ class BoxPlanner:
         q_goal: np.ndarray,
         rng: np.random.Generator,
         t0: float,
-        result: PlannerResult,
-    ) -> PlannerResult:
+        result: SBFResult,
+    ) -> SBFResult:
         """plan() 的实际实现（由 plan 调用，try/finally 确保缓存保存）"""
         # ---- Step 0: 验证始末点 ----
         if self.collision_checker.check_config_collision(q_start):
@@ -412,7 +412,7 @@ class BoxPlanner:
             logger.info(result.message)
             return result
 
-        # ---- Step 1: 加载/初始化 BoxForest ----
+        # ---- Step 1: 加载/初始化 SafeBoxForest ----
         forest = self._load_or_create_forest()
         forest.hier_tree = self.hier_tree
         result.forest = forest  # 即使失败也可检查 forest 状态
@@ -771,7 +771,7 @@ class BoxPlanner:
             path, path_boxes,
         )
 
-        # ---- Step 9: 保存 BoxForest ----
+        # ---- Step 9: 保存 SafeBoxForest ----
         self._save_forest(forest)
 
         # ---- 组装结果 ----
@@ -779,7 +779,6 @@ class BoxPlanner:
         result.path = path
         result.path_length = compute_path_length(path)
         result.forest = forest
-        result.box_trees = self.tree_manager.get_all_trees()  # legacy 兼容
         result.n_boxes_created = len(forest.boxes)
         result.n_collision_checks = self.collision_checker.n_collision_checks
         result.computation_time = time.time() - t0
@@ -792,34 +791,34 @@ class BoxPlanner:
         logger.info(result.message)
         return result
 
-    def _load_or_create_forest(self) -> BoxForest:
-        """加载或创建 BoxForest"""
+    def _load_or_create_forest(self) -> SafeBoxForest:
+        """加载或创建 SafeBoxForest"""
         forest_path = self.config.forest_path
         if forest_path:
             try:
-                forest = BoxForest.load(forest_path, self.robot)
-                logger.info("从 %s 加载 BoxForest", forest_path)
+                forest = SafeBoxForest.load(forest_path, self.robot)
+                logger.info("从 %s 加载 SafeBoxForest", forest_path)
                 return forest
             except Exception as e:
-                logger.warning("加载 BoxForest 失败: %s, 创建新实例", e)
+                logger.warning("加载 SafeBoxForest 失败: %s, 创建新实例", e)
 
         # period 从实际 joint_limits 计算，而非 2π（避免浮点截断误差）
         period = float(self.joint_limits[0][1] - self.joint_limits[0][0])
-        return BoxForest(
+        return SafeBoxForest(
             robot_fingerprint=self.robot.fingerprint(),
             joint_limits=self.joint_limits,
             config=self.config,
             period=period,
         )
 
-    def _save_forest(self, forest: BoxForest) -> None:
-        """保存 BoxForest（如果配置了路径）"""
+    def _save_forest(self, forest: SafeBoxForest) -> None:
+        """保存 SafeBoxForest（如果配置了路径）"""
         forest_path = self.config.forest_path
         if forest_path:
             try:
                 forest.save(forest_path)
             except Exception as e:
-                logger.warning("保存 BoxForest 失败: %s", e)
+                logger.warning("保存 SafeBoxForest 失败: %s", e)
 
     def _assign_boxes_to_path(
         self,
@@ -1254,7 +1253,3 @@ class BoxPlanner:
                         volume=vol,
                     )
                     self._add_box_to_tree(new_box, rng)
-
-
-# 向后兼容别名
-BoxRRT = BoxPlanner

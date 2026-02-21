@@ -1,0 +1,81 @@
+{
+  "experiment": "smoke_test",
+  "metadata": {
+    "config": {
+      "name": "smoke_test",
+      "scenes": [
+        {
+          "name": "2dof_simple",
+          "description": "2-DOF planar, no obstacles (unit test scene)",
+          "robot": "2dof_planar",
+          "obstacles": [],
+          "query_pairs": [
+            {
+              "start": [
+                -1.0,
+                0.5
+              ],
+              "goal": [
+                1.0,
+                -0.5
+              ]
+            }
+          ]
+        }
+      ],
+      "planners": [
+        {
+          "type": "RRT",
+          "algorithm": "RRTConnect",
+          "step_size": 0.5,
+          "resolution": 0.05
+        }
+      ],
+      "seeds": [
+        0,
+        1
+      ],
+      "n_trials": 1,
+      "timeout": 10.0
+    },
+    "total_trials": 2,
+    "timestamp": "20260221_105618"
+  },
+  "n_trials": 2,
+  "results": [
+    {
+      "scene": "2dof_simple",
+      "planner": "RRTConnect",
+      "seed": 0,
+      "trial": 0,
+      "wall_clock": 0.001451199990697205,
+      "success": true,
+      "cost": 2.23606797749979,
+      "planning_time": 0.0008207999926526099,
+      "first_solution_time": 0.0008207999926526099,
+      "collision_checks": 5,
+      "nodes_explored": 7,
+      "n_waypoints": 2,
+      "phase_times": {},
+      "algorithm": "RRTConnect",
+      "raw_path_length": 2.273463703003621
+    },
+    {
+      "scene": "2dof_simple",
+      "planner": "RRTConnect",
+      "seed": 1,
+      "trial": 0,
+      "wall_clock": 0.0009978000016417354,
+      "success": true,
+      "cost": 2.23606797749979,
+      "planning_time": 0.0004692999937105924,
+      "first_solution_time": 0.0004692999937105924,
+      "collision_checks": 6,
+      "nodes_explored": 8,
+      "n_waypoints": 2,
+      "phase_times": {},
+      "algorithm": "RRTConnect",
+      "raw_path_length": 2.806695550955922
+    }
+  ]
+}

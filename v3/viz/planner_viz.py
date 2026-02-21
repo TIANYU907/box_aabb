@@ -1,5 +1,5 @@
 """
-planner/visualizer.py - 规划过程可视化
+viz/planner_viz.py - 规划过程可视化
 
 提供 C-space 和工作空间两种视角的可视化：
 - C-space: box 区域、路径、碰撞区域（2DOF 时直接可视化）
@@ -15,7 +15,7 @@ import numpy as np
 
 from aabb.robot import Robot
 from forest.models import BoxNode, Obstacle
-from .models import BoxTree, PlannerResult
+from planner.models import BoxTree, SBFResult
 from forest.scene import Scene
 from forest.collision import CollisionChecker
 
@@ -43,27 +43,27 @@ except ImportError:
 
 
 # ============================================================
-# BoxForest v5 可视化
+# SafeBoxForest v5 可视化
 # ============================================================
 
 
 def plot_cspace_forest(
-    result: PlannerResult,
+    result: SBFResult,
     joint_limits: Optional[List[Tuple[float, float]]] = None,
     dim_x: int = 0,
     dim_y: int = 1,
     ax: Optional[Any] = None,
     show_path: bool = True,
     show_adjacency: bool = True,
-    title: str = "C-Space BoxForest（无重叠）",
+    title: str = "C-Space SafeBoxForest（无重叠）",
     figsize: Tuple[float, float] = (10, 8),
 ) -> Any:
-    """绘制 BoxForest 无重叠 box 集合 + 邻接边 + 路径
+    """绘制 SafeBoxForest 无重叠 box 集合 + 邻接边 + 路径
 
     每个 box 按邻接度着色，邻接 box 之间用虚线连接共享面中心。
 
     Args:
-        result: PlannerResult（需含 forest 属性）
+        result: SBFResult（需含 forest 属性）
         joint_limits: 关节限制
         dim_x, dim_y: 投影维度
         ax: matplotlib Axes
@@ -81,7 +81,7 @@ def plot_cspace_forest(
 
     forest = getattr(result, 'forest', None)
     if forest is None:
-        logger.warning("PlannerResult 无 forest 属性，回退到 plot_cspace_boxes")
+        logger.warning("SBFResult 无 forest 属性，回退到 plot_cspace_boxes")
         return plot_cspace_boxes(result, joint_limits, dim_x, dim_y, ax,
                                  show_path, title=title, figsize=figsize)
 
@@ -177,7 +177,7 @@ def plot_cspace_forest(
 
 
 def plot_cspace_boxes(
-    result: PlannerResult,
+    result: SBFResult,
     joint_limits: Optional[List[Tuple[float, float]]] = None,
     dim_x: int = 0,
     dim_y: int = 1,
@@ -274,7 +274,7 @@ def plot_cspace_with_collision(
     robot: Robot,
     scene: Scene,
     joint_limits: List[Tuple[float, float]],
-    result: Optional[PlannerResult] = None,
+    result: Optional[SBFResult] = None,
     resolution: float = 0.05,
     dim_x: int = 0,
     dim_y: int = 1,
@@ -341,7 +341,7 @@ def plot_cspace_with_collision(
 def plot_workspace_result(
     robot: Robot,
     scene: Scene,
-    result: PlannerResult,
+    result: SBFResult,
     n_poses: int = 10,
     figsize: Tuple[float, float] = (10, 8),
 ) -> Any:

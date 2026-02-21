@@ -1,0 +1,68 @@
+{
+  "sbf_dijkstra": {
+    "type": "SBF",
+    "method": "dijkstra",
+    "no_cache": true,
+    "max_boxes": 500,
+    "min_box_size": 0.1,
+    "goal_bias": 0.10,
+    "boundary_expand": true
+  },
+  "sbf_gcs": {
+    "type": "SBF",
+    "method": "gcs",
+    "no_cache": true,
+    "max_boxes": 500,
+    "min_box_size": 0.1,
+    "goal_bias": 0.10,
+    "boundary_expand": true
+  },
+  "sbf_visgraph": {
+    "type": "SBF",
+    "method": "visgraph",
+    "no_cache": true,
+    "max_boxes": 500,
+    "min_box_size": 0.1,
+    "goal_bias": 0.10,
+    "boundary_expand": true
+  },
+  "rrt_connect": {
+    "type": "RRT",
+    "algorithm": "RRTConnect",
+    "step_size": 0.5,
+    "resolution": 0.05
+  },
+  "rrt_star": {
+    "type": "RRT",
+    "algorithm": "RRT*",
+    "step_size": 0.5,
+    "resolution": 0.05,
+    "goal_bias": 0.05,
+    "goal_tol": 0.3
+  },
+  "informed_rrt_star": {
+    "type": "RRT",
+    "algorithm": "Informed-RRT*",
+    "step_size": 0.5,
+    "resolution": 0.05,
+    "goal_bias": 0.05,
+    "goal_tol": 0.3
+  },
+  "birrt_star": {
+    "type": "RRT",
+    "algorithm": "BiRRT*",
+    "step_size": 0.5,
+    "resolution": 0.05
+  },
+  "ompl_rrt_connect": {
+    "type": "OMPL",
+    "algorithm": "RRTConnect"
+  },
+  "ompl_prm": {
+    "type": "OMPL",
+    "algorithm": "PRM"
+  },
+  "iris_gcs": {
+    "type": "IRIS-GCS"
+  }
+}

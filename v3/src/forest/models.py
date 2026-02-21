@@ -31,8 +31,8 @@ class Obstacle:
 
 
 @dataclass
-class PlannerConfig:
-    """Forest-side config subset used by BoxForest.
+class SBFConfig:
+    """Forest-side config subset used by SafeBoxForest.
 
     Kept in forest layer to preserve dependency direction: planner -> forest.
     """

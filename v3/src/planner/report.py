@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from aabb.robot import Robot
-from .models import PlannerConfig, PlannerResult, BoxTree, Edge
+from .models import SBFConfig, SBFResult, BoxTree, Edge
 from forest.scene import Scene
 from .metrics import PathMetrics
 
@@ -43,10 +43,10 @@ class PlannerReportGenerator:
         self,
         robot: Robot,
         scene: Scene,
-        config: PlannerConfig,
+        config: SBFConfig,
         q_start: np.ndarray,
         q_goal: np.ndarray,
-        result: PlannerResult,
+        result: SBFResult,
         metrics: Optional[PathMetrics] = None,
         rng_seed: Optional[int] = None,
         saved_files: Optional[List[str]] = None,
@@ -185,7 +185,7 @@ class PlannerReportGenerator:
         L.append("")
 
     @staticmethod
-    def _sec_config(L: List[str], config: PlannerConfig) -> None:
+    def _sec_config(L: List[str], config: SBFConfig) -> None:
         L.append("## 4. 规划器参数")
         L.append("")
         L.append("| 参数 | 值 |")
@@ -195,7 +195,7 @@ class PlannerReportGenerator:
         L.append("")
 
     @staticmethod
-    def _sec_result(L: List[str], result: PlannerResult) -> None:
+    def _sec_result(L: List[str], result: SBFResult) -> None:
         L.append("## 5. 规划结果")
         L.append("")
         ok = "✓ 成功" if result.success else "✗ 失败"
@@ -213,7 +213,7 @@ class PlannerReportGenerator:
         L.append("")
 
     @staticmethod
-    def _sec_box_trees(L: List[str], result: PlannerResult) -> None:
+    def _sec_box_trees(L: List[str], result: SBFResult) -> None:
         if not result.box_trees:
             return
         L.append("### 5.1 Box Tree 明细")
@@ -253,7 +253,7 @@ class PlannerReportGenerator:
             L.append("")
 
     @staticmethod
-    def _sec_graph(L: List[str], result: PlannerResult) -> None:
+    def _sec_graph(L: List[str], result: SBFResult) -> None:
         if not result.edges:
             return
         n_edges = len(result.edges)
@@ -301,7 +301,7 @@ class PlannerReportGenerator:
             L.append("")
 
     @staticmethod
-    def _sec_path(L: List[str], result: PlannerResult) -> None:
+    def _sec_path(L: List[str], result: SBFResult) -> None:
         path = result.path
         n = len(path)
         ndim = len(path[0])
@@ -327,12 +327,12 @@ class PlannerReportGenerator:
         L.append("")
 
     # ------------------------------------------------------------------
-    # BoxForest v5 报告区段
+    # SafeBoxForest v5 报告区段
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _sec_forest(L: List[str], result: 'PlannerResult') -> None:
-        """BoxForest 无重叠 box 集合报告"""
+    def _sec_forest(L: List[str], result: 'SBFResult') -> None:
+        """SafeBoxForest 无重叠 box 集合报告"""
         forest = getattr(result, 'forest', None)
         if forest is None:
             return
@@ -341,7 +341,7 @@ class PlannerReportGenerator:
         total_vol = sum(b.volume for b in forest.boxes.values())
         n_adj_edges = sum(len(v) for v in forest.adjacency.values()) // 2
 
-        L.append("### 5.2 BoxForest 统计（无重叠 box 集合）")
+        L.append("### 5.2 SafeBoxForest 统计（无重叠 box 集合）")
         L.append("")
         L.append("| 指标 | 值 |")
         L.append("|------|----|")

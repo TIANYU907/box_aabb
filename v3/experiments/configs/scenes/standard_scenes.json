@@ -1,0 +1,119 @@
+{
+  "panda_8obs_open": {
+    "name": "panda_8obs_open",
+    "description": "Panda 7-DOF, 8 obstacles, open workspace",
+    "robot": "panda",
+    "random_obstacles": {
+      "count": 8,
+      "seed": 100,
+      "x_range": [-0.8, 0.8],
+      "y_range": [-0.8, 0.8],
+      "z_range": [0.1, 0.9],
+      "half_size_range": [0.04, 0.12]
+    },
+    "q_start": [0.5, -1.2, 0.5, -2.5, 0.5, 0.8, 1.5],
+    "q_goal": [-2.0, 1.2, -1.8, -0.5, -2.0, 3.0, -1.8],
+    "query_pairs": [
+      {"start": [0.5, -1.2, 0.5, -2.5, 0.5, 0.8, 1.5],
+       "goal":  [-2.0, 1.2, -1.8, -0.5, -2.0, 3.0, -1.8]},
+      {"start": [0.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.785],
+       "goal":  [-1.5, 0.8, -1.0, -0.8, -1.5, 2.5, -1.0]},
+      {"start": [1.0, -0.5, 0.3, -2.0, 0.8, 1.2, 0.5],
+       "goal":  [-1.0, 0.5, -1.5, -1.0, -1.0, 2.0, -0.5]}
+    ]
+  },
+  "panda_15obs_moderate": {
+    "name": "panda_15obs_moderate",
+    "description": "Panda 7-DOF, 15 obstacles, moderate density",
+    "robot": "panda",
+    "random_obstacles": {
+      "count": 15,
+      "seed": 200,
+      "x_range": [-0.75, 0.75],
+      "y_range": [-0.75, 0.75],
+      "z_range": [0.05, 0.95],
+      "half_size_range": [0.05, 0.15]
+    },
+    "q_start": [0.5, -1.2, 0.5, -2.5, 0.5, 0.8, 1.5],
+    "q_goal": [-2.0, 1.2, -1.8, -0.5, -2.0, 3.0, -1.8],
+    "query_pairs": [
+      {"start": [0.5, -1.2, 0.5, -2.5, 0.5, 0.8, 1.5],
+       "goal":  [-2.0, 1.2, -1.8, -0.5, -2.0, 3.0, -1.8]}
+    ]
+  },
+  "panda_20obs_dense": {
+    "name": "panda_20obs_dense",
+    "description": "Panda 7-DOF, 20 obstacles, dense (narrow passage)",
+    "robot": "panda",
+    "random_obstacles": {
+      "count": 20,
+      "seed": 300,
+      "x_range": [-0.7, 0.7],
+      "y_range": [-0.7, 0.7],
+      "z_range": [0.05, 0.95],
+      "half_size_range": [0.06, 0.18]
+    },
+    "q_start": [0.5, -1.2, 0.5, -2.5, 0.5, 0.8, 1.5],
+    "q_goal": [-2.0, 1.2, -1.8, -0.5, -2.0, 3.0, -1.8],
+    "query_pairs": [
+      {"start": [0.5, -1.2, 0.5, -2.5, 0.5, 0.8, 1.5],
+       "goal":  [-2.0, 1.2, -1.8, -0.5, -2.0, 3.0, -1.8]}
+    ]
+  },
+  "2dof_simple": {
+    "name": "2dof_simple",
+    "description": "2-DOF planar, no obstacles (unit test scene)",
+    "robot": "2dof_planar",
+    "obstacles": [],
+    "query_pairs": [
+      {"start": [-1.0, 0.5], "goal": [1.0, -0.5]}
+    ]
+  },
+  "2dof_with_obstacle": {
+    "name": "2dof_with_obstacle",
+    "description": "2-DOF planar with one obstacle",
+    "robot": "2dof_planar",
+    "obstacles": [
+      {"min": [10.0, 10.0, -0.5], "max": [11.0, 11.0, 0.5], "name": "far"}
+    ],
+    "query_pairs": [
+      {"start": [-1.0, 0.5], "goal": [1.0, -0.5]},
+      {"start": [0.0, 0.0], "goal": [2.0, -1.0]}
+    ]
+  },
+  "panda_8obs_reuse": {
+    "name": "panda_8obs_reuse",
+    "description": "Panda 7-DOF, 8 obstacles, many query pairs for reuse experiment",
+    "robot": "panda",
+    "random_obstacles": {
+      "count": 8,
+      "seed": 100,
+      "x_range": [-0.8, 0.8],
+      "y_range": [-0.8, 0.8],
+      "z_range": [0.1, 0.9],
+      "half_size_range": [0.04, 0.12]
+    },
+    "query_pairs": [
+      {"start": [0.5, -1.2, 0.5, -2.5, 0.5, 0.8, 1.5],
+       "goal":  [-2.0, 1.2, -1.8, -0.5, -2.0, 3.0, -1.8]},
+      {"start": [0.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.785],
+       "goal":  [-1.5, 0.8, -1.0, -0.8, -1.5, 2.5, -1.0]},
+      {"start": [1.0, -0.5, 0.3, -2.0, 0.8, 1.2, 0.5],
+       "goal":  [-1.0, 0.5, -1.5, -1.0, -1.0, 2.0, -0.5]},
+      {"start": [0.3, -0.8, 0.2, -2.2, 0.3, 1.0, 1.0],
+       "goal":  [-1.8, 1.0, -1.5, -0.3, -1.8, 2.8, -1.5]},
+      {"start": [-0.5, -0.3, 1.0, -1.8, -0.5, 1.5, 0.0],
+       "goal":  [1.5, 0.5, -0.5, -2.0, 1.5, 0.5, 1.5]},
+      {"start": [0.8, -1.0, 0.8, -2.3, 0.8, 0.5, 1.2],
+       "goal":  [-1.2, 0.8, -1.2, -0.8, -1.2, 2.2, -1.2]},
+      {"start": [-0.2, 0.3, -0.5, -1.5, 0.2, 2.0, 0.3],
+       "goal":  [1.0, -0.8, 0.8, -2.5, 1.0, 0.8, 1.0]},
+      {"start": [0.0, -1.5, 0.0, -2.0, 0.0, 1.0, 0.5],
+       "goal":  [-1.0, 1.5, -1.0, -0.5, -1.0, 2.5, -0.5]},
+      {"start": [1.2, -0.3, 0.5, -1.8, 1.2, 0.3, 0.8],
+       "goal":  [-0.8, 0.3, -0.8, -1.2, -0.8, 2.0, -0.8]},
+      {"start": [-1.0, 0.0, 0.5, -2.0, -0.5, 1.5, 0.0],
+       "goal":  [0.5, -1.0, -0.5, -1.0, 0.5, 2.5, 1.0]}
+    ]
+  }
+}

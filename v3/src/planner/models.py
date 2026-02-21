@@ -60,7 +60,7 @@ class Edge:
 
 
 @dataclass
-class PlannerConfig:
+class SBFConfig:
     max_iterations: int = 500
     max_box_nodes: int = 200
     seed_batch_size: int = 5
@@ -113,21 +113,14 @@ class PlannerConfig:
         return str(filepath)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'PlannerConfig':
+    def from_dict(cls, data: Dict[str, Any]) -> 'SBFConfig':
         from dataclasses import fields as dc_fields
-        compat = dict(data)
-        if 'min_box_volume' in compat and 'min_box_size' not in compat:
-            compat['min_box_size'] = compat.pop('min_box_volume')
-        else:
-            compat.pop('min_box_volume', None)
-        compat.pop('min_fragment_volume', None)
-        compat.pop('min_fragment_size', None)
         valid_fields = {f.name for f in dc_fields(cls)}
-        filtered = {k: v for k, v in compat.items() if k in valid_fields}
+        filtered = {k: v for k, v in data.items() if k in valid_fields}
         return cls(**filtered)
 
     @classmethod
-    def from_json(cls, filepath: str | Path) -> 'PlannerConfig':
+    def from_json(cls, filepath: str | Path) -> 'SBFConfig':
         filepath = Path(filepath)
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -135,7 +128,7 @@ class PlannerConfig:
 
 
 @dataclass
-class PlannerResult:
+class SBFResult:
     success: bool = False
     path: List[np.ndarray] = field(default_factory=list)
     box_trees: List[BoxTree] = field(default_factory=list)

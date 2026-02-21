@@ -173,24 +173,6 @@ class _NodeView:
         else:
             s.set_has_aabb(self._idx, 0)
 
-    @property
-    def raw_aabb(self) -> Optional[np.ndarray]:
-        """向后兼容别名 → aabb"""
-        return self.aabb
-
-    @raw_aabb.setter
-    def raw_aabb(self, val):
-        self.aabb = val
-
-    @property
-    def refined_aabb(self) -> Optional[np.ndarray]:
-        """向后兼容别名 → aabb"""
-        return self.aabb
-
-    @refined_aabb.setter
-    def refined_aabb(self, val):
-        self.aabb = val
-
     # ── 占用 ──
 
     @property
@@ -252,32 +234,6 @@ class _NodeView:
     @property
     def center(self) -> np.ndarray:
         return np.array([(lo + hi) / 2 for lo, hi in self.intervals])
-
-
-# ─────────────────────────────────────────────────────
-#  遗留数据类 / 结果
-# ─────────────────────────────────────────────────────
-
-@dataclass
-class HierAABBNode:
-    """遗留数据类——仅保留供 import 兼容。内部不再使用。"""
-    intervals: List[Tuple[float, float]]
-    depth: int = 0
-    raw_aabb: Optional[np.ndarray] = field(default=None, repr=False)
-    refined_aabb: Optional[np.ndarray] = field(default=None, repr=False)
-    split_dim: Optional[int] = None
-    split_val: Optional[float] = None
-    left: Optional['HierAABBNode'] = field(default=None, repr=False)
-    right: Optional['HierAABBNode'] = field(default=None, repr=False)
-    parent: Optional['HierAABBNode'] = field(default=None, repr=False)
-    occupied: bool = False
-    subtree_occupied: int = 0
-    forest_box_id: Optional[int] = None
-    _fk_cache: Optional[tuple] = field(default=None, repr=False)
-    _arr_idx: Optional[int] = field(default=None, repr=False)
-
-    def is_leaf(self) -> bool:
-        return self.left is None and self.right is None
 
 
 @dataclass
